@@ -3,10 +3,10 @@ pragma solidity ^0.8.24;
 
 import {BaseVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {SafeERC20, Math, IERC20} from "lib/yieldnest-vault/src/Common.sol";
-import {IHasConfigUpgradeable} from "lib/kernel/src/interfaces/IHasConfigUpgradeable.sol";
-import {IKernelConfig} from "lib/kernel/src/interfaces/IKernelConfig.sol";
-import {IStakerGateway} from "lib/kernel/src/interfaces/IStakerGateway.sol";
-import {IAssetRegistry} from "lib/kernel/src/interfaces/IAssetRegistry.sol";
+import {IHasConfigUpgradeable} from "./interfaces/IHasConfigUpgradeable.sol";
+import {IKernelConfig} from "./interfaces/IKernelConfig.sol";
+import {IStakerGateway} from "./interfaces/IStakerGateway.sol";
+import {IAssetRegistry} from "./interfaces/IAssetRegistry.sol";
 
 contract ynBNBStrategy is BaseVault {
     bytes32 public constant ALLOCATOR_ROLE = keccak256("ALLOCATOR_ROLE");
