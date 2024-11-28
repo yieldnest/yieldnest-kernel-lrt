@@ -3,16 +3,22 @@ pragma solidity ^0.8.24;
 
 import {BaseVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {SafeERC20, Math, IERC20} from "lib/yieldnest-vault/src/Common.sol";
+import {IHasConfigUpgradeable} from "./interfaces/IHasConfigUpgradeable.sol";
+import {IKernelConfig} from "./interfaces/IKernelConfig.sol";
+import {IStakerGateway} from "./interfaces/IStakerGateway.sol";
+import {IAssetRegistry} from "./interfaces/IAssetRegistry.sol";
 
 contract ynBNBStrategy is BaseVault {
     bytes32 public constant ALLOCATOR_ROLE = keccak256("ALLOCATOR_ROLE");
 
+    error UnverifiedAsset(address asset);
     /**
      * @notice Initializes the vault.
      * @param admin The address of the admin.
      * @param name The name of the vault.
      * @param symbol The symbol of the vault.
      */
+
     function initialize(address admin, string memory name, string memory symbol, uint8 decimals) external initializer {
         __ERC20_init(name, symbol);
         __AccessControl_init();
@@ -74,13 +80,7 @@ contract ynBNBStrategy is BaseVault {
         uint256 shares,
         uint256 baseAssets
     ) internal override onlyRole(ALLOCATOR_ROLE) {
-        VaultStorage storage vaultStorage = _getVaultStorage();
-        vaultStorage.totalAssets += baseAssets;
-
-        SafeERC20.safeTransferFrom(IERC20(asset_), caller, address(this), assets);
-
-        _mint(receiver, shares);
-        emit Deposit(caller, receiver, assets, shares);
+        super._deposit(asset_, caller, receiver, assets, shares, baseAssets);
     }
 
     /**
@@ -98,6 +98,7 @@ contract ynBNBStrategy is BaseVault {
         override
         onlyRole(ALLOCATOR_ROLE)
     {
+        // TODO: support withdrawal of specific assets
         VaultStorage storage vaultStorage = _getVaultStorage();
         vaultStorage.totalAssets -= assets;
         if (caller != owner) {
@@ -108,46 +109,5 @@ contract ynBNBStrategy is BaseVault {
 
         _burn(owner, shares);
         emit Withdraw(caller, receiver, owner, assets, shares);
-    }
-
-    /**
-     * @notice Deposits a given amount of assets and assigns the equivalent amount of shares to the receiver.
-     * @param asset The asset address
-     * @param amount The amount of assets to deposit.
-     * @param receiver The address of the receiver.
-     * @return uint256 The equivalent amount of shares.
-     */
-    function deposit(address asset, uint256 amount, address receiver) public virtual nonReentrant returns (uint256) {
-        if (paused()) {
-            revert Paused();
-        }
-        (uint256 shares, uint256 baseAssets) = _convertToShares(asset, amount, Math.Rounding.Floor);
-        _deposit(asset, _msgSender(), receiver, amount, shares, baseAssets);
-        return shares;
-    }
-
-    /**
-     * @notice Withdraws a given amount of assets and burns the equivalent amount of shares from the owner.
-     * @param asset The asset address
-     * @param amount The amount of assets to withdraw.
-     * @param receiver The address of the receiver.
-     * @param owner The address of the owner.
-     * @return shares The equivalent amount of shares.
-     */
-    function withdraw(address asset, uint256 amount, address receiver, address owner)
-        public
-        virtual
-        nonReentrant
-        returns (uint256 shares)
-    {
-        if (paused()) {
-            revert Paused();
-        }
-        uint256 maxAssets = maxWithdraw(owner);
-        if (amount > maxAssets) {
-            revert ExceededMaxWithdraw(owner, amount, maxAssets);
-        }
-        (shares,) = _convertToShares(asset, amount, Math.Rounding.Ceil);
-        _withdraw(_msgSender(), receiver, owner, amount, shares);
     }
 }
