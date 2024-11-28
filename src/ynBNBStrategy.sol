@@ -3,17 +3,21 @@ pragma solidity ^0.8.24;
 
 import {BaseVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {SafeERC20, Math, IERC20} from "lib/yieldnest-vault/src/Common.sol";
+import {IHasConfigUpgradeable} from "lib/kernel/src/interfaces/IHasConfigUpgradeable.sol";
+import {IKernelConfig} from "lib/kernel/src/interfaces/IKernelConfig.sol";
+import {IStakerGateway} from "lib/kernel/src/interfaces/IStakerGateway.sol";
 
 contract ynBNBStrategy is BaseVault {
     bytes32 public constant ALLOCATOR_ROLE = keccak256("ALLOCATOR_ROLE");
-
+    address public stakerGateway;
+    address public assetRegistry;
     /**
      * @notice Initializes the vault.
      * @param admin The address of the admin.
      * @param name The name of the vault.
      * @param symbol The symbol of the vault.
      */
-    function initialize(address admin, string memory name, string memory symbol, uint8 decimals) external initializer {
+    function initialize(address admin, string memory name, string memory symbol, uint8 decimals, address _stakerGateway) external initializer {
         __ERC20_init(name, symbol);
         __AccessControl_init();
         __ReentrancyGuard_init();
@@ -22,6 +26,8 @@ contract ynBNBStrategy is BaseVault {
         VaultStorage storage vaultStorage = _getVaultStorage();
         vaultStorage.paused = true;
         vaultStorage.decimals = decimals;
+        stakerGateway = _stakerGateway;
+        assetRegistry = IKernelConfig(IHasConfigUpgradeable(_stakerGateway).getConfig()).getAssetRegistry();
     }
 
     /**
@@ -110,6 +116,9 @@ contract ynBNBStrategy is BaseVault {
         emit Withdraw(caller, receiver, owner, assets, shares);
     }
 
+    function _verifyAsset(address asset)internal returns(bool){
+        return IAssetRegistry(assetRegistry).hasAsset(asset);
+    }
     /**
      * @notice Deposits a given amount of assets and assigns the equivalent amount of shares to the receiver.
      * @param asset The asset address
@@ -121,6 +130,7 @@ contract ynBNBStrategy is BaseVault {
         if (paused()) {
             revert Paused();
         }
+        require(_verifyAsset(asset), "Not an allowed asset");
         (uint256 shares, uint256 baseAssets) = _convertToShares(asset, amount, Math.Rounding.Floor);
         _deposit(asset, _msgSender(), receiver, amount, shares, baseAssets);
         return shares;

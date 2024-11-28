@@ -2,3 +2,6 @@
 	path = lib/yieldnest-vault
 	url = https://github.com/yieldnest/yieldnest-vault
 	branch = feature/x-vault
+[submodule "lib/kernel"]
+	path = lib/kernel
+	url = https://github.com/Kelp-DAO/kernel-smart-contracts-public.git
