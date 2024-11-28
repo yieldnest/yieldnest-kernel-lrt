@@ -5,3 +5,6 @@
 [submodule "lib/kernel"]
 	path = lib/kernel
 	url = https://github.com/Kelp-DAO/kernel-smart-contracts-public.git
+[submodule "lib/kernel-smart-contracts-public"]
+	path = lib/kernel-smart-contracts-public
+	url = https://github.com/Kelp-DAO/kernel-smart-contracts-public
