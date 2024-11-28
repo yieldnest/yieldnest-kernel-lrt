@@ -3,12 +3,10 @@ pragma solidity ^0.8.24;
 
 import {BaseVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {SafeERC20, IERC20} from "lib/yieldnest-vault/src/Common.sol";
-import {IStakerGateway} from "./interfaces/IStakerGateway.sol";
+import {IStakerGateway} from "src/interface/external/IStakerGateway.sol";
 
 contract KernelStrategy is BaseVault {
     bytes32 public constant ALLOCATOR_ROLE = keccak256("ALLOCATOR_ROLE");
-
-    error UnverifiedAsset(address asset);
 
     struct StrategyStorage {
         address stakerGateway;
@@ -24,6 +22,9 @@ contract KernelStrategy is BaseVault {
         external
         initializer
     {
+        if (admin == address(0) || stakerGateway == address(0)) {
+            revert ZeroAddress();
+        }
         __ERC20_init(name, symbol);
         __AccessControl_init();
         __ReentrancyGuard_init();
