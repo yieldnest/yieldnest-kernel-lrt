@@ -80,13 +80,7 @@ contract ynBNBStrategy is BaseVault {
         uint256 shares,
         uint256 baseAssets
     ) internal override onlyRole(ALLOCATOR_ROLE) {
-        VaultStorage storage vaultStorage = _getVaultStorage();
-        vaultStorage.totalAssets += baseAssets;
-
-        SafeERC20.safeTransferFrom(IERC20(asset_), caller, address(this), assets);
-
-        _mint(receiver, shares);
-        emit Deposit(caller, receiver, assets, shares);
+        super._deposit(asset_, caller, receiver, assets, shares, baseAssets);
     }
 
     /**
@@ -104,6 +98,7 @@ contract ynBNBStrategy is BaseVault {
         override
         onlyRole(ALLOCATOR_ROLE)
     {
+        // TODO: support withdrawal of specific assets
         VaultStorage storage vaultStorage = _getVaultStorage();
         vaultStorage.totalAssets -= assets;
         if (caller != owner) {
@@ -154,6 +149,7 @@ contract ynBNBStrategy is BaseVault {
             revert ExceededMaxWithdraw(owner, amount, maxAssets);
         }
         (shares,) = _convertToShares(asset, amount, Math.Rounding.Ceil);
+        // TODO: support withdrawal of specific assets
         _withdraw(_msgSender(), receiver, owner, amount, shares);
     }
 }
