@@ -110,46 +110,4 @@ contract ynBNBStrategy is BaseVault {
         _burn(owner, shares);
         emit Withdraw(caller, receiver, owner, assets, shares);
     }
-
-    /**
-     * @notice Deposits a given amount of assets and assigns the equivalent amount of shares to the receiver.
-     * @param asset The asset address
-     * @param amount The amount of assets to deposit.
-     * @param receiver The address of the receiver.
-     * @return uint256 The equivalent amount of shares.
-     */
-    function deposit(address asset, uint256 amount, address receiver) public virtual nonReentrant returns (uint256) {
-        if (paused()) {
-            revert Paused();
-        }
-        (uint256 shares, uint256 baseAssets) = _convertToShares(asset, amount, Math.Rounding.Floor);
-        _deposit(asset, _msgSender(), receiver, amount, shares, baseAssets);
-        return shares;
-    }
-
-    /**
-     * @notice Withdraws a given amount of assets and burns the equivalent amount of shares from the owner.
-     * @param asset The asset address
-     * @param amount The amount of assets to withdraw.
-     * @param receiver The address of the receiver.
-     * @param owner The address of the owner.
-     * @return shares The equivalent amount of shares.
-     */
-    function withdraw(address asset, uint256 amount, address receiver, address owner)
-        public
-        virtual
-        nonReentrant
-        returns (uint256 shares)
-    {
-        if (paused()) {
-            revert Paused();
-        }
-        uint256 maxAssets = maxWithdraw(owner);
-        if (amount > maxAssets) {
-            revert ExceededMaxWithdraw(owner, amount, maxAssets);
-        }
-        (shares,) = _convertToShares(asset, amount, Math.Rounding.Ceil);
-        // TODO: support withdrawal of specific assets
-        _withdraw(_msgSender(), receiver, owner, amount, shares);
-    }
 }
