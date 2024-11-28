@@ -6,6 +6,7 @@ import {SafeERC20, Math, IERC20} from "lib/yieldnest-vault/src/Common.sol";
 import {IHasConfigUpgradeable} from "lib/kernel/src/interfaces/IHasConfigUpgradeable.sol";
 import {IKernelConfig} from "lib/kernel/src/interfaces/IKernelConfig.sol";
 import {IStakerGateway} from "lib/kernel/src/interfaces/IStakerGateway.sol";
+import {IAssetRegistry} from "lib/kernel/src/interfaces/IAssetRegistry.sol";
 
 contract ynBNBStrategy is BaseVault {
     bytes32 public constant ALLOCATOR_ROLE = keccak256("ALLOCATOR_ROLE");
@@ -126,7 +127,7 @@ contract ynBNBStrategy is BaseVault {
      * @notice Checks that an asset is allowed to be deposited into the kernel Staker gateway
      * @param asset the param being deposited
      */
-    function _verifyAsset(address asset) internal {
+    function _verifyAsset(address asset) internal view {
         if (!IAssetRegistry(assetRegistry).hasAsset(asset)) {
             revert UnverifiedAsset(asset);
         }

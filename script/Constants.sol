@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 contract ynBNBConstants {
     uint256 public constant MIN_DELAY = 84600;
