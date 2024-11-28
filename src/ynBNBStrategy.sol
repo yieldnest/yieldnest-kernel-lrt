@@ -11,13 +11,19 @@ contract ynBNBStrategy is BaseVault {
     bytes32 public constant ALLOCATOR_ROLE = keccak256("ALLOCATOR_ROLE");
     address public stakerGateway;
     address public assetRegistry;
+
+    error UnverifiedAsset(address asset);
     /**
      * @notice Initializes the vault.
      * @param admin The address of the admin.
      * @param name The name of the vault.
      * @param symbol The symbol of the vault.
      */
-    function initialize(address admin, string memory name, string memory symbol, uint8 decimals, address _stakerGateway) external initializer {
+
+    function initialize(address admin, string memory name, string memory symbol, uint8 decimals, address _stakerGateway)
+        external
+        initializer
+    {
         __ERC20_init(name, symbol);
         __AccessControl_init();
         __ReentrancyGuard_init();
@@ -116,8 +122,14 @@ contract ynBNBStrategy is BaseVault {
         emit Withdraw(caller, receiver, owner, assets, shares);
     }
 
-    function _verifyAsset(address asset)internal returns(bool){
-        return IAssetRegistry(assetRegistry).hasAsset(asset);
+    /**
+     * @notice Checks that an asset is allowed to be deposited into the kernel Staker gateway
+     * @param asset the param being deposited
+     */
+    function _verifyAsset(address asset) internal {
+        if (!IAssetRegistry(assetRegistry).hasAsset(asset)) {
+            revert UnverifiedAsset(asset);
+        }
     }
     /**
      * @notice Deposits a given amount of assets and assigns the equivalent amount of shares to the receiver.
@@ -126,11 +138,12 @@ contract ynBNBStrategy is BaseVault {
      * @param receiver The address of the receiver.
      * @return uint256 The equivalent amount of shares.
      */
+
     function deposit(address asset, uint256 amount, address receiver) public virtual nonReentrant returns (uint256) {
         if (paused()) {
             revert Paused();
         }
-        require(_verifyAsset(asset), "Not an allowed asset");
+        _verifyAsset(asset);
         (uint256 shares, uint256 baseAssets) = _convertToShares(asset, amount, Math.Rounding.Floor);
         _deposit(asset, _msgSender(), receiver, amount, shares, baseAssets);
         return shares;
