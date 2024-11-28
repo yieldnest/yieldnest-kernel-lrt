@@ -7,7 +7,6 @@ import {IStakerGateway} from "./interfaces/IStakerGateway.sol";
 
 contract KernelStrategy is BaseVault {
     bytes32 public constant ALLOCATOR_ROLE = keccak256("ALLOCATOR_ROLE");
-    bytes32 public constant STRATEGY_STORAGE_LOCATION = keccak256("strategy.storage.location");
 
     error UnverifiedAsset(address asset);
 
@@ -112,9 +111,11 @@ contract KernelStrategy is BaseVault {
             _spendAllowance(owner, caller, shares);
         }
 
+        StrategyStorage storage strategyStorage = _getStrategyStorage();
+        IStakerGateway stakerGateway = IStakerGateway(strategyStorage.stakerGateway);
+
         // TODO: fix referralId
         string memory referralId = "";
-        IStakerGateway stakerGateway = IStakerGateway(vaultStorage.stakerGateway);
         stakerGateway.unstake(asset(), assets, referralId);
 
         SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);
@@ -128,8 +129,9 @@ contract KernelStrategy is BaseVault {
      * @return $ The vault storage.
      */
     function _getStrategyStorage() internal pure virtual returns (StrategyStorage storage $) {
+        //     keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ERC4626")) - 1)) & ~bytes32(uint256(0xff));
         assembly {
-            $.slot := STRATEGY_STORAGE_LOCATION
+            $.slot := 0x0773e532dfede91f04b12a73d3d2acd361424f41f76b4fb79f090161e36b4e00
         }
     }
 }
