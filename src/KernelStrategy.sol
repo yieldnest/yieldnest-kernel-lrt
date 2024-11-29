@@ -7,10 +7,15 @@ import {IStakerGateway} from "src/interface/external/IStakerGateway.sol";
 
 contract KernelStrategy is BaseVault {
     bytes32 public constant ALLOCATOR_ROLE = keccak256("ALLOCATOR_ROLE");
+    bytes32 public constant STRATEGY_MANAGER_ROLE = keccak256("STRATEGY_MANAGER_ROLE");
 
     struct StrategyStorage {
         address stakerGateway;
+        bool syncDeposit;
     }
+
+    event SetStakerGateway(address stakerGateway);
+    event SetSyncDeposit(bool syncDeposit);
 
     /**
      * @notice Initializes the vault.
@@ -18,11 +23,8 @@ contract KernelStrategy is BaseVault {
      * @param name The name of the vault.
      * @param symbol The symbol of the vault.
      */
-    function initialize(address admin, string memory name, string memory symbol, uint8 decimals, address stakerGateway)
-        external
-        initializer
-    {
-        if (admin == address(0) || stakerGateway == address(0)) {
+    function initialize(address admin, string memory name, string memory symbol, uint8 decimals) external initializer {
+        if (admin == address(0)) {
             revert ZeroAddress();
         }
         __ERC20_init(name, symbol);
@@ -33,9 +35,6 @@ contract KernelStrategy is BaseVault {
         VaultStorage storage vaultStorage = _getVaultStorage();
         vaultStorage.paused = true;
         vaultStorage.decimals = decimals;
-
-        StrategyStorage storage strategyStorage = _getStrategyStorage();
-        strategyStorage.stakerGateway = stakerGateway;
     }
 
     /**
@@ -89,6 +88,17 @@ contract KernelStrategy is BaseVault {
         uint256 baseAssets
     ) internal override onlyRole(ALLOCATOR_ROLE) {
         super._deposit(asset_, caller, receiver, assets, shares, baseAssets);
+
+        StrategyStorage storage strategyStorage = _getStrategyStorage();
+        if (strategyStorage.syncDeposit) {
+            IStakerGateway stakerGateway = IStakerGateway(strategyStorage.stakerGateway);
+
+            SafeERC20.safeIncreaseAllowance(IERC20(asset_), address(stakerGateway), assets);
+
+            // TODO: fix referralId
+            string memory referralId = "";
+            stakerGateway.stake(asset_, assets, referralId);
+        }
     }
 
     /**
@@ -130,9 +140,32 @@ contract KernelStrategy is BaseVault {
      * @return $ The vault storage.
      */
     function _getStrategyStorage() internal pure virtual returns (StrategyStorage storage $) {
-        //     keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ERC4626")) - 1)) & ~bytes32(uint256(0xff));
         assembly {
-            $.slot := 0x0773e532dfede91f04b12a73d3d2acd361424f41f76b4fb79f090161e36b4e00
+            $.slot := 0x0ef3e973c65e9ac117f6f10039e07687b1619898ed66fe088b0fab5f5dc83d88
         }
+    }
+
+    /**
+     * @notice Sets the staker gateway address.
+     * @param stakerGateway The address of the staker gateway.
+     */
+    function setStakerGateway(address stakerGateway) external onlyRole(STRATEGY_MANAGER_ROLE) {
+        if (stakerGateway == address(0)) revert ZeroAddress();
+
+        StrategyStorage storage strategyStorage = _getStrategyStorage();
+        strategyStorage.stakerGateway = stakerGateway;
+
+        emit SetStakerGateway(stakerGateway);
+    }
+
+    /**
+     * @notice Sets the direct deposit flag.
+     * @param syncDeposit The flag.
+     */
+    function setSyncDeposit(bool syncDeposit) external onlyRole(STRATEGY_MANAGER_ROLE) {
+        StrategyStorage storage strategyStorage = _getStrategyStorage();
+        strategyStorage.syncDeposit = syncDeposit;
+
+        emit SetSyncDeposit(syncDeposit);
     }
 }
