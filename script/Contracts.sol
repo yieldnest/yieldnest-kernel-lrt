@@ -14,6 +14,11 @@ library MainnetContracts {
 
     address public constant TIMELOCK = 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a;
 
+    // Kernel Contracts
+    address public constant STAKER_GATEWAY = 0xb32dF5B33dBCCA60437EC17b27842c12bFE83394;
+    address public constant KERNEL_CONFIG = 0x45d7Bb73253A908E6160aa5FD9DA083F7Bc6faf5;
+    address public constant ASSET_REGISTRY = 0xd0B91Fc0a323bbb726faAF8867CdB1cA98c44ABB;
+
     // TODO: update to Binance Mainnet values
     address public constant CL_STETH_FEED = 0x86392dC19c0b719886221c78AB11eb8Cf5c52812;
     address public constant FACTORY = 0x1756987c66eC529be59D3Ec1edFB005a2F9728E1;

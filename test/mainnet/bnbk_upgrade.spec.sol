@@ -160,4 +160,5 @@ contract VaultMainnetUpgradeTest is Test, AssertUtils, MainnetActors, Etches {
         assertEq(assets.length, 1, "There should be only one asset in the vault");
         assertEq(assets[0], MC.SLISBNB, "First asset should be SLISBNB");
     }
+
 }
