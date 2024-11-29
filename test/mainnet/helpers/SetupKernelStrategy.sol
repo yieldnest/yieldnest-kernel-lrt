@@ -85,12 +85,9 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
         setDepositRule(vault, MC.SLISBNB, address(vault));
 
         // set staking rule
-        address[] memory stakableAssets = new address[](1);
-        stakableAssets[0] = MC.SLISBNB;
-        setStakingRule(vault, stakableAssets);
+        setStakingRule(vault, MC.SLISBNB);
         
         // set approval rules
-        setApprovalRule(vault, address(vault), MC.YNBNBk);
         setApprovalRule(vault, address(vault), MC.STAKER_GATEWAY);
 
         vault.unpause();
@@ -117,7 +114,11 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
 
         vault_.setProcessorRule(contractAddress, funcSig, rule);
     }
-
+    function setStakingRule(Vault vault_, address asset) public {
+        address[] memory assets = new address[1]();
+        assets[0] = asset;
+        setStakingRule(vault_, assets);
+    }
     function setStakingRule(Vault vault_, address[] memory assets) public {
         bytes4 funcSig = bytes4(keccack256("stake(address,uint256,string)"));
 
