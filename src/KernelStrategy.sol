@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {BaseVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {SafeERC20, IERC20} from "lib/yieldnest-vault/src/Common.sol";
-import {IStakerGateway} from "src/interface/external/IStakerGateway.sol";
+import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 contract KernelStrategy is BaseVault {
     bytes32 public constant ALLOCATOR_ROLE = keccak256("ALLOCATOR_ROLE");
@@ -27,6 +27,7 @@ contract KernelStrategy is BaseVault {
         if (admin == address(0)) {
             revert ZeroAddress();
         }
+        __ERC20Permit_init(name);
         __ERC20_init(name, symbol);
         __AccessControl_init();
         __ReentrancyGuard_init();
