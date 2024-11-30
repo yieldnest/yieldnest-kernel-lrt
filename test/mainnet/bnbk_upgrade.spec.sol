@@ -3,7 +3,6 @@ pragma solidity ^0.8.24;
 
 import {Test} from "lib/forge-std/src/Test.sol";
 import {console} from "lib/forge-std/src/console.sol";
-import {SetupVault, Vault, IVault} from "lib/yieldnest-vault/test/mainnet/helpers/SetupVault.sol";
 import {SetupKernelStrategy} from "./helpers/SetupKernelStrategy.sol";
 import {Etches} from "lib/yieldnest-vault/test/mainnet/helpers/Etches.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
@@ -11,8 +10,6 @@ import {MainnetActors} from "script/Actors.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 import {ITransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
-import {Provider} from "lib/yieldnest-vault/src/module/Provider.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {MainnetActors} from "script/Actors.sol";
 
