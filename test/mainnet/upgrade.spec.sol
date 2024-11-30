@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "lib/forge-std/src/Test.sol";
-import {SetupKernelStrategy} from "./helpers/SetupKernelStrategy.sol";
+import {SetupKernelStrategy} from "test/mainnet/helpers/SetupKernelStrategy.sol";
 import {Etches} from "lib/yieldnest-vault/test/mainnet/helpers/Etches.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 import {MainnetActors} from "script/Actors.sol";

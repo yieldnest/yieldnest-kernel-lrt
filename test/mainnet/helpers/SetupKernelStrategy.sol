@@ -9,8 +9,10 @@ import {MainnetContracts as MC} from "script/Contracts.sol";
 import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
 import {MigrateKernelStrategy} from "src/MigrateKernelStrategy.sol";
 import {MainnetActors} from "script/Actors.sol";
-import {ITransparentUpgradeableProxy, TransparentUpgradeableProxy} from
-    "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy,
+    TransparentUpgradeableProxy
+} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {Etches} from "lib/yieldnest-vault/test/mainnet/helpers/Etches.sol";
 
 contract SetupKernelStrategy is Test, MainnetActors, Etches {
@@ -40,12 +42,11 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
         KernelStrategy implementation = new KernelStrategy();
 
         // Deploy transparent proxy
-        bytes memory initData = abi.encodeWithSelector(KernelStrategy.initialize.selector, MainnetActors.ADMIN, "ynWBNB Buffer", "ynWBNBk", 18);
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(implementation),
-            address(MainnetActors.ADMIN),
-            initData
+        bytes memory initData = abi.encodeWithSelector(
+            KernelStrategy.initialize.selector, MainnetActors.ADMIN, "ynWBNB Buffer", "ynWBNBk", 18
         );
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(address(implementation), address(MainnetActors.ADMIN), initData);
 
         // Cast proxy to KernelStrategy type
         buffer = KernelStrategy(payable(address(proxy)));
@@ -92,7 +93,6 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
 
         vault_.processAccounting();
     }
-
 
     function deployMigrateVault() internal returns (KernelStrategy) {
         MigrateKernelStrategy migrationVault = MigrateKernelStrategy(payable(MC.YNBNBk));
