@@ -9,18 +9,92 @@ import {MainnetContracts as MC} from "script/Contracts.sol";
 import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
 import {MigrateKernelStrategy} from "src/MigrateKernelStrategy.sol";
 import {MainnetActors} from "script/Actors.sol";
-import {ITransparentUpgradeableProxy} from
+import {ITransparentUpgradeableProxy, TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {Etches} from "lib/yieldnest-vault/test/mainnet/helpers/Etches.sol";
 
 contract SetupKernelStrategy is Test, MainnetActors, Etches {
     Vault public maxVault;
     KernelStrategy public vault;
+    KernelStrategy public buffer;
 
-    function deployAndUpgrade() public returns (KernelStrategy) {
+    function deploy() public returns (Vault, KernelStrategy, KernelStrategy) {
         SetupVault setupVault = new SetupVault();
         maxVault = setupVault.deploy();
 
+        // etch to mock ETHRate provider and Buffer
+        mockAll();
+
+        buffer = deployBuffer();
+        vault = deployMigrateVault();
+
+        // etch buffer to setup buffer for max vault
+        // bytes memory code = address(buffer).code;
+        // vm.etch(MC.BUFFER, code);
+
+        return (maxVault, vault, buffer);
+    }
+
+    function deployBuffer() internal returns (KernelStrategy) {
+        // Deploy implementation contract
+        KernelStrategy implementation = new KernelStrategy();
+
+        // Deploy transparent proxy
+        bytes memory initData = abi.encodeWithSelector(KernelStrategy.initialize.selector, MainnetActors.ADMIN, "ynWBNB Buffer", "ynWBNBk", 18);
+        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
+            address(implementation),
+            address(MainnetActors.ADMIN),
+            initData
+        );
+
+        // Cast proxy to KernelStrategy type
+        buffer = KernelStrategy(payable(address(proxy)));
+
+        assertEq(buffer.symbol(), "ynWBNBk");
+
+        configureBuffer(buffer);
+
+        return buffer;
+    }
+
+    function configureBuffer(KernelStrategy vault_) internal {
+        vm.startPrank(ADMIN);
+
+        vault_.grantRole(vault_.PROCESSOR_ROLE(), PROCESSOR);
+        vault_.grantRole(vault_.PROVIDER_MANAGER_ROLE(), PROVIDER_MANAGER);
+        vault_.grantRole(vault_.BUFFER_MANAGER_ROLE(), BUFFER_MANAGER);
+        vault_.grantRole(vault_.ASSET_MANAGER_ROLE(), ASSET_MANAGER);
+        vault_.grantRole(vault_.PROCESSOR_MANAGER_ROLE(), PROCESSOR_MANAGER);
+        vault_.grantRole(vault_.PAUSER_ROLE(), PAUSER);
+        vault_.grantRole(vault_.UNPAUSER_ROLE(), UNPAUSER);
+        vault_.grantRole(vault_.ALLOCATOR_ROLE(), address(maxVault));
+
+        // set strategy manager to admin for now
+        vault_.grantRole(vault_.STRATEGY_MANAGER_ROLE(), address(ADMIN));
+
+        vault_.setProvider(MC.PROVIDER);
+
+        vault_.setStakerGateway(MC.STAKER_GATEWAY);
+
+        vault_.setSyncDeposit(true);
+
+        vault_.addAsset(MC.WBNB, 18, true);
+
+        // set deposit rules
+        setDepositRule(vault_, MC.WBNB, address(vault_));
+
+        // set approval rules
+        setApprovalRule(vault_, address(vault_), MC.STAKER_GATEWAY);
+
+        vault_.unpause();
+
+        vm.stopPrank();
+
+        vault_.processAccounting();
+    }
+
+
+    function deployMigrateVault() internal returns (KernelStrategy) {
         MigrateKernelStrategy migrationVault = MigrateKernelStrategy(payable(MC.YNBNBk));
 
         uint256 previousTotalAssets = migrationVault.totalAssets();
@@ -59,43 +133,40 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
         assertEq(newBalance, previousBalance, "Balance should remain the same after upgrade");
 
         vault = KernelStrategy(payable(address(migrationVault)));
-        configureVault();
+        configureMigrationVault(vault);
 
         return vault;
     }
 
-    function configureVault() internal {
-        // etch to mock ETHRate provider and Buffer
-        mockAll();
-
+    function configureMigrationVault(KernelStrategy vault_) internal {
         vm.startPrank(ADMIN);
 
-        vault.grantRole(vault.PROCESSOR_ROLE(), PROCESSOR);
-        vault.grantRole(vault.PROVIDER_MANAGER_ROLE(), PROVIDER_MANAGER);
-        vault.grantRole(vault.BUFFER_MANAGER_ROLE(), BUFFER_MANAGER);
-        vault.grantRole(vault.ASSET_MANAGER_ROLE(), ASSET_MANAGER);
-        vault.grantRole(vault.PROCESSOR_MANAGER_ROLE(), PROCESSOR_MANAGER);
-        vault.grantRole(vault.PAUSER_ROLE(), PAUSER);
-        vault.grantRole(vault.UNPAUSER_ROLE(), UNPAUSER);
-        vault.grantRole(vault.ALLOCATOR_ROLE(), address(maxVault));
+        vault_.grantRole(vault_.PROCESSOR_ROLE(), PROCESSOR);
+        vault_.grantRole(vault_.PROVIDER_MANAGER_ROLE(), PROVIDER_MANAGER);
+        vault_.grantRole(vault_.BUFFER_MANAGER_ROLE(), BUFFER_MANAGER);
+        vault_.grantRole(vault_.ASSET_MANAGER_ROLE(), ASSET_MANAGER);
+        vault_.grantRole(vault_.PROCESSOR_MANAGER_ROLE(), PROCESSOR_MANAGER);
+        vault_.grantRole(vault_.PAUSER_ROLE(), PAUSER);
+        vault_.grantRole(vault_.UNPAUSER_ROLE(), UNPAUSER);
+        vault_.grantRole(vault_.ALLOCATOR_ROLE(), address(maxVault));
 
         // set strategy manager to admin for now
-        vault.grantRole(vault.STRATEGY_MANAGER_ROLE(), address(ADMIN));
+        vault_.grantRole(vault_.STRATEGY_MANAGER_ROLE(), address(ADMIN));
 
-        vault.setProvider(MC.PROVIDER);
+        vault_.setProvider(MC.PROVIDER);
 
-        vault.setStakerGateway(MC.STAKER_GATEWAY);
+        vault_.setStakerGateway(MC.STAKER_GATEWAY);
 
         // set deposit rules
-        setDepositRule(vault, MC.SLISBNB, address(vault));
+        setDepositRule(vault_, MC.SLISBNB, address(vault_));
 
         // set staking rule
-        setStakingRule(vault, MC.SLISBNB);
+        setStakingRule(vault_, MC.SLISBNB);
 
         // set approval rules
-        setApprovalRule(vault, address(vault), MC.STAKER_GATEWAY);
+        setApprovalRule(vault_, address(vault_), MC.STAKER_GATEWAY);
 
-        vault.unpause();
+        vault_.unpause();
 
         vm.stopPrank();
 

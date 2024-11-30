@@ -35,10 +35,11 @@ contract MigrateKernelStrategy is KernelStrategy {
         VaultStorage storage vaultStorage = _getVaultStorage();
         vaultStorage.paused = true;
         vaultStorage.decimals = decimals;
+
         _migrate();
     }
 
-    function _migrate() internal {
+    function _migrate() private {
         ERC4626Storage storage erc4626Storage = _getERC4626Storage();
 
         address asset_ = address(erc4626Storage._asset);
@@ -60,6 +61,7 @@ contract MigrateKernelStrategy is KernelStrategy {
         VaultStorage storage vaultStorage = _getVaultStorage();
         vaultStorage.totalAssets = totalBaseBalance;
 
+        // empty storage
         erc4626Storage._asset = IERC20(0x0000000000000000000000000000000000000000);
         erc4626Storage._underlyingDecimals = 0;
     }

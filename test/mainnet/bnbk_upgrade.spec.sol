@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: BSD Clause-3
 pragma solidity ^0.8.24;
 
-import {Test} from "lib/forge-std/src/Test.sol";
-import {console} from "lib/forge-std/src/console.sol";
+import "lib/forge-std/src/Test.sol";
 import {SetupKernelStrategy} from "./helpers/SetupKernelStrategy.sol";
 import {Etches} from "lib/yieldnest-vault/test/mainnet/helpers/Etches.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
@@ -18,7 +17,7 @@ contract VaultMainnetUpgradeTest is Test, AssertUtils, MainnetActors, Etches {
 
     function setUp() public {
         SetupKernelStrategy setup = new SetupKernelStrategy();
-        vault = setup.deployAndUpgrade();
+        (, vault,) = setup.deploy();
     }
 
     function test_Vault_Upgrade_ERC20_view_functions() public view {
@@ -54,8 +53,6 @@ contract VaultMainnetUpgradeTest is Test, AssertUtils, MainnetActors, Etches {
 
         // Test the convertToAssets function
         uint256 convertedAssets = vault.convertToAssets(shares);
-        console.log(convertedAssets);
-        console.log(amount);
         // TODO: fix this test
         // assertEqThreshold(convertedAssets, amount, 3, "Converted assets should be close to amount deposited");
 
