@@ -4,22 +4,22 @@ pragma solidity ^0.8.24;
 import {Test} from "lib/forge-std/src/Test.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {SetupVault, Vault, IVault} from "lib/yieldnest-vault/test/mainnet/helpers/SetupVault.sol";
-import {TimelockController as TLC} from "src/Common.sol";
+import {TimelockController as TLC} from "lib/yieldnest-vault/src/Common.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
 import {MigrateKernelStrategy} from "src/MigrateKernelStrategy.sol";
 import {MainnetActors} from "script/Actors.sol";
 import {ITransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {Etches} from "test/mainnet/helpers/Etches.sol";
+import {Etches} from "lib/yieldnest-vault/test/mainnet/helpers/Etches.sol";
 
 contract SetupKernelStrategy is Test, MainnetActors, Etches {
     Vault public maxVault;
     KernelStrategy public vault;
 
     function deployAndUpgrade() public returns (KernelStrategy) {
-     SetupVault setupVault = new SetupVault();
-       maxVault = setupVault.deploy();
+        SetupVault setupVault = new SetupVault();
+        maxVault = setupVault.deploy();
 
         MigrateKernelStrategy migrationVault = MigrateKernelStrategy(payable(MC.YNBNBk));
 
@@ -43,12 +43,11 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
             abi.encodeWithSelector(
                 MigrateKernelStrategy.initializeAndMigrate.selector,
                 address(MainnetActors.ADMIN),
-                "YieldNest BNB Kernel", 
-                "ynBNBk", 
+                "YieldNest BNB Kernel",
+                "ynBNBk",
                 18
             )
         );
-
 
         uint256 newTotalAssets = migrationVault.totalAssets();
         assertEq(newTotalAssets, previousTotalAssets, "Total assets should remain the same after upgrade");
@@ -66,12 +65,11 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
     }
 
     function configureVault() internal {
-
         // etch to mock ETHRate provider and Buffer
         mockAll();
 
         vm.startPrank(ADMIN);
-        
+
         vault.grantRole(vault.PROCESSOR_ROLE(), PROCESSOR);
         vault.grantRole(vault.PROVIDER_MANAGER_ROLE(), PROVIDER_MANAGER);
         vault.grantRole(vault.BUFFER_MANAGER_ROLE(), BUFFER_MANAGER);
@@ -93,7 +91,7 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
 
         // set staking rule
         setStakingRule(vault, MC.SLISBNB);
-        
+
         // set approval rules
         setApprovalRule(vault, address(vault), MC.STAKER_GATEWAY);
 
@@ -127,13 +125,13 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
         assets[0] = asset;
         setStakingRule(vault_, assets);
     }
-    
+
     function setStakingRule(KernelStrategy vault_, address[] memory assets) public {
         bytes4 funcSig = bytes4(keccak256("stake(address,uint256,string)"));
 
         IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](3);
 
-        paramRules[0] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: assets });
+        paramRules[0] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: assets});
         paramRules[1] =
             IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
 
@@ -142,7 +140,7 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
             IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
 
         IVault.FunctionRule memory rule = IVault.FunctionRule({isActive: true, paramRules: paramRules});
-         vault_.setProcessorRule(MC.STAKER_GATEWAY, funcSig, rule);
+        vault_.setProcessorRule(MC.STAKER_GATEWAY, funcSig, rule);
     }
 
     function setApprovalRule(KernelStrategy vault_, address contractAddress, address spender) public {
@@ -165,5 +163,4 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
 
         vault_.setProcessorRule(contractAddress, funcSig, rule);
     }
- 
 }

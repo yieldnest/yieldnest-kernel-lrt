@@ -19,7 +19,6 @@ contract VaultMainnetUpgradeTest is Test, AssertUtils, MainnetActors, Etches {
     function setUp() public {
         SetupKernelStrategy setup = new SetupKernelStrategy();
         vault = setup.deployAndUpgrade();
-
     }
 
     function test_Vault_Upgrade_ERC20_view_functions() public view {
@@ -37,7 +36,6 @@ contract VaultMainnetUpgradeTest is Test, AssertUtils, MainnetActors, Etches {
     }
 
     function test_Vault_Upgrade_ERC4626_view_functions() public view {
-
         // Test the paused function
         assertFalse(vault.paused(), "Vault should not be paused");
 
@@ -52,12 +50,12 @@ contract VaultMainnetUpgradeTest is Test, AssertUtils, MainnetActors, Etches {
         // Test the convertToShares function
         uint256 amount = 1 ether;
         uint256 shares = vault.convertToShares(amount);
-        console.log(shares);
         assertGe(shares, amount, "Shares should greater or equal to amount deposited");
 
         // Test the convertToAssets function
         uint256 convertedAssets = vault.convertToAssets(shares);
         console.log(convertedAssets);
+        console.log(amount);
         // TODO: fix this test
         // assertEqThreshold(convertedAssets, amount, 3, "Converted assets should be close to amount deposited");
 
@@ -82,5 +80,4 @@ contract VaultMainnetUpgradeTest is Test, AssertUtils, MainnetActors, Etches {
         assertEq(assets.length, 1, "There should be only one asset in the vault");
         assertEq(assets[0], MC.SLISBNB, "First asset should be SLISBNB");
     }
-
 }
