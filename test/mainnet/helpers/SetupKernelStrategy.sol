@@ -5,6 +5,7 @@ import {Test} from "lib/forge-std/src/Test.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {SetupVault, Vault, IVault} from "lib/yieldnest-vault/test/mainnet/helpers/SetupVault.sol";
 import {TimelockController as TLC} from "src/Common.sol";
+import {MainnetContracts as MC} from "script/Contracts.sol";
 import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
 import {MigrateKernelStrategy} from "src/MigrateKernelStrategy.sol";
 import {MainnetActors} from "script/Actors.sol";
@@ -13,20 +14,22 @@ import {ITransparentUpgradeableProxy} from
 import {Etches} from "test/mainnet/helpers/Etches.sol";
 
 contract SetupKernelStrategy is Test, MainnetActors, Etches {
+    Vault public maxVault;
+    KernelStrategy public vault;
 
-    function upgrade() public returns (KernelStrategy) {
+    function deployAndUpgrade() public returns (KernelStrategy) {
      SetupVault setupVault = new SetupVault();
-        maxVault = setupVault.deploy();
+       maxVault = setupVault.deploy();
 
-        vault = MigrateKernelStrategy(payable(MC.YNBNBk));
+        MigrateKernelStrategy migrationVault = MigrateKernelStrategy(payable(MC.YNBNBk));
 
-        uint256 previousTotalAssets = vault.totalAssets();
+        uint256 previousTotalAssets = migrationVault.totalAssets();
 
-        uint256 previousTotalSupply = vault.totalSupply();
+        uint256 previousTotalSupply = migrationVault.totalSupply();
 
         address specificHolder = 0xCfac0990700eD9B67FeFBD4b26a79E426468a419;
 
-        uint256 previousBalance = vault.balanceOf(specificHolder);
+        uint256 previousBalance = migrationVault.balanceOf(specificHolder);
 
         MigrateKernelStrategy implemention = new MigrateKernelStrategy();
 
@@ -47,15 +50,16 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
         );
 
 
-        uint256 newTotalAssets = vault.totalAssets();
+        uint256 newTotalAssets = migrationVault.totalAssets();
         assertEq(newTotalAssets, previousTotalAssets, "Total assets should remain the same after upgrade");
 
-        uint256 newTotalSupply = vault.totalSupply();
+        uint256 newTotalSupply = migrationVault.totalSupply();
         assertEq(newTotalSupply, previousTotalSupply, "Total supply should remain the same after upgrade");
 
-        uint256 newBalance = vault.balanceOf(specificHolder);
+        uint256 newBalance = migrationVault.balanceOf(specificHolder);
         assertEq(newBalance, previousBalance, "Balance should remain the same after upgrade");
 
+        vault = KernelStrategy(payable(address(migrationVault)));
         configureVault();
 
         return vault;
@@ -77,6 +81,9 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
         vault.grantRole(vault.UNPAUSER_ROLE(), UNPAUSER);
         vault.grantRole(vault.ALLOCATOR_ROLE(), address(maxVault));
 
+        // set strategy manager to admin for now
+        vault.grantRole(vault.STRATEGY_MANAGER_ROLE(), address(ADMIN));
+
         vault.setProvider(MC.PROVIDER);
 
         vault.setStakerGateway(MC.STAKER_GATEWAY);
@@ -97,7 +104,7 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
         vault.processAccounting();
     }
 
-    function setDepositRule(Vault vault_, address contractAddress, address receiver) public {
+    function setDepositRule(KernelStrategy vault_, address contractAddress, address receiver) public {
         bytes4 funcSig = bytes4(keccak256("deposit(uint256,address)"));
 
         IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](2);
@@ -114,15 +121,17 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
 
         vault_.setProcessorRule(contractAddress, funcSig, rule);
     }
-    function setStakingRule(Vault vault_, address asset) public {
-        address[] memory assets = new address[1]();
+
+    function setStakingRule(KernelStrategy vault_, address asset) public {
+        address[] memory assets = new address[](1);
         assets[0] = asset;
         setStakingRule(vault_, assets);
     }
-    function setStakingRule(Vault vault_, address[] memory assets) public {
-        bytes4 funcSig = bytes4(keccack256("stake(address,uint256,string)"));
+    
+    function setStakingRule(KernelStrategy vault_, address[] memory assets) public {
+        bytes4 funcSig = bytes4(keccak256("stake(address,uint256,string)"));
 
-        IVault.ParamRule[] memory paramRules = new IVaultParamRule[](3);
+        IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](3);
 
         paramRules[0] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: assets });
         paramRules[1] =
@@ -136,13 +145,13 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
          vault_.setProcessorRule(MC.STAKER_GATEWAY, funcSig, rule);
     }
 
-    function setApprovalRule(Vault vault_, address contractAddress, address spender) public {
+    function setApprovalRule(KernelStrategy vault_, address contractAddress, address spender) public {
         address[] memory allowList = new address[](1);
         allowList[0] = spender;
         setApprovalRule(vault_, contractAddress, allowList);
     }
 
-    function setApprovalRule(Vault vault_, address contractAddress, address[] memory allowList) public {
+    function setApprovalRule(KernelStrategy vault_, address contractAddress, address[] memory allowList) public {
         bytes4 funcSig = bytes4(keccak256("approve(address,uint256)"));
 
         IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](2);
