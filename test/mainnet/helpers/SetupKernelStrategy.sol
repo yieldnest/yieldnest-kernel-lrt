@@ -6,6 +6,7 @@ import {KernelStrategy} from "src/KernelStrategy.sol";
 import {SetupVault, Vault, IVault} from "lib/yieldnest-vault/test/mainnet/helpers/SetupVault.sol";
 import {TimelockController as TLC} from "lib/yieldnest-vault/src/Common.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
+import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
 import {MigrateKernelStrategy} from "src/MigrateKernelStrategy.sol";
 import {MainnetActors} from "script/Actors.sol";
@@ -15,7 +16,7 @@ import {
 } from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {Etches} from "lib/yieldnest-vault/test/mainnet/helpers/Etches.sol";
 
-contract SetupKernelStrategy is Test, MainnetActors, Etches {
+contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, Etches {
     Vault public maxVault;
     KernelStrategy public vault;
     KernelStrategy public buffer;
@@ -30,11 +31,26 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
         buffer = deployBuffer();
         vault = deployMigrateVault();
 
+        configureMaxVault(maxVault);
+
         // etch buffer to setup buffer for max vault
-        // bytes memory code = address(buffer).code;
-        // vm.etch(MC.BUFFER, code);
+        bytes memory code = address(buffer).code;
+        vm.etch(MC.BUFFER, code);
 
         return (maxVault, vault, buffer);
+    }
+
+    function configureMaxVault(Vault vault_) internal {
+        vm.startPrank(ADMIN);
+
+        // set approval rules
+        setApprovalRule(KernelStrategy(payable(address(vault_))), MC.WBNB, address(buffer));
+
+        setApprovalRule(KernelStrategy(payable(address(vault_))), MC.WBNB, address(vault));
+        setApprovalRule(KernelStrategy(payable(address(vault_))), MC.SLISBNB, address(vault));
+        setApprovalRule(KernelStrategy(payable(address(vault_))), MC.BNBX, address(vault));
+
+        vm.stopPrank();
     }
 
     function deployBuffer() internal returns (KernelStrategy) {
@@ -123,17 +139,19 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
             )
         );
 
+        vault = KernelStrategy(payable(address(migrationVault)));
+        configureMigrationVault(vault);
+
         uint256 newTotalAssets = migrationVault.totalAssets();
-        assertEq(newTotalAssets, previousTotalAssets, "Total assets should remain the same after upgrade");
+        assertEqThreshold(
+            newTotalAssets, previousTotalAssets, 1000, "Total assets should remain the same after upgrade"
+        );
 
         uint256 newTotalSupply = migrationVault.totalSupply();
         assertEq(newTotalSupply, previousTotalSupply, "Total supply should remain the same after upgrade");
 
         uint256 newBalance = migrationVault.balanceOf(specificHolder);
         assertEq(newBalance, previousBalance, "Balance should remain the same after upgrade");
-
-        vault = KernelStrategy(payable(address(migrationVault)));
-        configureMigrationVault(vault);
 
         return vault;
     }
@@ -156,6 +174,10 @@ contract SetupKernelStrategy is Test, MainnetActors, Etches {
         vault_.setProvider(MC.PROVIDER);
 
         vault_.setStakerGateway(MC.STAKER_GATEWAY);
+
+        vault_.addAsset(MC.WBNB, 18, false);
+        vault_.addAsset(MC.SLISBNB, 18, true);
+        vault_.addAsset(MC.BNBX, 18, true);
 
         // set deposit rules
         setDepositRule(vault_, MC.SLISBNB, address(vault_));

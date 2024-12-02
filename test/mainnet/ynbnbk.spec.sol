@@ -19,8 +19,11 @@ contract VaultMainnetYnBNBkTest is Test, AssertUtils, MainnetActors {
         (vault,,) = setup.deploy();
 
         vm.startPrank(ADMIN);
+
         setWBNBWithdrawRule();
         setYnBNBkDepositRule();
+        setYnBNBkDepositAssetRule();
+
         vm.stopPrank();
     }
 
@@ -75,7 +78,7 @@ contract VaultMainnetYnBNBkTest is Test, AssertUtils, MainnetActors {
 
         vm.startPrank(PROCESSOR);
         processApproveAsset(assetAddress, assets, MC.YNBNBk);
-        processDepositYnBNBk(assets);
+        processDepositYnBNBk(assetAddress, assets);
 
         uint256 ynBnbkBalance = IERC20(MC.YNBNBk).balanceOf(address(vault));
         vm.stopPrank();
@@ -116,7 +119,7 @@ contract VaultMainnetYnBNBkTest is Test, AssertUtils, MainnetActors {
         vault.processor(targets, values, data);
     }
 
-    function processDepositYnBNBk(uint256 assets) public {
+    function processDepositYnBNBk(address assetAddress, uint256 assets) public {
         // deposit BNB to ynBNBk
         address[] memory targets = new address[](1);
         targets[0] = MC.YNBNBk;
@@ -125,7 +128,7 @@ contract VaultMainnetYnBNBkTest is Test, AssertUtils, MainnetActors {
         values[0] = 0;
 
         bytes[] memory data = new bytes[](1);
-        data[0] = abi.encodeWithSignature("deposit(uint256,address)", assets, address(vault));
+        data[0] = abi.encodeWithSignature("depositAsset(address,uint256,address)", assetAddress, assets, address(vault));
 
         vault.processor(targets, values, data);
     }
@@ -155,6 +158,32 @@ contract VaultMainnetYnBNBkTest is Test, AssertUtils, MainnetActors {
         allowList[0] = address(vault); // receiver
 
         paramRules[1] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: allowList});
+
+        IVault.FunctionRule memory rule = IVault.FunctionRule({isActive: true, paramRules: paramRules});
+
+        vault.setProcessorRule(MC.YNBNBk, funcSig, rule);
+    }
+
+    function setYnBNBkDepositAssetRule() internal {
+        bytes4 funcSig = bytes4(keccak256("depositAsset(address,uint256,address)"));
+
+        IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](3);
+
+        address[] memory tokenAllowList = new address[](3);
+        tokenAllowList[0] = MC.WBNB;
+        tokenAllowList[1] = MC.SLISBNB;
+        tokenAllowList[2] = MC.BNBX;
+
+        paramRules[0] =
+            IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: tokenAllowList});
+
+        paramRules[1] =
+            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
+
+        address[] memory allowList = new address[](1);
+        allowList[0] = address(vault); // receiver
+
+        paramRules[2] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: allowList});
 
         IVault.FunctionRule memory rule = IVault.FunctionRule({isActive: true, paramRules: paramRules});
 

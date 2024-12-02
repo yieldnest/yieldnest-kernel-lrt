@@ -39,7 +39,7 @@ contract VaultMainnetUpgradeTest is Test, AssertUtils, MainnetActors, Etches {
         assertFalse(vault.paused(), "Vault should not be paused");
 
         // Test the asset function
-        assertEq(address(vault.asset()), MC.SLISBNB, "Vault asset should be WBNB");
+        assertEq(address(vault.asset()), MC.WBNB, "Vault asset should be WBNB");
 
         // Test the totalAssets function
         uint256 totalAssets = vault.totalAssets();
@@ -49,12 +49,12 @@ contract VaultMainnetUpgradeTest is Test, AssertUtils, MainnetActors, Etches {
         // Test the convertToShares function
         uint256 amount = 1 ether;
         uint256 shares = vault.convertToShares(amount);
-        assertGe(shares, amount, "Shares should greater or equal to amount deposited");
+        assertLe(shares, amount, "Shares should be less or equal to amount deposited");
 
         // Test the convertToAssets function
         uint256 convertedAssets = vault.convertToAssets(shares);
         // TODO: fix this test
-        // assertEqThreshold(convertedAssets, amount, 3, "Converted assets should be close to amount deposited");
+        assertEqThreshold(convertedAssets, amount, 3, "Converted assets should be close to amount deposited");
 
         // Test the maxDeposit function
         uint256 maxDeposit = vault.maxDeposit(address(this));
@@ -74,7 +74,9 @@ contract VaultMainnetUpgradeTest is Test, AssertUtils, MainnetActors, Etches {
 
         // Test the getAssets function
         address[] memory assets = vault.getAssets();
-        assertEq(assets.length, 1, "There should be only one asset in the vault");
-        assertEq(assets[0], MC.SLISBNB, "First asset should be SLISBNB");
+        assertEq(assets.length, 3, "There should be only one asset in the vault");
+        assertEq(assets[0], MC.WBNB, "First asset should be WBNB");
+        assertEq(assets[1], MC.SLISBNB, "Second asset should be SLISBNB");
+        assertEq(assets[2], MC.BNBX, "Third asset should be SLISBNB");
     }
 }

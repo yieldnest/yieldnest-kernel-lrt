@@ -42,25 +42,6 @@ contract MigrateKernelStrategy is KernelStrategy {
     function _migrate() private {
         ERC4626Storage storage erc4626Storage = _getERC4626Storage();
 
-        address asset_ = address(erc4626Storage._asset);
-        uint8 decimals_ = erc4626Storage._underlyingDecimals;
-
-        // add asset
-        AssetStorage storage assetStorage = _getAssetStorage();
-        assetStorage.assets[asset_] = AssetParams({active: true, index: 0, decimals: decimals_});
-        assetStorage.list.push(asset_);
-
-        emit NewAsset(asset_, decimals_, 0);
-
-        // process accounting
-        IStakeManager stakeManager = IStakeManager(0x1adB950d8bB3dA4bE104211D5AB038628e477fE6);
-        uint256 assetBalance = erc4626Storage._asset.balanceOf(address(this));
-        uint256 totalBaseBalance = address(this).balance;
-        totalBaseBalance += stakeManager.convertSnBnbToBnb(assetBalance);
-
-        VaultStorage storage vaultStorage = _getVaultStorage();
-        vaultStorage.totalAssets = totalBaseBalance;
-
         // empty storage
         erc4626Storage._asset = IERC20(0x0000000000000000000000000000000000000000);
         erc4626Storage._underlyingDecimals = 0;
