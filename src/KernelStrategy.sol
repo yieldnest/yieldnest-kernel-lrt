@@ -2,12 +2,14 @@
 pragma solidity ^0.8.24;
 
 import {BaseVault} from "lib/yieldnest-vault/src/BaseVault.sol";
-import {SafeERC20, IERC20} from "lib/yieldnest-vault/src/Common.sol";
+import {Math, SafeERC20, IERC20} from "lib/yieldnest-vault/src/Common.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 contract KernelStrategy is BaseVault {
     bytes32 public constant ALLOCATOR_ROLE = keccak256("ALLOCATOR_ROLE");
     bytes32 public constant STRATEGY_MANAGER_ROLE = keccak256("STRATEGY_MANAGER_ROLE");
+
+    // TODO: add events for Deposit, Withdraw, Redeem, with asset address
 
     struct StrategyStorage {
         address stakerGateway;
@@ -41,18 +43,15 @@ contract KernelStrategy is BaseVault {
     /**
      * @notice Returns the maximum amount of assets that can be withdrawn by a given owner.
      * @param owner The address of the owner.
-     * @return uint256 The maximum amount of assets.
+     * @return maxAssets uint256 The maximum amount of assets.
      * @dev override the maxWithdraw function for strategies
      */
-    function maxWithdraw(address owner) public view override returns (uint256) {
+    function maxWithdraw(address owner) public view override returns (uint256 maxAssets) {
         if (paused()) {
             return 0;
         }
 
-        uint256 ownerShares = balanceOf(owner);
-        uint256 maxAssets = convertToAssets(ownerShares);
-
-        return maxAssets;
+        (maxAssets,) = _convertToAssets(asset(), balanceOf(owner), Math.Rounding.Floor);
     }
 
     /**
@@ -67,6 +66,87 @@ contract KernelStrategy is BaseVault {
         }
 
         return balanceOf(owner);
+    }
+
+    /**
+     * @notice Returns the maximum amount of assets that can be withdrawn by a given owner.
+     * @param owner The address of the owner.
+     * @return maxAssets uint256 The maximum amount of assets.
+     * @dev override the maxWithdraw function for strategies
+     */
+    function maxWithdrawAsset(address asset_, address owner) public view returns (uint256 maxAssets) {
+        if (paused()) {
+            return 0;
+        }
+
+        (maxAssets,) = _convertToAssets(asset_, balanceOf(owner), Math.Rounding.Floor);
+    }
+
+    /**
+     * @notice Previews the amount of shares that would be received for a given amount of assets for a specific asset.
+     * @param asset_ The address of the asset.
+     * @param assets The amount of assets to deposit.
+     * @return shares The equivalent amount of shares.
+     */
+    function previewWithdrawAsset(address asset_, uint256 assets) public view virtual returns (uint256 shares) {
+        (shares,) = _convertToShares(asset_, assets, Math.Rounding.Floor);
+    }
+
+    /**
+     * @notice Previews the amount of assets that would be received for a given amount of shares.
+     * @param shares The amount of shares to redeem.
+     * @return assets The equivalent amount of assets.
+     */
+    function previewRedeemAsset(address asset_, uint256 shares) public view virtual returns (uint256 assets) {
+        (assets,) = _convertToAssets(asset_, shares, Math.Rounding.Floor);
+    }
+
+    /**
+     * @notice Withdraws a given amount of assets and burns the equivalent amount of shares from the owner.
+     * @param assets The amount of assets to withdraw.
+     * @param receiver The address of the receiver.
+     * @param owner The address of the owner.
+     * @return shares The equivalent amount of shares.
+     */
+    function withdrawAsset(address asset_, uint256 assets, address receiver, address owner)
+        public
+        virtual
+        nonReentrant
+        returns (uint256 shares)
+    {
+        if (paused()) {
+            revert Paused();
+        }
+        uint256 maxAssets = maxWithdrawAsset(asset_, owner);
+        if (assets > maxAssets) {
+            revert ExceededMaxWithdraw(owner, assets, maxAssets);
+        }
+        shares = previewWithdrawAsset(asset_, assets);
+        _withdrawAsset(asset_, _msgSender(), receiver, owner, assets, shares);
+    }
+
+    /**
+     * @notice Redeems a given amount of shares and transfers the equivalent amount of assets to the receiver.
+     * @param shares The amount of shares to redeem.
+     * @param receiver The address of the receiver.
+     * @param owner The address of the owner.
+     * @return assets The equivalent amount of assets.
+     */
+    function redeemAsset(address asset_, uint256 shares, address receiver, address owner)
+        public
+        virtual
+        nonReentrant
+        returns (uint256 assets)
+    {
+        if (paused()) {
+            revert Paused();
+        }
+        uint256 maxShares = maxRedeem(owner);
+        if (shares > maxShares) {
+            revert ExceededMaxRedeem(owner, shares, maxShares);
+        }
+        assets = previewRedeemAsset(asset_, shares);
+        _withdrawAsset(asset_, _msgSender(), receiver, owner, assets, shares);
     }
 
     /**
@@ -134,6 +214,43 @@ contract KernelStrategy is BaseVault {
 
         _burn(owner, shares);
         emit Withdraw(caller, receiver, owner, assets, shares);
+    }
+
+    /**
+     * @notice Internal function to handle withdrawals.
+     * @param caller The address of the caller.
+     * @param receiver The address of the receiver.
+     * @param owner The address of the owner.
+     * @param assets The amount of assets to withdraw.
+     * @param shares The equivalent amount of shares.
+     * @dev This is an example:
+     *     The _withdraw function for strategies needs an override
+     */
+    function _withdrawAsset(
+        address asset_,
+        address caller,
+        address receiver,
+        address owner,
+        uint256 assets,
+        uint256 shares
+    ) internal onlyRole(ALLOCATOR_ROLE) {
+        VaultStorage storage vaultStorage = _getVaultStorage();
+        vaultStorage.totalAssets -= assets;
+        if (caller != owner) {
+            _spendAllowance(owner, caller, shares);
+        }
+
+        StrategyStorage storage strategyStorage = _getStrategyStorage();
+        IStakerGateway stakerGateway = IStakerGateway(strategyStorage.stakerGateway);
+
+        // TODO: fix referralId
+        string memory referralId = "";
+        stakerGateway.unstake(asset_, assets, referralId);
+
+        SafeERC20.safeTransfer(IERC20(asset_), receiver, assets);
+
+        _burn(owner, shares);
+        // TODO: emit custom event for withdraw asset
     }
 
     /**
