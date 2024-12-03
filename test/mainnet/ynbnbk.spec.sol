@@ -13,6 +13,7 @@ import {
     ITransparentUpgradeableProxy,
     TransparentUpgradeableProxy
 } from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {Initializable} from "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {MainnetActors} from "script/Actors.sol";
 import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
@@ -42,14 +43,30 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
 
         MigratedKernelStrategy implemention = new MigratedKernelStrategy();
 
-        // TODO: move admin to actors
-        vm.prank(0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a);
         ProxyAdmin proxyAdmin = ProxyAdmin(MC.YNBNBk_PROXY_ADMIN);
+
+        vm.prank(proxyAdmin.owner());
+
+        vm.expectRevert(Initializable.InvalidInitialization.selector);
+        proxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(MC.YNBNBk),
+            address(implemention),
+            abi.encodeWithSelector(
+                KernelStrategy.initialize.selector,
+                address(MainnetActors.ADMIN),
+                "YieldNest Restaked BNB - Kernel",
+                "ynBNBk",
+                18
+            )
+        );
+
         MigratedKernelStrategy.Asset[] memory assets = new MigratedKernelStrategy.Asset[](3);
 
         assets[0] = MigratedKernelStrategy.Asset({asset: MC.WBNB, decimals: 18, active: false});
         assets[1] = MigratedKernelStrategy.Asset({asset: MC.SLISBNB, decimals: 18, active: true});
         assets[2] = MigratedKernelStrategy.Asset({asset: MC.BNBX, decimals: 18, active: true});
+
+        vm.prank(proxyAdmin.owner());
 
         proxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(MC.YNBNBk),

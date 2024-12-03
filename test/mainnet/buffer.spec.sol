@@ -9,9 +9,10 @@ import {MainnetContracts as MC} from "script/Contracts.sol";
 import {MainnetActors} from "script/Actors.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
-import {ITransparentUpgradeableProxy,
-    TransparentUpgradeableProxy} from
-    "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy,
+    TransparentUpgradeableProxy
+} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {MainnetActors} from "script/Actors.sol";
 import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
