@@ -291,34 +291,4 @@ contract KernelStrategy is BaseVault {
 
         emit SetSyncDeposit(syncDeposit);
     }
-
-    /**
-     * @notice Processes the accounting of the vault by calculating the total base balance.
-     * @dev This function iterates through the list of assets, gets their balances and rates,
-     *      and updates the total assets denominated in the base asset.
-     */
-    function processAccounting() public override {
-        uint256 totalBaseBalance = address(this).balance;
-        AssetStorage storage assetStorage = _getAssetStorage();
-        address[] memory assetList = assetStorage.list;
-        uint256 assetListLength = assetList.length;
-        uint256 baseAssetUnit = 10 ** (assetStorage.assets[asset()].decimals);
-
-        IStakerGateway stakerGateway = IStakerGateway(_getStrategyStorage().stakerGateway);
-
-        for (uint256 i = 0; i < assetListLength; i++) {
-            // add the balance of the asset in the vault
-            uint256 balance = IERC20(assetList[i]).balanceOf(address(this));
-            // add the balance of the asset in the kernel vaults
-            balance += stakerGateway.balanceOf(assetList[i], address(this));
-
-            if (balance == 0) continue;
-
-            uint256 rate = IProvider(provider()).getRate(assetList[i]);
-            totalBaseBalance += Math.mulDiv(balance, rate, baseAssetUnit, Math.Rounding.Floor);
-        }
-
-        _getVaultStorage().totalAssets = totalBaseBalance;
-        emit ProcessAccounting(block.timestamp, totalBaseBalance);
-    }
 }
