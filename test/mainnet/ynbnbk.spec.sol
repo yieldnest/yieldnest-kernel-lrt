@@ -18,6 +18,7 @@ import {KernelStrategy} from "src/KernelStrategy.sol";
 import {MainnetActors} from "script/Actors.sol";
 import {ProxyAdmin, IERC20} from "lib/yieldnest-vault/src/Common.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
+import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {ISlisBnbStakeManager} from "lib/yieldnest-vault/src/interface/external/lista/ISlisBnbStakeManager.sol";
 
 contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
@@ -26,7 +27,6 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
     KernelRateProvider public kernelProvider;
 
     address bob = address(0xB0B);
-    IKernelVault kernelVault;
 
     function setUp() public {
         kernelProvider = new KernelRateProvider();
@@ -126,11 +126,121 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
         // set provider
         vault_.setProvider(address(MC.PROVIDER));
 
+        vault_.addAsset(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.WBNB), 18, false);
+        vault_.addAsset(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SLISBNB), 18, false);
+        vault_.addAsset(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.BNBX), 18, false);
+
+        setApprovalRule(vault_, MC.SLISBNB, MC.STAKER_GATEWAY);
+        setStakingRule(vault_, MC.SLISBNB);
+
+        // allow transfers to admin for testing
+        setTransferRule(vault_, MC.SLISBNB, ADMIN);
+
         vault_.unpause();
 
         vm.stopPrank();
 
         vault_.processAccounting();
+    }
+
+    function setTransferRule(KernelStrategy vault_, address contractAddress, address recipient) public {
+        address[] memory allowList = new address[](1);
+        allowList[0] = recipient;
+        setTransferRule(vault_, contractAddress, allowList);
+    }
+
+    function setTransferRule(KernelStrategy vault_, address contractAddress, address[] memory allowList) public {
+        bytes4 funcSig = bytes4(keccak256("transfer(address,uint256)"));
+
+        IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](2);
+
+        paramRules[0] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: allowList});
+
+        paramRules[1] =
+            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
+
+        IVault.FunctionRule memory rule = IVault.FunctionRule({isActive: true, paramRules: paramRules});
+
+        vault_.setProcessorRule(contractAddress, funcSig, rule);
+    }
+
+    function setApprovalRule(KernelStrategy vault_, address contractAddress, address spender) public {
+        address[] memory allowList = new address[](1);
+        allowList[0] = spender;
+        setApprovalRule(vault_, contractAddress, allowList);
+    }
+
+    function setApprovalRule(KernelStrategy vault_, address contractAddress, address[] memory allowList) public {
+        bytes4 funcSig = bytes4(keccak256("approve(address,uint256)"));
+
+        IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](2);
+
+        paramRules[0] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: allowList});
+
+        paramRules[1] =
+            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
+
+        IVault.FunctionRule memory rule = IVault.FunctionRule({isActive: true, paramRules: paramRules});
+
+        vault_.setProcessorRule(contractAddress, funcSig, rule);
+    }
+
+    function setStakingRule(KernelStrategy vault_, address asset) public {
+        address[] memory assets = new address[](1);
+        assets[0] = asset;
+        setStakingRule(vault_, assets);
+    }
+
+    function setStakingRule(KernelStrategy vault_, address[] memory assets) public {
+        bytes4 funcSig = bytes4(keccak256("stake(address,uint256,string)"));
+
+        IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](3);
+
+        paramRules[0] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: assets});
+        paramRules[1] =
+            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
+
+        // since there is no verification for uints in the Guard.sol, setting the string param to uint256
+        paramRules[2] =
+            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
+
+        IVault.FunctionRule memory rule = IVault.FunctionRule({isActive: true, paramRules: paramRules});
+        vault_.setProcessorRule(MC.STAKER_GATEWAY, funcSig, rule);
+    }
+
+    function transferToAdmin(address asset, uint256 amount) public {
+        address[] memory targets = new address[](1);
+        targets[0] = asset;
+
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory data = new bytes[](1);
+        data[0] = abi.encodeWithSignature("transfer(address,uint256)", ADMIN, amount);
+
+        vm.prank(ADMIN);
+        vault.processor(targets, values, data);
+
+        vault.processAccounting();
+    }
+
+    function stakeIntoKernel(address asset, uint256 amount) public {
+        address[] memory targets = new address[](2);
+        targets[0] = asset;
+        targets[1] = MC.STAKER_GATEWAY;
+
+        uint256[] memory values = new uint256[](2);
+        values[0] = 0;
+        values[1] = 0;
+
+        bytes[] memory data = new bytes[](2);
+        data[0] = abi.encodeWithSignature("approve(address,uint256)", MC.STAKER_GATEWAY, amount);
+        data[1] = abi.encodeWithSignature("stake(address,uint256,string)", asset, amount, "");
+
+        vm.prank(ADMIN);
+        vault.processor(targets, values, data);
+
+        vault.processAccounting();
     }
 
     function test_Vault_Upgrade_ERC20_view_functions() public view {
@@ -188,7 +298,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
 
         // Test the getAssets function
         address[] memory assets = vault.getAssets();
-        assertEq(assets.length, 3, "There should be three assets in the vault");
+        assertEq(assets.length, 6, "There should be six assets in the vault");
         assertEq(assets[0], MC.WBNB, "First asset should be WBNB");
         assertEq(assets[1], MC.SLISBNB, "Second asset should be SLISBNB");
         assertEq(assets[2], MC.BNBX, "Third asset should be SLISBNB");
@@ -268,6 +378,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
         depositIntoVault(MC.SLISBNB, amount);
 
         IERC20 asset = IERC20(MC.SLISBNB);
+
         uint256 beforeVaultBalance = asset.balanceOf(address(vault));
         uint256 beforeBobBalance = asset.balanceOf(bob);
         uint256 beforeBobShares = vault.balanceOf(bob);
@@ -323,5 +434,157 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
             "Bob should have the amount deposited after withdraw"
         );
         assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have no shares after withdraw");
+    }
+
+    function test_Vault_ynBNBk_deposit_and_stake_slisBNB() public {
+        uint256 amount = 0.5 ether;
+
+        getSlisBnb(amount);
+
+        depositIntoVault(MC.SLISBNB, amount);
+
+        address kernelVault = IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SLISBNB);
+
+        IERC20 asset = IERC20(MC.SLISBNB);
+
+        uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+        uint256 beforeKernelVaultBalance = asset.balanceOf(kernelVault);
+        uint256 beforeTotalAssets = vault.totalAssets();
+
+        stakeIntoKernel(MC.SLISBNB, amount);
+
+        assertEq(
+            asset.balanceOf(address(vault)), beforeVaultBalance - amount, "Vault should have the asset after deposit"
+        );
+        assertEq(
+            asset.balanceOf(kernelVault),
+            beforeKernelVaultBalance + amount,
+            "KernelVault should have the asset after deposit"
+        );
+        assertEq(vault.totalAssets(), beforeTotalAssets, "Total assets should not change");
+    }
+
+    function test_Vault_ynBNBk_deposit_and_stake_and_withdraw_slisBNB() public {
+        uint256 amount = 0.5 ether;
+
+        getSlisBnb(amount);
+
+        depositIntoVault(MC.SLISBNB, amount);
+
+        IERC20 asset = IERC20(MC.SLISBNB);
+
+        address kernelVault = IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SLISBNB);
+
+        {
+            uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+            uint256 beforeKernelVaultBalance = asset.balanceOf(kernelVault);
+            uint256 beforeTotalAssets = vault.totalAssets();
+
+            stakeIntoKernel(MC.SLISBNB, amount);
+
+            assertEq(
+                asset.balanceOf(address(vault)),
+                beforeVaultBalance - amount,
+                "Vault should have the asset after deposit"
+            );
+            assertEq(
+                asset.balanceOf(kernelVault),
+                beforeKernelVaultBalance + amount,
+                "KernelVault should have the asset after deposit"
+            );
+            assertEq(vault.totalAssets(), beforeTotalAssets, "Total assets should not change");
+        }
+
+        {
+            // remove any funds from the vault to test unstaking
+            transferToAdmin(MC.SLISBNB, asset.balanceOf(address(vault)));
+
+            uint256 beforeKernelVaultBalance = asset.balanceOf(kernelVault);
+            uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+            uint256 beforeBobBalance = asset.balanceOf(bob);
+            uint256 beforeBobShares = vault.balanceOf(bob);
+
+            uint256 assets = vault.previewRedeemAsset(MC.SLISBNB, beforeBobShares);
+
+            vm.prank(bob);
+            vault.withdrawAsset(MC.SLISBNB, assets, bob, bob);
+
+            uint256 afterKernelVaultBalance = asset.balanceOf(kernelVault);
+            uint256 afterVaultBalance = asset.balanceOf(address(vault));
+            uint256 afterBobBalance = asset.balanceOf(bob);
+            uint256 afterBobShares = vault.balanceOf(bob);
+
+            assertEq(
+                afterKernelVaultBalance,
+                beforeKernelVaultBalance - assets,
+                "KernelVault balance should decrease by assets"
+            );
+            assertEq(afterVaultBalance, beforeVaultBalance, "Vault balance should remain same");
+            assertEq(afterBobBalance, beforeBobBalance + assets, "Bob balance should increase by assets");
+            assertEqThreshold(afterBobShares, 0, 2000, "Bob shares should decrease by shares");
+        }
+    }
+
+    function test_Vault_ynBNBk_deposit_and_stake_and_redeem_slisBNB() public {
+        uint256 amount = 0.5 ether;
+
+        getSlisBnb(amount);
+
+        depositIntoVault(MC.SLISBNB, amount);
+
+        IERC20 asset = IERC20(MC.SLISBNB);
+
+        address kernelVault = IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SLISBNB);
+
+        {
+            uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+            uint256 beforeKernelVaultBalance = asset.balanceOf(kernelVault);
+            uint256 beforeTotalAssets = vault.totalAssets();
+
+            stakeIntoKernel(MC.SLISBNB, amount);
+
+            assertEq(
+                asset.balanceOf(address(vault)),
+                beforeVaultBalance - amount,
+                "Vault should have the asset after deposit"
+            );
+            assertEq(
+                asset.balanceOf(kernelVault),
+                beforeKernelVaultBalance + amount,
+                "KernelVault should have the asset after deposit"
+            );
+            assertEq(vault.totalAssets(), beforeTotalAssets, "Total assets should not change");
+        }
+
+        {
+            // remove any funds from the vault to test unstaking
+            transferToAdmin(MC.SLISBNB, asset.balanceOf(address(vault)));
+
+            uint256 beforeKernelVaultBalance = asset.balanceOf(kernelVault);
+            uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+            uint256 beforeBobBalance = asset.balanceOf(bob);
+            uint256 beforeBobShares = vault.balanceOf(bob);
+
+            uint256 previewAssets = vault.previewRedeemAsset(MC.SLISBNB, beforeBobShares);
+
+            vm.prank(bob);
+            uint256 assets = vault.redeemAsset(MC.SLISBNB, beforeBobShares, bob, bob);
+
+            assertEq(previewAssets, assets, "Preview assets should be equal to assets");
+
+            uint256 afterKernelVaultBalance = asset.balanceOf(kernelVault);
+            uint256 afterVaultBalance = asset.balanceOf(address(vault));
+            uint256 afterBobBalance = asset.balanceOf(bob);
+            uint256 afterBobShares = vault.balanceOf(bob);
+
+            assertEq(
+                afterKernelVaultBalance,
+                beforeKernelVaultBalance - assets,
+                "KernelVault balance should decrease by assets"
+            );
+            assertEq(afterVaultBalance, beforeVaultBalance, "Vault balance should remain same");
+            assertEq(afterBobBalance, beforeBobBalance + assets, "Bob balance should increase by assets");
+            assertEq(afterBobShares, 0, "Bob shares should decrease by shares");
+        }
     }
 }
