@@ -28,10 +28,6 @@ contract KernelRateProvider is IProvider {
     }
 
     function getRate(address asset) public view override returns (uint256) {
-        if (asset == MC.BUFFER || asset == MC.YNBNBk) {
-            return IERC4626(asset).previewRedeem(1e18);
-        }
-
         if (asset == MC.WBNB) {
             return 1e18;
         }

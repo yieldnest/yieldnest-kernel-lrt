@@ -14,6 +14,6 @@ out = "out"
 libs = ["lib"]
 test = "test/mainnet"
 eth_rpc_url = "https://rpc.ankr.com/bsc"
-fork_block_number = 44464125
+fork_block_number = 44550750
 evm_version = "cancun"
 solc_version = "0.8.24"

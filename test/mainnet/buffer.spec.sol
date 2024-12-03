@@ -8,18 +8,23 @@ import {MigratedKernelStrategy} from "src/MigratedKernelStrategy.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 import {MainnetActors} from "script/Actors.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
+import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
 import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
 import {
     ITransparentUpgradeableProxy,
     TransparentUpgradeableProxy
 } from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {KernelStrategy} from "src/KernelStrategy.sol";
+import {KernelStrategy, IStakerGateway} from "src/KernelStrategy.sol";
 import {MainnetActors} from "script/Actors.sol";
 import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
+import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 
 contract BufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
     KernelStrategy public vault;
     KernelRateProvider public kernelProvider;
+
+    address bob = address(0xB0B);
+    IKernelVault kernelVault;
 
     function setUp() public {
         kernelProvider = new KernelRateProvider();
@@ -61,8 +66,8 @@ contract BufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
         vault_.grantRole(vault_.PAUSER_ROLE(), PAUSER);
         vault_.grantRole(vault_.UNPAUSER_ROLE(), UNPAUSER);
 
-        // set allocator to admin for now
-        vault_.grantRole(vault_.ALLOCATOR_ROLE(), address(ADMIN));
+        // set allocator to bob
+        vault_.grantRole(vault_.ALLOCATOR_ROLE(), address(bob));
 
         // set strategy manager to admin for now
         vault_.grantRole(vault_.STRATEGY_MANAGER_ROLE(), address(ADMIN));
@@ -70,8 +75,13 @@ contract BufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
         vault_.setProvider(address(MC.PROVIDER));
 
         vault_.setStakerGateway(MC.STAKER_GATEWAY);
+        vault_.setSyncDeposit(true);
+
+        kernelVault = IKernelVault(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.WBNB));
+        assertNotEq(address(kernelVault), address(0));
 
         vault_.addAsset(MC.WBNB, 18, true);
+        vault_.addAsset(address(kernelVault), 18, false);
 
         vault_.unpause();
 
@@ -133,7 +143,92 @@ contract BufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
 
         // Test the getAssets function
         address[] memory assets = vault.getAssets();
-        assertEq(assets.length, 1, "There should be only one asset in the vault");
+        assertEq(assets.length, 2, "There should be two assets in the vault");
         assertEq(assets[0], MC.WBNB, "First asset should be WBNB");
+        assertEq(assets[1], address(kernelVault), "Second asset should be the WBNB kernel vault");
+    }
+
+    function test_Buffer_Vault_ERC4626_deposit() public {
+        uint256 amount = 0.5 ether;
+        depositIntoBuffer(amount);
+    }
+
+    function depositIntoBuffer(uint256 amount) internal returns (uint256) {
+        WETH9 wbnb = WETH9(payable(MC.WBNB));
+        uint256 depositLimit = kernelVault.getDepositLimit();
+        assertGt(depositLimit, amount, "Deposit limit should be greater than amount");
+
+        uint256 beforeTotalAssets = vault.totalAssets();
+        uint256 beforeTotalShares = vault.totalSupply();
+        uint256 beforeVaultBalance = wbnb.balanceOf(address(vault));
+        uint256 beforeKernelVaultBalance = wbnb.balanceOf(address(kernelVault));
+        uint256 beforeBobBalance = wbnb.balanceOf(bob);
+        uint256 beforeBobShares = vault.balanceOf(bob);
+
+        vm.deal(bob, amount);
+        vm.prank(bob);
+        wbnb.deposit{value: amount}();
+
+        assertEq(wbnb.balanceOf(bob), beforeBobBalance + amount);
+
+        vm.prank(bob);
+        wbnb.approve(address(vault), amount);
+
+        uint256 previewShares = vault.previewDeposit(amount);
+
+        // Test the deposit function
+        vm.prank(bob);
+        uint256 shares = vault.deposit(amount, bob);
+
+        assertEq(previewShares, shares, "Preview shares should be equal to shares");
+
+        assertEq(
+            vault.totalAssets(), beforeTotalAssets + amount, "Total assets should increase by the amount deposited"
+        );
+        assertEq(
+            vault.totalSupply(), beforeTotalShares + shares, "Total shares should increase by the amount deposited"
+        );
+        assertEq(
+            wbnb.balanceOf(address(vault)),
+            beforeVaultBalance,
+            "Vault should have the same amount of WBNB after deposit"
+        );
+        assertEq(
+            wbnb.balanceOf(address(kernelVault)),
+            beforeKernelVaultBalance + amount,
+            "KernelVault should have funds after deposit"
+        );
+        assertEq(wbnb.balanceOf(bob), beforeBobBalance, "Bob should have the same amount of WBNB after deposit");
+        assertEq(vault.balanceOf(bob), beforeBobShares + shares, "Bob should have shares after deposit");
+
+        return shares;
+    }
+
+    function test_Buffer_Vault_ERC4626_withdraw() public {
+        WETH9 wbnb = WETH9(payable(MC.WBNB));
+
+        uint256 beforeVaultBalance = wbnb.balanceOf(address(vault));
+        uint256 beforeKernelVaultBalance = wbnb.balanceOf(address(kernelVault));
+        uint256 beforeBobBalance = wbnb.balanceOf(bob);
+        uint256 beforeBobShares = vault.balanceOf(bob);
+
+        uint256 amount = 0.5 ether;
+        uint256 shares = depositIntoBuffer(amount);
+
+        vm.prank(bob);
+        vault.withdraw(shares, bob, bob);
+
+        assertEq(
+            wbnb.balanceOf(address(vault)),
+            beforeVaultBalance,
+            "Vault should have the same amount of WBNB after withdraw"
+        );
+        assertEq(
+            wbnb.balanceOf(address(kernelVault)),
+            beforeKernelVaultBalance,
+            "KernelVault should have funds after withdraw"
+        );
+        assertEq(wbnb.balanceOf(bob), beforeBobBalance + amount, "Bob should have the amount deposited after withdraw");
+        assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have no shares after withdraw");
     }
 }
