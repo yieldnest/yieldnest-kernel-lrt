@@ -13,94 +13,44 @@ import {
     ITransparentUpgradeableProxy,
     TransparentUpgradeableProxy
 } from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {Initializable} from "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {MainnetActors} from "script/Actors.sol";
 import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
 
-contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
+contract BufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
     KernelStrategy public vault;
-    KernelStrategy public buffer;
     KernelRateProvider public kernelProvider;
 
     function setUp() public {
         kernelProvider = new KernelRateProvider();
         etchProvider(address(kernelProvider));
 
-        vault = deployMigrateVault();
+        vault = deployBuffer();
+        etchBuffer(address(vault));
     }
 
-    function deployMigrateVault() internal returns (KernelStrategy) {
-        MigratedKernelStrategy migrationVault = MigratedKernelStrategy(payable(MC.YNBNBk));
+    function deployBuffer() internal returns (KernelStrategy) {
+        // Deploy implementation contract
+        KernelStrategy implementation = new KernelStrategy();
 
-        uint256 previousTotalAssets = migrationVault.totalAssets();
-
-        uint256 previousTotalSupply = migrationVault.totalSupply();
-
-        address specificHolder = 0xCfac0990700eD9B67FeFBD4b26a79E426468a419;
-
-        uint256 previousBalance = migrationVault.balanceOf(specificHolder);
-
-        MigratedKernelStrategy implemention = new MigratedKernelStrategy();
-
-        ProxyAdmin proxyAdmin = ProxyAdmin(MC.YNBNBk_PROXY_ADMIN);
-
-        vm.prank(proxyAdmin.owner());
-
-        vm.expectRevert(Initializable.InvalidInitialization.selector);
-        proxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(MC.YNBNBk),
-            address(implemention),
-            abi.encodeWithSelector(
-                KernelStrategy.initialize.selector,
-                address(MainnetActors.ADMIN),
-                "YieldNest Restaked BNB - Kernel",
-                "ynBNBk",
-                18
-            )
+        // Deploy transparent proxy
+        bytes memory initData = abi.encodeWithSelector(
+            KernelStrategy.initialize.selector, MainnetActors.ADMIN, "YieldNest BNB Buffer - Kernel", "ynWBNBk", 18
         );
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(address(implementation), address(MainnetActors.ADMIN), initData);
 
-        MigratedKernelStrategy.Asset[] memory assets = new MigratedKernelStrategy.Asset[](3);
+        // Cast proxy to KernelStrategy type
+        vault = KernelStrategy(payable(address(proxy)));
 
-        assets[0] = MigratedKernelStrategy.Asset({asset: MC.WBNB, decimals: 18, active: false});
-        assets[1] = MigratedKernelStrategy.Asset({asset: MC.SLISBNB, decimals: 18, active: true});
-        assets[2] = MigratedKernelStrategy.Asset({asset: MC.BNBX, decimals: 18, active: true});
+        assertEq(vault.symbol(), "ynWBNBk");
 
-        vm.prank(proxyAdmin.owner());
-
-        proxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(MC.YNBNBk),
-            address(implemention),
-            abi.encodeWithSelector(
-                MigratedKernelStrategy.initializeAndMigrate.selector,
-                address(MainnetActors.ADMIN),
-                "YieldNest Restaked BNB - Kernel",
-                "ynBNBk",
-                18,
-                assets,
-                MC.STAKER_GATEWAY,
-                false
-            )
-        );
-
-        vault = KernelStrategy(payable(address(migrationVault)));
-        configureVault(vault);
-
-        uint256 newTotalAssets = migrationVault.totalAssets();
-        assertEqThreshold(
-            newTotalAssets, previousTotalAssets, 1000, "Total assets should remain the same after upgrade"
-        );
-
-        uint256 newTotalSupply = migrationVault.totalSupply();
-        assertEq(newTotalSupply, previousTotalSupply, "Total supply should remain the same after upgrade");
-
-        uint256 newBalance = migrationVault.balanceOf(specificHolder);
-        assertEq(newBalance, previousBalance, "Balance should remain the same after upgrade");
+        configureBuffer(vault);
 
         return vault;
     }
 
-    function configureVault(KernelStrategy vault_) internal {
+    function configureBuffer(KernelStrategy vault_) internal {
         vm.startPrank(ADMIN);
 
         vault_.grantRole(vault_.PROCESSOR_ROLE(), PROCESSOR);
@@ -117,8 +67,11 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
         // set strategy manager to admin for now
         vault_.grantRole(vault_.STRATEGY_MANAGER_ROLE(), address(ADMIN));
 
-        // set provider
         vault_.setProvider(address(MC.PROVIDER));
+
+        vault_.setStakerGateway(MC.STAKER_GATEWAY);
+
+        vault_.addAsset(MC.WBNB, 18, true);
 
         vault_.unpause();
 
@@ -127,14 +80,12 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
         vault_.processAccounting();
     }
 
-    function test_Vault_Upgrade_ERC20_view_functions() public view {
+    function test_Buffer_Vault_ERC20_view_functions() public view {
         // Test the name function
-        assertEq(
-            vault.name(), "YieldNest Restaked BNB - Kernel", "Vault name should be 'YieldNest Restaked BNB - Kernel'"
-        );
+        assertEq(vault.name(), "YieldNest BNB Buffer - Kernel", "Vault name should be 'YieldNest BNB Buffer - Kernel'");
 
         // Test the symbol function
-        assertEq(vault.symbol(), "ynBNBk", "Vault symbol should be 'ynBNBk'");
+        assertEq(vault.symbol(), "ynWBNBk", "Vault symbol should be 'ynWBNBk'");
 
         // Test the decimals function
         assertEq(vault.decimals(), 18, "Vault decimals should be 18");
@@ -143,7 +94,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
         vault.totalSupply();
     }
 
-    function test_Vault_Upgrade_ERC4626_view_functions() public view {
+    function test_Buffer_Vault_ERC4626_view_functions() public view {
         // Test the paused function
         assertFalse(vault.paused(), "Vault should not be paused");
 
@@ -182,9 +133,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
 
         // Test the getAssets function
         address[] memory assets = vault.getAssets();
-        assertEq(assets.length, 3, "There should be three assets in the vault");
+        assertEq(assets.length, 1, "There should be only one asset in the vault");
         assertEq(assets[0], MC.WBNB, "First asset should be WBNB");
-        assertEq(assets[1], MC.SLISBNB, "Second asset should be SLISBNB");
-        assertEq(assets[2], MC.BNBX, "Third asset should be SLISBNB");
     }
 }

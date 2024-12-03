@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Test} from "lib/forge-std/src/Test.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
-import {KernelRateProvider} from "src/KernelRateProvider.sol";
+import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
 import {SetupVault, Vault, IVault} from "lib/yieldnest-vault/test/mainnet/helpers/SetupVault.sol";
 import {TimelockController as TLC} from "lib/yieldnest-vault/src/Common.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
@@ -15,21 +15,18 @@ import {
     ITransparentUpgradeableProxy,
     TransparentUpgradeableProxy
 } from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {Etches} from "lib/yieldnest-vault/test/mainnet/helpers/Etches.sol";
+import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
-contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, Etches {
+contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
     KernelRateProvider public kernelProvider;
     KernelStrategy public vault;
-    KernelStrategy public buffer;
 
     function deploy() public returns (KernelStrategy) {
-        // etch to mock ETHRate provider and Buffer
-        mockAll();
-
         kernelProvider = new KernelRateProvider();
+        etchProvider(address(kernelProvider));
 
         KernelStrategy implementation = new KernelStrategy();
-            bytes memory initData = abi.encodeWithSelector(
+        bytes memory initData = abi.encodeWithSelector(
             KernelStrategy.initialize.selector, MainnetActors.ADMIN, "YieldNest Restaked BNB - Kernel", "ynWBNBk", 18
         );
 
@@ -62,16 +59,16 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, Etches {
 
         vault_.setStakerGateway(MC.STAKER_GATEWAY);
 
-        vault_.setSyncDeposit(true);
-
-        vault_.addAsset(MC.WBNB, 18, true);
-        vault_.addAsset(MC.SLISBNB, 18, true);
+        // vault_.setSyncDeposit(true);
+        //
+        // vault_.addAsset(MC.WBNB, 18, true);
+        // vault_.addAsset(MC.SLISBNB, 18, true);
 
         // set deposit rules
-        setDepositRule(vault_, MC.WBNB, address(vault_));
+        // setDepositRule(vault_, MC.WBNB, address(vault_));
 
         // set approval rules
-        setApprovalRule(vault_, address(vault_), MC.STAKER_GATEWAY);
+        // setApprovalRule(vault_, address(vault_), MC.STAKER_GATEWAY);
 
         vault_.unpause();
 
