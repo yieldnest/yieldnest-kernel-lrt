@@ -11,6 +11,7 @@ contract MigratedKernelStrategy is KernelStrategy {
         IERC20 _asset;
         uint8 _underlyingDecimals;
     }
+
     struct Asset {
         address asset;
         uint8 decimals;
@@ -35,6 +36,10 @@ contract MigratedKernelStrategy is KernelStrategy {
         if (admin == address(0)) {
             revert ZeroAddress();
         }
+        if (stakerGateway == address(0)) {
+            revert ZeroAddress();
+        }
+
         __ERC20Permit_init(name);
         __ERC20_init(name, symbol);
         __AccessControl_init();
@@ -57,13 +62,18 @@ contract MigratedKernelStrategy is KernelStrategy {
 
         // add new assets
         Asset memory tempAsset;
-        for(uint256 i; i < assets.length; i++){
+        for (uint256 i; i < assets.length; i++) {
             tempAsset = assets[i];
             _addAsset(tempAsset.asset, tempAsset.decimals, tempAsset.active);
         }
+
+        // set staker gateway and sync deposit
+        StrategyStorage storage strategyStorage = _getStrategyStorage();
+        strategyStorage.stakerGateway = stakerGateway;
+        strategyStorage.syncDeposit = syncDeposit;
     }
 
-        function _addAsset(address asset_, uint8 decimals_, bool active_) internal {
+    function _addAsset(address asset_, uint8 decimals_, bool active_) internal {
         if (asset_ == address(0)) {
             revert ZeroAddress();
         }
@@ -77,5 +87,4 @@ contract MigratedKernelStrategy is KernelStrategy {
 
         emit NewAsset(asset_, decimals_, index);
     }
-
 }
