@@ -76,6 +76,7 @@ contract BufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
 
         vault_.setStakerGateway(MC.STAKER_GATEWAY);
         vault_.setSyncDeposit(true);
+        vault_.setSyncWithdraw(true);
 
         kernelVault = IKernelVault(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.WBNB));
         assertNotEq(address(kernelVault), address(0));

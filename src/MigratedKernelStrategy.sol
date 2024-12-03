@@ -31,7 +31,8 @@ contract MigratedKernelStrategy is KernelStrategy {
         uint8 decimals,
         Asset[] calldata assets,
         address stakerGateway,
-        bool syncDeposit
+        bool syncDeposit,
+        bool syncWithdraw
     ) external reinitializer(2) {
         if (admin == address(0)) {
             revert ZeroAddress();
@@ -50,10 +51,15 @@ contract MigratedKernelStrategy is KernelStrategy {
         vaultStorage.paused = true;
         vaultStorage.decimals = decimals;
 
-        _migrate(assets, stakerGateway, syncDeposit);
+        StrategyStorage storage strategyStorage = _getStrategyStorage();
+        strategyStorage.stakerGateway = stakerGateway;
+        strategyStorage.syncDeposit = syncDeposit;
+        strategyStorage.syncWithdraw = syncWithdraw;
+
+        _migrate(assets);
     }
 
-    function _migrate(Asset[] memory assets, address stakerGateway, bool syncDeposit) private {
+    function _migrate(Asset[] memory assets) private {
         ERC4626Storage storage erc4626Storage = _getERC4626Storage();
 
         // empty storage
@@ -66,11 +72,6 @@ contract MigratedKernelStrategy is KernelStrategy {
             tempAsset = assets[i];
             _addAsset(tempAsset.asset, tempAsset.decimals, tempAsset.active);
         }
-
-        // set staker gateway and sync deposit
-        StrategyStorage storage strategyStorage = _getStrategyStorage();
-        strategyStorage.stakerGateway = stakerGateway;
-        strategyStorage.syncDeposit = syncDeposit;
     }
 
     function _addAsset(address asset_, uint8 decimals_, bool active_) internal {
