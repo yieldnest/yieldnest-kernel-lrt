@@ -3,21 +3,35 @@ pragma solidity ^0.8.24;
 
 import {BaseVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {Math, SafeERC20, IERC20} from "lib/yieldnest-vault/src/Common.sol";
+import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 contract KernelStrategy is BaseVault {
     bytes32 public constant ALLOCATOR_ROLE = keccak256("ALLOCATOR_ROLE");
     bytes32 public constant STRATEGY_MANAGER_ROLE = keccak256("STRATEGY_MANAGER_ROLE");
 
-    // TODO: add events for Deposit, Withdraw, Redeem, with asset address
+    event DepositAsset(
+        address indexed sender, address indexed receiver, address indexed asset, uint256 assets, uint256 shares
+    );
+
+    event WithdrawAsset(
+        address indexed sender,
+        address indexed receiver,
+        address indexed owner,
+        address asset,
+        uint256 assets,
+        uint256 shares
+    );
 
     struct StrategyStorage {
         address stakerGateway;
         bool syncDeposit;
+        bool syncWithdraw;
     }
 
     event SetStakerGateway(address stakerGateway);
     event SetSyncDeposit(bool syncDeposit);
+    event SetSyncWithdraw(bool syncWithdraw);
 
     /**
      * @notice Initializes the vault.
@@ -98,7 +112,7 @@ contract KernelStrategy is BaseVault {
      * @return assets The equivalent amount of assets.
      */
     function previewRedeemAsset(address asset_, uint256 shares) public view virtual returns (uint256 assets) {
-        (assets,) = _convertToAssets(asset_, shares, Math.Rounding.Floor);
+        (, assets) = _convertToAssets(asset_, shares, Math.Rounding.Floor);
     }
 
     /**
@@ -168,18 +182,26 @@ contract KernelStrategy is BaseVault {
         uint256 shares,
         uint256 baseAssets
     ) internal override onlyRole(ALLOCATOR_ROLE) {
-        super._deposit(asset_, caller, receiver, assets, shares, baseAssets);
+        if (!_getAssetStorage().assets[asset_].active) {
+            revert AssetNotActive();
+        }
+
+        VaultStorage storage vaultStorage = _getVaultStorage();
+        vaultStorage.totalAssets += baseAssets;
+
+        SafeERC20.safeTransferFrom(IERC20(asset_), caller, address(this), assets);
+        _mint(receiver, shares);
 
         StrategyStorage storage strategyStorage = _getStrategyStorage();
         if (strategyStorage.syncDeposit) {
-            IStakerGateway stakerGateway = IStakerGateway(strategyStorage.stakerGateway);
-
-            SafeERC20.safeIncreaseAllowance(IERC20(asset_), address(stakerGateway), assets);
+            SafeERC20.safeIncreaseAllowance(IERC20(asset_), address(strategyStorage.stakerGateway), assets);
 
             // TODO: fix referralId
             string memory referralId = "";
-            stakerGateway.stake(asset_, assets, referralId);
+            IStakerGateway(strategyStorage.stakerGateway).stake(asset_, assets, referralId);
         }
+
+        emit DepositAsset(caller, receiver, asset_, assets, shares);
     }
 
     /**
@@ -195,25 +217,8 @@ contract KernelStrategy is BaseVault {
     function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
         internal
         override
-        onlyRole(ALLOCATOR_ROLE)
     {
-        VaultStorage storage vaultStorage = _getVaultStorage();
-        vaultStorage.totalAssets -= assets;
-        if (caller != owner) {
-            _spendAllowance(owner, caller, shares);
-        }
-
-        StrategyStorage storage strategyStorage = _getStrategyStorage();
-        IStakerGateway stakerGateway = IStakerGateway(strategyStorage.stakerGateway);
-
-        // TODO: fix referralId
-        string memory referralId = "";
-        stakerGateway.unstake(asset(), assets, referralId);
-
-        SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);
-
-        _burn(owner, shares);
-        emit Withdraw(caller, receiver, owner, assets, shares);
+        _withdrawAsset(asset(), caller, receiver, owner, assets, shares);
     }
 
     /**
@@ -240,17 +245,20 @@ contract KernelStrategy is BaseVault {
             _spendAllowance(owner, caller, shares);
         }
 
-        StrategyStorage storage strategyStorage = _getStrategyStorage();
-        IStakerGateway stakerGateway = IStakerGateway(strategyStorage.stakerGateway);
+        uint256 vaultBalance = IERC20(asset_).balanceOf(address(this));
 
-        // TODO: fix referralId
-        string memory referralId = "";
-        stakerGateway.unstake(asset_, assets, referralId);
+        StrategyStorage storage strategyStorage = _getStrategyStorage();
+        if (vaultBalance < assets && strategyStorage.syncWithdraw) {
+            // TODO: fix referralId
+            string memory referralId = "";
+            IStakerGateway(strategyStorage.stakerGateway).unstake(asset_, assets, referralId);
+        }
 
         SafeERC20.safeTransfer(IERC20(asset_), receiver, assets);
 
         _burn(owner, shares);
-        // TODO: emit custom event for withdraw asset
+
+        emit WithdrawAsset(caller, receiver, owner, asset_, assets, shares);
     }
 
     /**
@@ -285,5 +293,16 @@ contract KernelStrategy is BaseVault {
         strategyStorage.syncDeposit = syncDeposit;
 
         emit SetSyncDeposit(syncDeposit);
+    }
+
+    /**
+     * @notice Sets the direct withdraw flag.
+     * @param syncWithdraw The flag.
+     */
+    function setSyncWithdraw(bool syncWithdraw) external onlyRole(STRATEGY_MANAGER_ROLE) {
+        StrategyStorage storage strategyStorage = _getStrategyStorage();
+        strategyStorage.syncWithdraw = syncWithdraw;
+
+        emit SetSyncWithdraw(syncWithdraw);
     }
 }
