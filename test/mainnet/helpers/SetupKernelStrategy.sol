@@ -2,19 +2,19 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "lib/forge-std/src/Test.sol";
-import {KernelStrategy} from "src/KernelStrategy.sol";
-import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
-import {SetupVault, Vault, IVault} from "lib/yieldnest-vault/test/mainnet/helpers/SetupVault.sol";
-import {TimelockController as TLC} from "lib/yieldnest-vault/src/Common.sol";
-import {MainnetContracts as MC} from "script/Contracts.sol";
+
+import {TransparentUpgradeableProxy} from
+    "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+
+import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
-import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
-import {MigratedKernelStrategy} from "src/MigratedKernelStrategy.sol";
+
 import {MainnetActors} from "script/Actors.sol";
-import {
-    ITransparentUpgradeableProxy,
-    TransparentUpgradeableProxy
-} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {MainnetContracts as MC} from "script/Contracts.sol";
+import {KernelStrategy} from "src/KernelStrategy.sol";
+
+import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
+
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
 contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {

@@ -17,3 +17,9 @@ eth_rpc_url = "https://rpc.ankr.com/bsc"
 fork_block_number = 44550750
 evm_version = "cancun"
 solc_version = "0.8.24"
+max-line-length = 120
+
+[fmt]
+sort_imports = true
+line_length = 120
+wrap_comments = true

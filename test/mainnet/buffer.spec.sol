@@ -1,30 +1,29 @@
 // SPDX-License-Identifier: BSD Clause-3
 pragma solidity ^0.8.24;
 
-import "lib/forge-std/src/Test.sol";
-import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
-import {SetupVault, Vault, IVault} from "lib/yieldnest-vault/test/mainnet/helpers/SetupVault.sol";
-import {MigratedKernelStrategy} from "src/MigratedKernelStrategy.sol";
-import {MainnetContracts as MC} from "script/Contracts.sol";
-import {MainnetActors} from "script/Actors.sol";
-import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
+import {Test} from "lib/forge-std/src/Test.sol";
+
+import {TransparentUpgradeableProxy} from
+    "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
-import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
-import {
-    ITransparentUpgradeableProxy,
-    TransparentUpgradeableProxy
-} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {KernelStrategy, IStakerGateway} from "src/KernelStrategy.sol";
+import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 import {MainnetActors} from "script/Actors.sol";
-import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
+
+import {MainnetActors} from "script/Actors.sol";
+import {MainnetContracts as MC} from "script/Contracts.sol";
+import {IStakerGateway, KernelStrategy} from "src/KernelStrategy.sol";
+
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
+import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
+import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
 contract BufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
     KernelStrategy public vault;
     KernelRateProvider public kernelProvider;
 
-    address bob = address(0xB0B);
-    IKernelVault kernelVault;
+    address public bob = address(0xB0B);
+    IKernelVault public kernelVault;
 
     function setUp() public {
         kernelProvider = new KernelRateProvider();

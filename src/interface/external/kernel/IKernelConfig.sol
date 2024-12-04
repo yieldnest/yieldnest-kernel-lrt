@@ -4,7 +4,8 @@ pragma solidity ^0.8.24;
 import {IAccessControl} from "lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
 
 interface IKernelConfig is IAccessControl {
-    /* Events ***********************************************************************************************************/
+    /* Events
+    ***********************************************************************************************************/
 
     // functionality has been paused
     event FunctionalityPaused(string key);
@@ -15,7 +16,8 @@ interface IKernelConfig is IAccessControl {
     // set contract to config
     event SetContract(string key, address addr);
 
-    /* Errors ***********************************************************************************************************/
+    /* Errors
+    ***********************************************************************************************************/
 
     /// A functionality was found paused
     error FunctionalityIsPaused(string);
@@ -38,7 +40,8 @@ interface IKernelConfig is IAccessControl {
     /// A sensitive key-value (eg. an address) in config was not stored
     error NotStored(string);
 
-    /* External Functions ***********************************************************************************************/
+    /* External Functions
+    ***********************************************************************************************/
 
     function check() external view returns (bool);
 

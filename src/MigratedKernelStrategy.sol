@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {KernelStrategy} from "src/KernelStrategy.sol";
 import {IERC20} from "lib/yieldnest-vault/src/Common.sol";
-import {IStakeManager} from "src/interface/external/synclub/IStakeManager.sol";
-import {IVault} from "lib/yieldnest-vault/src/interface/IVault.sol";
+import {KernelStrategy} from "src/KernelStrategy.sol";
 
 contract MigratedKernelStrategy is KernelStrategy {
     struct ERC4626Storage {

@@ -2,8 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {BaseVault} from "lib/yieldnest-vault/src/BaseVault.sol";
-import {Math, SafeERC20, IERC20} from "lib/yieldnest-vault/src/Common.sol";
-import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
+import {IERC20, Math, SafeERC20} from "lib/yieldnest-vault/src/Common.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 contract KernelStrategy is BaseVault {
@@ -121,7 +120,8 @@ contract KernelStrategy is BaseVault {
     }
 
     /**
-     * @notice Previews the amount of shares that would be received for a given amount of assets for a specific asset.
+     * @notice Previews the amount of shares that would be received for a given amount of assets for a specific
+     * asset.
      * @param asset_ The address of the asset.
      * @param assets The amount of assets to deposit.
      * @return shares The equivalent amount of shares.

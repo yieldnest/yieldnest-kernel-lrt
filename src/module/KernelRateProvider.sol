@@ -2,16 +2,13 @@
 pragma solidity ^0.8.24;
 
 import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
-import {IERC4626} from "lib/yieldnest-vault/src/Common.sol";
-import {MainnetContracts as MC} from "script/Contracts.sol";
-import {IBNBXStakeManagerV2} from "lib/yieldnest-vault/src/interface/external/stader/IBNBXStakeManagerV2.sol";
+
 import {ISlisBnbStakeManager} from "lib/yieldnest-vault/src/interface/external/lista/ISlisBnbStakeManager.sol";
+import {IBNBXStakeManagerV2} from "lib/yieldnest-vault/src/interface/external/stader/IBNBXStakeManagerV2.sol";
+import {MainnetContracts as MC} from "script/Contracts.sol";
+
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
-
-/*
-    The Provider fetches state from other contracts.
-*/
 
 contract KernelRateProvider is IProvider {
     error UnsupportedAsset(address asset);
