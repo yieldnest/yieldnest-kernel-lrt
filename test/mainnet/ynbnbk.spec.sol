@@ -214,6 +214,29 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
         vault_.setProcessorRule(MC.STAKER_GATEWAY, funcSig, rule);
     }
 
+    function setUnstakingRule(KernelStrategy vault_, address asset) public {
+        address[] memory assets = new address[](1);
+        assets[0] = asset;
+        setUnstakingRule(vault_, assets);
+    }
+
+    function setUnstakingRule(KernelStrategy vault_, address[] memory assets) public {
+        bytes4 funcSig = bytes4(keccak256("unstake(address,uint256,string)"));
+
+        IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](3);
+
+        paramRules[0] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: assets});
+        paramRules[1] =
+            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
+
+        // since there is no verification for uints in the Guard.sol, setting the string param to uint256
+        paramRules[2] =
+            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
+
+        IVault.FunctionRule memory rule = IVault.FunctionRule({isActive: true, paramRules: paramRules});
+        vault_.setProcessorRule(MC.STAKER_GATEWAY, funcSig, rule);
+    }
+
     function transferToAdmin(address asset, uint256 amount) public {
         address[] memory targets = new address[](1);
         targets[0] = asset;
@@ -431,21 +454,41 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
          assertEq(asset.balanceOf(address(vault)), beforeVaultSlisBalance, "vault should have a balance of amount");
     }
 
+    function withdrawAssetFromVault(address asset, address receiver, uint256 amount)public {
+        vm.prank(ADMIN);
+        setTransferRule(vault, asset, receiver);
+        //drain vault assets so unstaking is required to withdraw
+        address[] memory targets = new address[](1);
+        targets[0] = asset;
 
-    function test_Vault_ynBNBk_withdraw_slisBNB() public {
-        uint256 amount = 100 ether;
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory data = new bytes[](1);
+        data[0] = abi.encodeWithSignature("transfer(address,uint256)", receiver, amount, "");
+
+        vm.prank(ADMIN);
+        vault.processor(targets, values, data);  
+    }
+    function test_Vault_ynBNBk_withdraw_slisBNB_sync_enabled() public {
+        uint256 amount = 1 ether;
 
         getSlisBnb(amount);
-
+        
         depositIntoVault(MC.SLISBNB, amount);
-
+        stakeIntoKernel(MC.SLISBNB, amount);
         IERC20 asset = IERC20(MC.SLISBNB);
+
 
         uint256 beforeVaultBalance = asset.balanceOf(address(vault));
         uint256 beforeBobBalance = asset.balanceOf(bob);
         uint256 beforeBobShares = vault.balanceOf(bob);
+        uint256 beforeVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
 
         uint256 previewShares = vault.previewWithdrawAsset(MC.SLISBNB, amount);
+
+        // drain vault to force unstaking
+        withdrawAssetFromVault(address(asset), address(1), beforeVaultBalance);
 
         vm.prank(bob);
         uint256 shares = vault.withdrawAsset(MC.SLISBNB, amount, bob, bob);
@@ -455,10 +498,96 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
         uint256 afterVaultBalance = asset.balanceOf(address(vault));
         uint256 afterBobBalance = asset.balanceOf(bob);
         uint256 afterBobShares = vault.balanceOf(bob);
+        uint256 afterVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
 
-        assertEq(afterVaultBalance, beforeVaultBalance - amount, "Vault balance should decrease by amount");
+        assertEq(afterVaultBalance, 0, "Vault balance should decrease be 0");
         assertEq(afterBobBalance, beforeBobBalance + amount, "Bob balance should increase by amount");
         assertEq(afterBobShares, beforeBobShares - shares, "Bob shares should decrease by shares");
+        assertEq(afterVaultStakerShares, beforeVaultStakerShares - amount, "Vault shares should decrease after withdrawal");
+    }
+
+    function test_Vault_ynBNBk_withdraw_slisBNB_sync_disabled() public {
+        IERC20 asset = IERC20(MC.SLISBNB);
+        // disable withdraw sync
+        vm.startPrank(ADMIN);
+        vault.setSyncWithdraw(false);
+        setTransferRule(vault, address(asset), address(1));
+        vm.stopPrank();
+
+        
+        uint256 amount = 1 ether;
+        // get slis
+        getSlisBnb(amount);
+        //deposit asset
+        depositIntoVault(address(asset), amount);
+        // stake slis
+        stakeIntoKernel(address(asset), amount);
+
+        uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+
+        // drain vault to force unstaking
+        withdrawAssetFromVault(address(asset), address(1), beforeVaultBalance);
+
+         
+        uint256 beforeBobBalance = asset.balanceOf(bob);
+        uint256 beforeBobShares = vault.balanceOf(bob);
+        uint256 maxWithdraw = vault.maxWithdraw(bob);
+        uint256 previewShares = vault.previewWithdrawAsset(MC.SLISBNB, amount);
+
+        vm.prank(bob);
+        vm .expectRevert(abi.encodePacked("ERC20: transfer amount exceeds balance"));
+        uint256 shares = vault.withdrawAsset(MC.SLISBNB, maxWithdraw, bob, bob);
+
+        assertEq(shares, 0, "Shares should be 0");
+
+        uint256 afterVaultBalance = asset.balanceOf(address(vault));
+        uint256 afterBobBalance = asset.balanceOf(bob);
+        uint256 afterBobShares = vault.balanceOf(bob);
+
+        assertEq(afterVaultBalance, 0, "Vault balance should be 0");
+        assertEq(afterBobBalance, beforeBobBalance, "Bob balance should not increase");
+        assertEq(afterBobShares, beforeBobShares, "Bob shares should not decrease");
+        // set unstaking rule
+        vm.prank(ADMIN);
+
+        setUnstakingRule(vault, address(asset));
+
+        address[] memory targets = new address[](1);
+        targets[0] = MC.STAKER_GATEWAY;
+
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory data = new bytes[](1);
+        data[0] = abi.encodeWithSignature("unstake(address,uint256,string)", address(asset), amount, "");
+
+        vm.prank(ADMIN);
+        vault.processor(targets, values, data);
+
+        vault.processAccounting();
+
+        afterVaultBalance = asset.balanceOf(address(vault));
+        afterBobBalance = asset.balanceOf(bob);
+        afterBobShares = vault.balanceOf(bob);
+
+        assertEq(afterVaultBalance, amount, "Vault balance should increase by amount");
+        assertEq(afterBobBalance, beforeBobBalance, "Bob balance should not change");
+        assertEq(afterBobShares, beforeBobShares, "Bob shares should not change");
+        console.log(afterVaultBalance);
+        maxWithdraw = vault.maxWithdraw(bob);
+        //withdraw for real
+        vm.prank(bob);
+        shares = vault.withdrawAsset(MC.SLISBNB, maxWithdraw, bob, bob);
+
+        afterVaultBalance = asset.balanceOf(address(vault));
+        afterBobBalance = asset.balanceOf(bob);
+        afterBobShares = vault.balanceOf(bob);
+
+
+        assertEq(afterVaultBalance, 0, "Vault balance should decrease be 0");
+        assertEq(afterBobBalance, beforeBobBalance + amount, "Bob balance should increase by amount");
+        assertEq(afterBobShares, beforeBobShares - shares, "Bob shares should decrease by shares");
+        assertEq(afterVaultStakerShares, beforeVaultStakerShares - amount, "Vault shares should decrease after withdrawal");
     }
 
     function test_Vault_ynBNBk_redeem_slisBNB() public {
