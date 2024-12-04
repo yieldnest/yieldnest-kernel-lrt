@@ -60,7 +60,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
         vault_.setStakerGateway(MC.STAKER_GATEWAY);
 
         vault_.setSyncDeposit(true);
-        
+
         vault_.addAsset(MC.WBNB, 18, true);
         vault_.addAsset(MC.SLISBNB, 18, true);
 

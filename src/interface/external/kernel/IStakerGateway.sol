@@ -40,4 +40,6 @@ interface IStakerGateway {
     function unstakeClisBNB(uint256 amount, string calldata referralId) external;
 
     function unstakeNative(uint256 amount, string calldata referralId) external;
+
+    function getConfig() external view returns (address);
 }
