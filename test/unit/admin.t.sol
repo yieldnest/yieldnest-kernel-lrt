@@ -9,12 +9,12 @@ contract KernelStrategyAdminUintTest is SetupKernelStrategy {
 
         // Give Alice some tokens
         deal(alice, INITIAL_BALANCE);
-        weth.deposit{value: INITIAL_BALANCE}();
-        weth.transfer(alice, INITIAL_BALANCE);
+        wbnb.deposit{value: INITIAL_BALANCE}();
+        wbnb.transfer(alice, INITIAL_BALANCE);
 
         // Approve vault to spend Alice's tokens
         vm.prank(alice);
-        weth.approve(address(vault), type(uint256).max);
+        wbnb.approve(address(vault), type(uint256).max);
     }
 
     function test_Vault_setStakerGateway() public {

@@ -8,52 +8,52 @@ import {MockSTETH} from "lib/yieldnest-vault/test/unit/mocks/MockST_ETH.sol";
 
 import {MockSlisBnbStakeManager} from "lib/yieldnest-vault/test/unit/mocks/MockSlisBnbStakeManager.sol";
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
-import {MainnetContracts} from "script/Contracts.sol";
+import {MainnetContracts as MC} from "script/Contracts.sol";
 import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
 
 contract EtchUtils is Test {
     function mockAll() public {
-        mockWETH9();
-        mockStETH();
-        mockRETH();
+        mockWBNB();
+        mockSLISBNB();
+        mockBNBX();
         mockProvider();
         mockBnbxStakeManager();
         mockSlisBnbStakeManager();
     }
 
-    function mockWETH9() public {
-        WETH9 weth = new WETH9();
-        bytes memory code = address(weth).code;
-        vm.etch(MainnetContracts.WETH, code);
+    function mockWBNB() public {
+        WETH9 wbnb = new WETH9();
+        bytes memory code = address(wbnb).code;
+        vm.etch(MC.WBNB, code);
     }
 
-    function mockStETH() public {
-        MockSTETH steth = new MockSTETH();
-        bytes memory code = address(steth).code;
-        vm.etch(MainnetContracts.STETH, code);
+    function mockSLISBNB() public {
+        MockSTETH slisbnb = new MockSTETH();
+        bytes memory code = address(slisbnb).code;
+        vm.etch(MC.SLISBNB, code);
     }
 
-    function mockRETH() public {
-        WETH9 reth = new WETH9();
-        bytes memory code = address(reth).code;
-        vm.etch(MainnetContracts.RETH, code);
+    function mockBNBX() public {
+        WETH9 bnbx = new WETH9();
+        bytes memory code = address(bnbx).code;
+        vm.etch(MC.BNBX, code);
     }
 
     function mockProvider() public {
         KernelRateProvider provider = new KernelRateProvider();
         bytes memory code = address(provider).code;
-        vm.etch(MainnetContracts.PROVIDER, code);
+        vm.etch(MC.PROVIDER, code);
     }
 
     function mockBnbxStakeManager() public {
         MockBNBxStakeManagerV2 bnbxStakeManager = new MockBNBxStakeManagerV2();
         bytes memory code = address(bnbxStakeManager).code;
-        vm.etch(MainnetContracts.BNBX_STAKE_MANAGER, code);
+        vm.etch(MC.BNBX_STAKE_MANAGER, code);
     }
 
     function mockSlisBnbStakeManager() public {
         MockSlisBnbStakeManager slisBnbStakeManager = new MockSlisBnbStakeManager();
         bytes memory code = address(slisBnbStakeManager).code;
-        vm.etch(MainnetContracts.SLIS_BNB_STAKE_MANAGER, code);
+        vm.etch(MC.SLIS_BNB_STAKE_MANAGER, code);
     }
 }

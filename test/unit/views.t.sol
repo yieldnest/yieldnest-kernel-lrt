@@ -4,22 +4,22 @@ pragma solidity ^0.8.24;
 import {MainnetContracts as MC} from "script/Contracts.sol";
 import {SetupKernelStrategy} from "test/unit/helpers/SetupKernelStrategy.sol";
 
-contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
+contract KernelStrategyViewUnitTest is SetupKernelStrategy {
     function setUp() public {
         deploy();
 
         // Give Alice some tokens
         deal(alice, INITIAL_BALANCE);
-        weth.deposit{value: INITIAL_BALANCE}();
-        weth.transfer(alice, INITIAL_BALANCE);
+        wbnb.deposit{value: INITIAL_BALANCE}();
+        wbnb.transfer(alice, INITIAL_BALANCE);
 
         // Approve vault to spend Alice's tokens
         vm.prank(alice);
-        weth.approve(address(vault), type(uint256).max);
+        wbnb.approve(address(vault), type(uint256).max);
     }
 
     function test_KernelStrategy_asset() public view {
-        address expectedAsset = MC.WETH;
+        address expectedAsset = MC.WBNB;
         assertEq(vault.asset(), expectedAsset, "Asset address does not match");
     }
 

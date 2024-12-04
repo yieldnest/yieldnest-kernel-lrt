@@ -7,6 +7,7 @@ import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 
+import {MockSTETH} from "lib/yieldnest-vault/test/unit/mocks/MockST_ETH.sol";
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 import {MainnetActors} from "script/Actors.sol";
@@ -17,7 +18,11 @@ import {EtchUtils} from "test/unit/helpers/EtchUtils.sol";
 
 contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
     KernelStrategy public vault;
-    WETH9 public weth;
+
+    WETH9 public wbnb;
+    MockSTETH public slisbnb;
+    WETH9 public bnbx;
+
     address public alice = address(0x1);
     uint256 public constant INITIAL_BALANCE = 100_000 ether;
 
@@ -34,7 +39,9 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
 
         vault = KernelStrategy(payable(address(proxy)));
 
-        weth = WETH9(payable(MC.WETH));
+        wbnb = WETH9(payable(MC.WBNB));
+        slisbnb = MockSTETH(payable(MC.SLISBNB));
+        bnbx = WETH9(payable(MC.BNBX));
 
         configureKernelStrategy();
     }
@@ -50,8 +57,8 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
         vault.grantRole(vault.PAUSER_ROLE(), PAUSER);
         vault.grantRole(vault.UNPAUSER_ROLE(), UNPAUSER);
 
-        // since we're not testing the max vault, we'll set the admin as the allocator role
-        vault.grantRole(vault.ALLOCATOR_ROLE(), address(ADMIN));
+        // set allocator to alice for testing
+        vault.grantRole(vault.ALLOCATOR_ROLE(), address(alice));
 
         // set strategy manager to admin for now
         vault.grantRole(vault.STRATEGY_MANAGER_ROLE(), address(ADMIN));
