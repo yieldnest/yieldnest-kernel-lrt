@@ -4,6 +4,8 @@ pragma solidity ^0.8.24;
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {MockERC20} from "lib/yieldnest-vault/test/unit/mocks/MockERC20.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
+
+import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
 import {SetupKernelStrategy} from "test/unit/helpers/SetupKernelStrategy.sol";
 
@@ -56,6 +58,11 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
         if (depositAmount < 10) return;
         if (depositAmount > 100_000 ether) return;
 
+        vm.prank(ADMIN);
+        vault.setSyncDeposit(true);
+
+        uint256 beforeGatewayBalance = wbnb.balanceOf(address(MC.STAKER_GATEWAY));
+
         vm.prank(alice);
         uint256 sharesMinted = vault.deposit(depositAmount, alice);
 
@@ -63,7 +70,11 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
         assertGt(sharesMinted, 0, "No shares were minted");
 
         // Check that the vault received the tokens
-        assertEq(wbnb.balanceOf(address(vault)), depositAmount, "KernelStrategy did not receive tokens");
+        assertEq(
+            wbnb.balanceOf(address(MC.STAKER_GATEWAY)),
+            beforeGatewayBalance + depositAmount,
+            "KernelStrategy did not receive tokens"
+        );
 
         // Check that Alice's token balance decreased
         assertEq(wbnb.balanceOf(alice), INITIAL_BALANCE - depositAmount, "Alice's balance did not decrease correctly");
@@ -73,6 +84,13 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
 
         // Check that total assets increased
         assertEq(vault.totalAssets(), depositAmount, "Total assets did not increase correctly");
+
+        // Check that the kernel staker gateway received the correct amount of tokens
+        assertEq(
+            IStakerGateway(address(MC.STAKER_GATEWAY)).balanceOf(address(wbnb), address(vault)),
+            depositAmount,
+            "KernelStrategy did not receive tokens"
+        );
     }
 
     event Log(string, uint256);
@@ -106,6 +124,49 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
 
         // Check that total assets increased
         assertEq(vault.totalAssets(), previewDepositAsset, "Total assets did not increase correctly");
+
+        vm.stopPrank();
+    }
+
+    function test_KernelStrategy_depositAsset_STETH_sync(uint256 depositAmount) public {
+        if (depositAmount < 10) return;
+        if (depositAmount > 100_000 ether) return;
+
+        vm.prank(ADMIN);
+        vault.setSyncDeposit(true);
+
+        deal(address(slisbnb), alice, depositAmount);
+
+        vm.startPrank(alice);
+
+        uint256 previewDepositAsset = vault.previewDepositAsset(address(slisbnb), depositAmount);
+
+        slisbnb.approve(address(vault), depositAmount);
+
+        uint256 sharesMinted = vault.depositAsset(address(slisbnb), depositAmount, alice);
+
+        // Check that shares were minted
+        assertGt(sharesMinted, 0, "No shares were minted");
+        assertEq(sharesMinted, previewDepositAsset, "Incorrect shares minted");
+
+        // Check that the vault received the tokens
+        assertEq(slisbnb.balanceOf(address(MC.STAKER_GATEWAY)), depositAmount, "KernelStrategy did not receive tokens");
+
+        // Check that Alice's token balance decreased
+        assertEq(slisbnb.balanceOf(alice), 0, "Alice's balance did not decrease correctly");
+
+        // Check that Alice received the correct amount of shares
+        assertEq(vault.balanceOf(alice), sharesMinted, "Alice did not receive the correct amount of shares");
+
+        // Check that total assets increased
+        assertEq(vault.totalAssets(), previewDepositAsset, "Total assets did not increase correctly");
+
+        // Check that the kernel staker gateway received the correct amount of tokens
+        assertEq(
+            IStakerGateway(address(MC.STAKER_GATEWAY)).balanceOf(address(slisbnb), address(vault)),
+            depositAmount,
+            "KernelStrategy did not receive tokens"
+        );
 
         vm.stopPrank();
     }
