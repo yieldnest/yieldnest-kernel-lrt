@@ -21,7 +21,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
     KernelRateProvider public kernelProvider;
     KernelStrategy public vault;
 
-    function deploy() public returns (KernelStrategy) {
+    function deploy() public returns (KernelStrategy, KernelRateProvider) {
         kernelProvider = new KernelRateProvider();
         etchProvider(address(kernelProvider));
 
@@ -35,7 +35,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
 
         vault = KernelStrategy(payable(address(proxy)));
         configureKernelStrategy(vault);
-        return vault;
+        return (vault, kernelProvider);
     }
 
     function configureKernelStrategy(KernelStrategy vault_) internal {
@@ -59,16 +59,16 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
 
         vault_.setStakerGateway(MC.STAKER_GATEWAY);
 
-        // vault_.setSyncDeposit(true);
-        //
-        // vault_.addAsset(MC.WBNB, 18, true);
-        // vault_.addAsset(MC.SLISBNB, 18, true);
+        vault_.setSyncDeposit(true);
+        
+        vault_.addAsset(MC.WBNB, 18, true);
+        vault_.addAsset(MC.SLISBNB, 18, true);
 
         // set deposit rules
-        // setDepositRule(vault_, MC.WBNB, address(vault_));
+        setDepositRule(vault_, MC.WBNB, address(vault_));
 
         // set approval rules
-        // setApprovalRule(vault_, address(vault_), MC.STAKER_GATEWAY);
+        setApprovalRule(vault_, address(vault_), MC.STAKER_GATEWAY);
 
         vault_.unpause();
 

@@ -55,6 +55,30 @@ contract KernelStrategy is BaseVault {
     }
 
     /**
+     * @notice Returns the Storage parameters of this strategy.
+     * @return strategySyncDeposit syncDeposit bool.
+     */
+    function getStrategySyncDeposit() public view returns (bool strategySyncDeposit) {
+        return _getStrategyStorage().syncDeposit;
+    }
+
+    /**
+     * @notice Returns the Storage parameters of this strategy.
+     * @return syncWithdraw syncWithdraw bool.
+     */
+    function getStrategySyncWithdraw() public view returns (bool syncWithdraw) {
+        return _getStrategyStorage().syncWithdraw;
+    }
+
+    /**
+     * @notice Returns the address of the strategy gateway.
+     * @return stakerGateway stakerGateway address.
+     */
+    function getStrategyGateway() public view returns (address stakerGateway) {
+        return _getStrategyStorage().stakerGateway;
+    }
+
+    /**
      * @notice Returns the maximum amount of assets that can be withdrawn by a given owner.
      * @param owner The address of the owner.
      * @return maxAssets uint256 The maximum amount of assets.

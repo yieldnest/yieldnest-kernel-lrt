@@ -25,6 +25,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
     KernelStrategy public vault;
     KernelStrategy public buffer;
     KernelRateProvider public kernelProvider;
+    IStakerGateway public stakerGateway;
 
     address bob = address(0xB0B);
 
@@ -33,6 +34,11 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
         etchProvider(address(kernelProvider));
 
         vault = deployMigrateVault();
+
+        stakerGateway = IStakerGateway(MC.STAKER_GATEWAY);
+        vm.label(MC.STAKER_GATEWAY, "staker gateway");
+        vm.label(address(vault), "kernel Strategy");
+        vm.label(address(kernelProvider), "kernel strategy provider");
     }
 
     function deployMigrateVault() internal returns (KernelStrategy) {
@@ -309,6 +315,18 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
         assertEqThreshold(convertedAssets, amount, 10, "Converted assets should be equal to amount");
     }
 
+    function test_Vault_ynBNBk_view_functions() public {
+        // Test sync bools
+        bool strategySync = vault.getStrategySyncDeposit();
+        bool syncWithdraw = vault.getStrategySyncWithdraw();
+        assertFalse(strategySync, "strategySync should be true");
+        assertTrue(syncWithdraw, "SyncWithdraw should be false");
+
+        // Test staker gateway
+        address strategyGateway = vault.getStrategyGateway();
+        assertEq(strategyGateway, MC.STAKER_GATEWAY, "incorrect staker gateway");
+    }
+
     function depositIntoVault(address assetAddress, uint256 amount) internal returns (uint256) {
         IERC20 asset = IERC20(assetAddress);
 
@@ -362,13 +380,57 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
         assertGe(slisBnb.balanceOf(bob), amount, "Should have slisBnb");
     }
 
-    function test_Vault_ynBNBk_deposit_slisBNB() public {
-        uint256 amount = 100 ether;
+    function test_Vault_ynBNBk_deposit_slisBNB_sync_deposit_enabled() public {
+        IERC20 asset = IERC20(MC.SLISBNB);
+        //set sync deposit enabled
+        vm.prank(ADMIN);
+        vault.setSyncDeposit(true);
+
+        // slisBnB vault has a deposit limit of 1 ether
+        uint256 amount = 1 ether;
+        uint256 beforeVaultBalance = stakerGateway.balanceOf(address(asset), address(vault));
+        uint256 depositPreview = vault.previewDepositAsset(address(asset),amount);
 
         getSlisBnb(amount);
 
-        depositIntoVault(MC.SLISBNB, amount);
+        vm.prank(bob);
+        asset.approve(address(vault), amount);
+
+        // Test the deposit function
+        vm.prank(bob);
+        vault.depositAsset(address(asset), amount, bob);
+
+        assertEqThreshold(stakerGateway.balanceOf(address(asset), address(vault)), beforeVaultBalance + amount, 100, "Vault should have a balance in the stakerGateway");
     }
+
+    function test_Vault_ynBNBk_deposit_slisBNB_sync_deposit_disabled() public {
+        IERC20 asset = IERC20(MC.SLISBNB);
+        
+        // slisBnB vault has a deposit limit of 1 ether
+        uint256 amount = 1 ether;
+        uint256 beforeVaultStakerBalance = stakerGateway.balanceOf(address(asset), address(vault));
+        uint256 beforeVaultSlisBalance = asset.balanceOf(address(vault));
+
+        getSlisBnb(amount);
+
+        vm.prank(bob);
+        asset.approve(address(vault), amount);
+
+        // Test the deposit function
+        vm.prank(bob);
+        vault.depositAsset(address(asset), amount, bob);
+
+        assertEq(stakerGateway.balanceOf(address(asset), address(vault)), beforeVaultStakerBalance, "Vault should have a balance in the stakerGateway");
+        assertEq(asset.balanceOf(address(vault)), beforeVaultSlisBalance + amount, "vault should have a balance of amount");
+
+        // process deposit
+
+        stakeIntoKernel(address(asset), amount);
+        // check balances
+         assertEqThreshold(stakerGateway.balanceOf(address(asset), address(vault)), beforeVaultStakerBalance + amount, 100, "Vault should have a balance in the stakerGateway");
+         assertEq(asset.balanceOf(address(vault)), beforeVaultSlisBalance, "vault should have a balance of amount");
+    }
+
 
     function test_Vault_ynBNBk_withdraw_slisBNB() public {
         uint256 amount = 100 ether;
