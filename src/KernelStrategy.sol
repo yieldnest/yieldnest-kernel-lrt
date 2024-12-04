@@ -56,25 +56,25 @@ contract KernelStrategy is BaseVault {
 
     /**
      * @notice Returns the Storage parameters of this strategy.
-     * @return strategySyncDeposit syncDeposit bool.
+     * @return syncDeposit bool.
      */
-    function getStrategySyncDeposit() public view returns (bool strategySyncDeposit) {
+    function getSyncDeposit() public view returns (bool syncDeposit) {
         return _getStrategyStorage().syncDeposit;
     }
 
     /**
      * @notice Returns the Storage parameters of this strategy.
-     * @return syncWithdraw syncWithdraw bool.
+     * @return syncWithdraw bool.
      */
-    function getStrategySyncWithdraw() public view returns (bool syncWithdraw) {
+    function getSyncWithdraw() public view returns (bool syncWithdraw) {
         return _getStrategyStorage().syncWithdraw;
     }
 
     /**
      * @notice Returns the address of the strategy gateway.
-     * @return stakerGateway stakerGateway address.
+     * @return stakerGateway address.
      */
-    function getStrategyGateway() public view returns (address stakerGateway) {
+    function getStakerGateway() public view returns (address stakerGateway) {
         return _getStrategyStorage().stakerGateway;
     }
 

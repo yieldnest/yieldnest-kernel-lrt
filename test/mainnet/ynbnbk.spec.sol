@@ -311,13 +311,13 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
     }
 
     function test_Vault_ynBNBk_view_functions() public view {
-        bool syncDeposit = vault.getStrategySyncDeposit();
+        bool syncDeposit = vault.getSyncDeposit();
         assertFalse(syncDeposit, "SyncDeposit should be true");
 
-        bool syncWithdraw = vault.getStrategySyncWithdraw();
+        bool syncWithdraw = vault.getSyncWithdraw();
         assertTrue(syncWithdraw, "SyncWithdraw should be false");
 
-        address strategyGateway = vault.getStrategyGateway();
+        address strategyGateway = vault.getStakerGateway();
         assertEq(strategyGateway, MC.STAKER_GATEWAY, "incorrect staker gateway");
     }
 
