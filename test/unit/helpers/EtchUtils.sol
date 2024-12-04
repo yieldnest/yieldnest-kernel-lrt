@@ -10,6 +10,7 @@ import {MockSlisBnbStakeManager} from "lib/yieldnest-vault/test/unit/mocks/MockS
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
+import {MockStakerGateway} from "test/unit/mocks/MockStakerGateway.sol";
 
 contract EtchUtils is Test {
     function mockAll() public {
@@ -19,6 +20,7 @@ contract EtchUtils is Test {
         mockProvider();
         mockBnbxStakeManager();
         mockSlisBnbStakeManager();
+        mockStakerGateway();
     }
 
     function mockWBNB() public {
@@ -55,5 +57,16 @@ contract EtchUtils is Test {
         MockSlisBnbStakeManager slisBnbStakeManager = new MockSlisBnbStakeManager();
         bytes memory code = address(slisBnbStakeManager).code;
         vm.etch(MC.SLIS_BNB_STAKE_MANAGER, code);
+    }
+
+    function mockStakerGateway() public {
+        address[] memory assets = new address[](3);
+        assets[0] = MC.WBNB;
+        assets[1] = MC.SLISBNB;
+        assets[2] = MC.BNBX;
+
+        MockStakerGateway stakerGateway = new MockStakerGateway(assets);
+        bytes memory code = address(stakerGateway).code;
+        vm.etch(MC.STAKER_GATEWAY, code);
     }
 }

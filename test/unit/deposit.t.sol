@@ -51,6 +51,30 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
         assertEq(vault.totalAssets(), depositAmount, "Total assets did not increase correctly");
     }
 
+    function test_KernelStrategy_deposit_success_sync(uint256 depositAmount) public {
+        // uint256 depositAmount = 100 * 10 ** 18;
+        if (depositAmount < 10) return;
+        if (depositAmount > 100_000 ether) return;
+
+        vm.prank(alice);
+        uint256 sharesMinted = vault.deposit(depositAmount, alice);
+
+        // Check that shares were minted
+        assertGt(sharesMinted, 0, "No shares were minted");
+
+        // Check that the vault received the tokens
+        assertEq(wbnb.balanceOf(address(vault)), depositAmount, "KernelStrategy did not receive tokens");
+
+        // Check that Alice's token balance decreased
+        assertEq(wbnb.balanceOf(alice), INITIAL_BALANCE - depositAmount, "Alice's balance did not decrease correctly");
+
+        // Check that Alice received the correct amount of shares
+        assertEq(vault.balanceOf(alice), sharesMinted, "Alice did not receive the correct amount of shares");
+
+        // Check that total assets increased
+        assertEq(vault.totalAssets(), depositAmount, "Total assets did not increase correctly");
+    }
+
     event Log(string, uint256);
 
     function test_KernelStrategy_depositAsset_STETH(uint256 depositAmount) public {
