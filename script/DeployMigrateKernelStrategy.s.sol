@@ -70,9 +70,9 @@ contract DeployMigrateKernelStrategy is Script, VaultUtils {
 
         MigratedKernelStrategy.Asset[] memory assets = new MigratedKernelStrategy.Asset[](3);
 
-        assets[0] = MigratedKernelStrategy.Asset({asset: MC.WBNB, decimals: 18, active: false});
-        assets[1] = MigratedKernelStrategy.Asset({asset: MC.SLISBNB, decimals: 18, active: true});
-        assets[2] = MigratedKernelStrategy.Asset({asset: MC.BNBX, decimals: 18, active: true});
+        assets[0] = MigratedKernelStrategy.Asset({asset: MC.WBNB, active: false});
+        assets[1] = MigratedKernelStrategy.Asset({asset: MC.SLISBNB, active: true});
+        assets[2] = MigratedKernelStrategy.Asset({asset: MC.BNBX, active: true});
 
         proxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(vaultAddress),
@@ -123,9 +123,9 @@ contract DeployMigrateKernelStrategy is Script, VaultUtils {
         // set provider
         vault_.setProvider(address(rateProvider));
 
-        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.WBNB()), 18, false);
-        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.SLISBNB()), 18, false);
-        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.BNBX()), 18, false);
+        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.WBNB()), false);
+        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.SLISBNB()), false);
+        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.BNBX()), false);
 
         setApprovalRule(vault_, contracts.SLISBNB(), contracts.STAKER_GATEWAY());
         setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.SLISBNB());

@@ -23,8 +23,8 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
         wbnb.approve(address(vault), type(uint256).max);
 
         vm.startPrank(ADMIN);
-        setStakingRule(address(wbnb));
-        setApprovalRule(address(wbnb), address(mockGateway));
+        setStakingRule(vault, address(mockGateway), address(wbnb));
+        setApprovalRule(vault, address(wbnb), address(mockGateway));
         vm.stopPrank();
     }
 
@@ -245,7 +245,7 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
 
         // set unstaking rule
         vm.prank(ADMIN);
-        setUnstakingRule(vault, address(asset));
+        setUnstakingRule(vault, address(mockGateway), address(asset));
 
         address[] memory targets = new address[](1);
         targets[0] = address(mockGateway);
@@ -314,7 +314,7 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
 
         // set unstaking rule
         vm.prank(ADMIN);
-        setUnstakingRule(vault, address(asset));
+        setUnstakingRule(vault, address(mockGateway), address(asset));
         {
             address[] memory targets = new address[](1);
             targets[0] = address(mockGateway);

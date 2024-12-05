@@ -69,15 +69,17 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
                 address(MainnetActors.ADMIN),
                 "YieldNest Restaked BNB - Kernel",
                 "ynBNBk",
-                18
+                18,
+                0,
+                true
             )
         );
 
         MigratedKernelStrategy.Asset[] memory assets = new MigratedKernelStrategy.Asset[](3);
 
-        assets[0] = MigratedKernelStrategy.Asset({asset: MC.WBNB, decimals: 18, active: false});
-        assets[1] = MigratedKernelStrategy.Asset({asset: MC.SLISBNB, decimals: 18, active: true});
-        assets[2] = MigratedKernelStrategy.Asset({asset: MC.BNBX, decimals: 18, active: true});
+        assets[0] = MigratedKernelStrategy.Asset({asset: MC.WBNB, active: false});
+        assets[1] = MigratedKernelStrategy.Asset({asset: MC.SLISBNB, active: true});
+        assets[2] = MigratedKernelStrategy.Asset({asset: MC.BNBX, active: true});
 
         vm.prank(proxyAdmin.owner());
 
@@ -93,6 +95,8 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
                 assets,
                 MC.STAKER_GATEWAY,
                 false,
+                true,
+                0,
                 true
             )
         );
@@ -134,9 +138,9 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         // set provider
         vault_.setProvider(address(MC.PROVIDER));
 
-        vault_.addAsset(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.WBNB), 18, false);
-        vault_.addAsset(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SLISBNB), 18, false);
-        vault_.addAsset(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.BNBX), 18, false);
+        vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.WBNB), 18, false);
+        vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SLISBNB), 18, false);
+        vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.BNBX), 18, false);
 
         setApprovalRule(vault_, MC.SLISBNB, MC.STAKER_GATEWAY);
         setStakingRule(vault_, MC.STAKER_GATEWAY, MC.SLISBNB);
