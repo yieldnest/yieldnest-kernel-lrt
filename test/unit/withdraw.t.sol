@@ -4,15 +4,9 @@ pragma solidity ^0.8.24;
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 
 import {IERC20} from "lib/yieldnest-vault/src/Common.sol";
-import {MockERC20} from "lib/yieldnest-vault/test/unit/mocks/MockERC20.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 
-import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
-import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
-import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
-
 import {KernelStrategy} from "src/KernelStrategy.sol";
-import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
 import {SetupKernelStrategy} from "test/unit/helpers/SetupKernelStrategy.sol";
 
 contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
@@ -35,8 +29,6 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
     }
 
     function stakeIntoKernel(address asset, uint256 amount) public {
-        address kernelVault = mockGateway.getVault(asset);
-
         address[] memory targets = new address[](2);
         targets[0] = asset;
         targets[1] = address(mockGateway);
@@ -55,7 +47,7 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
         vault.processAccounting();
     }
 
-    function test_KernelStrategy_ynBNBk_withdraw_revert_whilePaused(address asset) public {
+    function test_KernelStrategy_ynBNBk_withdraw_revert_whilePaused() public {
         vm.prank(ADMIN);
         vault.pause();
         assertEq(vault.paused(), true);
