@@ -9,7 +9,7 @@ contract MockStakerGateway {
 
     mapping(address => address) private _vaults;
 
-    constructor(address[] memory assets) public {
+    constructor(address[] memory assets) {
         for (uint256 i = 0; i < assets.length; i++) {
             _vaults[assets[i]] = address(new MockKernelVault(assets[i]));
         }

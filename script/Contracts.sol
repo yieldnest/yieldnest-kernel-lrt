@@ -1,11 +1,24 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
+interface IContracts {
+    function WBNB() external view returns (address);
+    function SLISBNB() external view returns (address);
+    function BNBX() external view returns (address);
+
+    function YNBNBK() external view returns (address);
+
+    function YNBNBX() external view returns (address);
+
+    function STAKER_GATEWAY() external view returns (address);
+}
+
 library MainnetContracts {
     // tokens
     address public constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     address public constant SLISBNB = 0xB0b84D294e0C75A6abe60171b70edEb2EFd14A1B;
     address public constant BNBX = 0x1bdd3Cf7F79cfB8EdbB955f20ad99211551BA275;
+
     address public constant CLISBNB = 0x4b30fcAA7945fE9fDEFD2895aae539ba102Ed6F6;
 
     // stake managers
@@ -25,4 +38,56 @@ library MainnetContracts {
 
     address public constant PROVIDER = address(123456789); // TODO: Update with deployed Provider
     address public constant BUFFER = address(987654321); // TODO: Update with deployed buffer
+}
+
+contract ChapelContracts is IContracts {
+    address public constant SLISBNB = 0x80815ee920Bd9d856562633C36D3eB0E43cb15e2;
+
+    function WBNB() external pure override returns (address) {
+        return MainnetContracts.WBNB;
+    }
+
+    function BNBX() external pure override returns (address) {
+        return MainnetContracts.BNBX;
+    }
+
+    function YNBNBK() external pure override returns (address) {
+        return MainnetContracts.YNBNBk;
+    }
+
+    // TODO: Update with deployed YNBNBX
+    function YNBNBX() external pure override returns (address) {
+        return address(0);
+    }
+
+    function STAKER_GATEWAY() external pure override returns (address) {
+        return MainnetContracts.STAKER_GATEWAY;
+    }
+}
+
+contract BscContracts is IContracts {
+    function WBNB() external pure override returns (address) {
+        return MainnetContracts.WBNB;
+    }
+
+    function SLISBNB() external pure override returns (address) {
+        return MainnetContracts.SLISBNB;
+    }
+
+    function BNBX() external pure override returns (address) {
+        return MainnetContracts.BNBX;
+    }
+
+    function YNBNBK() external pure override returns (address) {
+        return MainnetContracts.YNBNBk;
+    }
+
+    // TODO: Update with deployed YNBNBX
+    function YNBNBX() external pure override returns (address) {
+        return address(0);
+    }
+
+    function STAKER_GATEWAY() external pure override returns (address) {
+        return MainnetContracts.STAKER_GATEWAY;
+    }
 }

@@ -9,25 +9,23 @@ import {ITransparentUpgradeableProxy} from
 
 import {IERC20, ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
 
-import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {ISlisBnbStakeManager} from "lib/yieldnest-vault/src/interface/external/lista/ISlisBnbStakeManager.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
-import {MainnetActors} from "script/Actors.sol";
 
 import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {MigratedKernelStrategy} from "src/MigratedKernelStrategy.sol";
 
+import {VaultUtils} from "script/VaultUtils.sol";
 import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
-contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
+contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     KernelStrategy public vault;
-    KernelStrategy public buffer;
     KernelRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
 
@@ -141,80 +139,14 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
         vault_.addAsset(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.BNBX), 18, false);
 
         setApprovalRule(vault_, MC.SLISBNB, MC.STAKER_GATEWAY);
-        setStakingRule(vault_, MC.SLISBNB);
+        setStakingRule(vault_, MC.STAKER_GATEWAY, MC.SLISBNB);
+        setUnstakingRule(vault, MC.STAKER_GATEWAY, MC.SLISBNB);
 
         vault_.unpause();
 
         vm.stopPrank();
 
         vault_.processAccounting();
-    }
-
-    function setApprovalRule(KernelStrategy vault_, address contractAddress, address spender) public {
-        address[] memory allowList = new address[](1);
-        allowList[0] = spender;
-        setApprovalRule(vault_, contractAddress, allowList);
-    }
-
-    function setApprovalRule(KernelStrategy vault_, address contractAddress, address[] memory allowList) public {
-        bytes4 funcSig = bytes4(keccak256("approve(address,uint256)"));
-
-        IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](2);
-
-        paramRules[0] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: allowList});
-
-        paramRules[1] =
-            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
-
-        IVault.FunctionRule memory rule = IVault.FunctionRule({isActive: true, paramRules: paramRules});
-
-        vault_.setProcessorRule(contractAddress, funcSig, rule);
-    }
-
-    function setStakingRule(KernelStrategy vault_, address asset) public {
-        address[] memory assets = new address[](1);
-        assets[0] = asset;
-        setStakingRule(vault_, assets);
-    }
-
-    function setStakingRule(KernelStrategy vault_, address[] memory assets) public {
-        bytes4 funcSig = bytes4(keccak256("stake(address,uint256,string)"));
-
-        IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](3);
-
-        paramRules[0] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: assets});
-        paramRules[1] =
-            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
-
-        // since there is no verification for uints in the Guard.sol, setting the string param to uint256
-        paramRules[2] =
-            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
-
-        IVault.FunctionRule memory rule = IVault.FunctionRule({isActive: true, paramRules: paramRules});
-        vault_.setProcessorRule(MC.STAKER_GATEWAY, funcSig, rule);
-    }
-
-    function setUnstakingRule(KernelStrategy vault_, address asset) public {
-        address[] memory assets = new address[](1);
-        assets[0] = asset;
-        setUnstakingRule(vault_, assets);
-    }
-
-    function setUnstakingRule(KernelStrategy vault_, address[] memory assets) public {
-        bytes4 funcSig = bytes4(keccak256("unstake(address,uint256,string)"));
-
-        IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](3);
-
-        paramRules[0] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: assets});
-        paramRules[1] =
-            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
-
-        // since there is no verification for uints in the Guard.sol, setting the string param to uint256
-        paramRules[2] =
-            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
-
-        IVault.FunctionRule memory rule = IVault.FunctionRule({isActive: true, paramRules: paramRules});
-        vault_.setProcessorRule(MC.STAKER_GATEWAY, funcSig, rule);
     }
 
     function stakeIntoKernel(address asset) public {
@@ -522,10 +454,6 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
         assertEq(asset.balanceOf(address(vault)), 0, "Vault balance should be 0");
         assertEq(asset.balanceOf(bob), beforeBobBalance, "Bob balance should not increase");
         assertEq(vault.balanceOf(bob), beforeBobShares, "Bob shares should not decrease");
-
-        // set unstaking rule
-        vm.prank(ADMIN);
-        setUnstakingRule(vault, address(asset));
 
         address[] memory targets = new address[](1);
         targets[0] = MC.STAKER_GATEWAY;
