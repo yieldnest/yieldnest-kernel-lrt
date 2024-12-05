@@ -39,7 +39,13 @@ contract BufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
 
         // Deploy transparent proxy
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector, MainnetActors.ADMIN, "YieldNest BNB Buffer - Kernel", "ynWBNBk", 18, 0, true
+            KernelStrategy.initialize.selector,
+            MainnetActors.ADMIN,
+            "YieldNest BNB Buffer - Kernel",
+            "ynWBNBk",
+            18,
+            0,
+            true
         );
         TransparentUpgradeableProxy proxy =
             new TransparentUpgradeableProxy(address(implementation), address(MainnetActors.ADMIN), initData);
@@ -81,7 +87,7 @@ contract BufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
         assertNotEq(address(kernelVault), address(0));
 
         vault_.addAsset(MC.WBNB, true);
-        vault_.addAsset(address(kernelVault), false);
+        vault_.addAssetWithDecimals(address(kernelVault), 18, false);
 
         vault_.unpause();
 

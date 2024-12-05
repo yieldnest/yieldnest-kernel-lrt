@@ -7,7 +7,6 @@ import {IValidator} from "lib/yieldnest-vault/src/interface/IVault.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 
 contract VaultUtils {
-
     function setDepositRule(KernelStrategy vault_, address contractAddress, address asset) public {
         address[] memory assets = new address[](1);
         assets[0] = asset;

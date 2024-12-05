@@ -346,4 +346,29 @@ contract KernelStrategy is Vault {
 
         emit SetSyncWithdraw(syncWithdraw);
     }
+
+    /**
+     * @notice Adds a new asset to the vault.
+     * @param asset_ The address of the asset.
+     * @param decimals_ The decimals of the asset.
+     * @param active_ Whether the asset is active or not.
+     */
+    function addAssetWithDecimals(address asset_, uint8 decimals_, bool active_)
+        public
+        virtual
+        onlyRole(ASSET_MANAGER_ROLE)
+    {
+        if (asset_ == address(0)) {
+            revert ZeroAddress();
+        }
+        AssetStorage storage assetStorage = _getAssetStorage();
+        uint256 index = assetStorage.list.length;
+        if (index > 0 && assetStorage.assets[asset_].index != 0) {
+            revert DuplicateAsset(asset_);
+        }
+        assetStorage.assets[asset_] = AssetParams({active: active_, index: index, decimals: decimals_});
+        assetStorage.list.push(asset_);
+
+        emit NewAsset(asset_, decimals_, index);
+    }
 }

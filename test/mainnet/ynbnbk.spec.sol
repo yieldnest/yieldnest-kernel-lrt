@@ -95,7 +95,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
                 assets,
                 MC.STAKER_GATEWAY,
                 false,
-                true, 
+                true,
                 0,
                 true
             )
@@ -138,9 +138,9 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         // set provider
         vault_.setProvider(address(MC.PROVIDER));
 
-        vault_.addAsset(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.WBNB), false);
-        vault_.addAsset(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SLISBNB), false);
-        vault_.addAsset(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.BNBX), false);
+        vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.WBNB), 18, false);
+        vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SLISBNB), 18, false);
+        vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.BNBX), 18, false);
 
         setApprovalRule(vault_, MC.SLISBNB, MC.STAKER_GATEWAY);
         setStakingRule(vault_, MC.STAKER_GATEWAY, MC.SLISBNB);

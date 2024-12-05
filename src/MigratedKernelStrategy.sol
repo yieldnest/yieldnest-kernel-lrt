@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {IERC20, IERC20Metadata} from "lib/yieldnest-vault/src/Common.sol";
+import {IERC20} from "lib/yieldnest-vault/src/Common.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 
 contract MigratedKernelStrategy is KernelStrategy {
@@ -72,10 +72,10 @@ contract MigratedKernelStrategy is KernelStrategy {
         strategyStorage.syncDeposit = syncDeposit;
         strategyStorage.syncWithdraw = syncWithdraw;
 
-        _migrate(assets);
+        _migrate(assets, decimals);
     }
 
-    function _migrate(Asset[] memory assets) private {
+    function _migrate(Asset[] memory assets, uint8 decimals) private {
         ERC4626Storage storage erc4626Storage = _getERC4626Storage();
 
         // empty storage
@@ -87,9 +87,7 @@ contract MigratedKernelStrategy is KernelStrategy {
         for (uint256 i; i < assets.length; i++) {
             tempAsset = assets[i];
 
-                    uint8 decimals_ = IERC20Metadata(tempAsset.asset).decimals();
-
-            _addAsset(tempAsset.asset, decimals_, tempAsset.active);
+            _addAsset(tempAsset.asset, decimals, tempAsset.active);
         }
     }
 

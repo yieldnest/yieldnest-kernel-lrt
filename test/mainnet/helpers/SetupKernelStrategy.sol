@@ -6,7 +6,6 @@ import {Test} from "lib/forge-std/src/Test.sol";
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 
 import {MainnetActors} from "script/Actors.sol";
@@ -15,8 +14,8 @@ import {KernelStrategy} from "src/KernelStrategy.sol";
 
 import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
 
-import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 import {VaultUtils} from "script/VaultUtils.sol";
+import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
 contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     KernelRateProvider public kernelProvider;
@@ -28,7 +27,13 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
 
         KernelStrategy implementation = new KernelStrategy();
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector, MainnetActors.ADMIN, "YieldNest Restaked BNB - Kernel", "ynWBNBk", 18, 0, true
+            KernelStrategy.initialize.selector,
+            MainnetActors.ADMIN,
+            "YieldNest Restaked BNB - Kernel",
+            "ynWBNBk",
+            18,
+            0,
+            true
         );
 
         TransparentUpgradeableProxy proxy =
@@ -63,7 +68,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
         vault_.setSyncDeposit(true);
 
         vault_.addAsset(MC.WBNB, true);
-        vault_.addAsset(MC.SLISBNB,true);
+        vault_.addAsset(MC.SLISBNB, true);
 
         // set deposit rules
         setDepositRule(vault_, MC.WBNB, address(vault_));

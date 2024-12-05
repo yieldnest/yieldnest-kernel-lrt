@@ -5,7 +5,6 @@ import {Test} from "lib/forge-std/src/Test.sol";
 
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 
 import {MockSTETH} from "lib/yieldnest-vault/test/unit/mocks/MockST_ETH.sol";
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
@@ -18,9 +17,10 @@ import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
 import {MockStakerGateway} from "../mocks/MockStakerGateway.sol";
 
 import {IValidator} from "lib/yieldnest-vault/src/interface/IVault.sol";
+
+import {VaultUtils} from "script/VaultUtils.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {EtchUtils} from "test/unit/helpers/EtchUtils.sol";
-import {VaultUtils} from "script/VaultUtils.sol";
 
 contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     KernelStrategy public vault;
@@ -40,7 +40,13 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
         provider = new KernelRateProvider();
         KernelStrategy implementation = new KernelStrategy();
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector, MainnetActors.ADMIN, "YieldNest Restaked BNB - Kernel", "ynWBNBk", 18, 0, true
+            KernelStrategy.initialize.selector,
+            MainnetActors.ADMIN,
+            "YieldNest Restaked BNB - Kernel",
+            "ynWBNBk",
+            18,
+            0,
+            true
         );
 
         TransparentUpgradeableProxy proxy =
@@ -108,5 +114,4 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
 
         vault.processAccounting();
     }
-
 }
