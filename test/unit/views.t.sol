@@ -51,7 +51,7 @@ contract KernelStrategyViewUnitTest is SetupKernelStrategy {
     }
 
     function test_KernelStrategy_Provider() public view {
-        assertEq(vault.provider(), MC.PROVIDER, "Provider does not match expected");
+        assertEq(vault.provider(), address(provider), "Provider does not match expected");
     }
 
     function test_KernelStrategy_Buffer_public() public view {
@@ -59,7 +59,7 @@ contract KernelStrategyViewUnitTest is SetupKernelStrategy {
     }
 
     function test_KernetStrategy_GetStakerGateway() public view {
-        assertEq(vault.getStakerGateway(), MC.STAKER_GATEWAY, "Staker gateway does not match expected");
+        assertEq(vault.getStakerGateway(), address(mockGateway), "Staker gateway does not match expected");
     }
 
     function test_KernelStrategy_GetSyncDeposit() public view {

@@ -13,22 +13,28 @@ import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
+import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
 
+import {MockStakerGateway} from "../mocks/MockStakerGateway.sol";
+import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {EtchUtils} from "test/unit/helpers/EtchUtils.sol";
 
 contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
     KernelStrategy public vault;
+    KernelRateProvider public provider;
 
     WETH9 public wbnb;
     MockSTETH public slisbnb;
     WETH9 public bnbx;
 
-    address public alice = address(0x1);
+    IStakerGateway public mockGateway;
+
+    address public alice = address(0xa11ce);
     uint256 public constant INITIAL_BALANCE = 100_000 ether;
 
     function deploy() public {
         mockAll();
-
+        provider = new KernelRateProvider();
         KernelStrategy implementation = new KernelStrategy();
         bytes memory initData = abi.encodeWithSelector(
             KernelStrategy.initialize.selector, MainnetActors.ADMIN, "YieldNest Restaked BNB - Kernel", "ynWBNBk", 18
@@ -42,6 +48,13 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
         wbnb = WETH9(payable(MC.WBNB));
         slisbnb = MockSTETH(payable(MC.SLISBNB));
         bnbx = WETH9(payable(MC.BNBX));
+
+        address[] memory assets = new address[](3);
+        assets[0] = address(wbnb);
+        assets[1] = address(slisbnb);
+        assets[2] = address(bnbx);
+
+        mockGateway = IStakerGateway(address(new MockStakerGateway(assets)));
 
         configureKernelStrategy();
     }
@@ -64,10 +77,10 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
         vault.grantRole(vault.STRATEGY_MANAGER_ROLE(), address(ADMIN));
 
         // set provider
-        vault.setProvider(MC.PROVIDER);
+        vault.setProvider(address(provider));
 
         // set staker gateway
-        vault.setStakerGateway(MC.STAKER_GATEWAY);
+        vault.setStakerGateway(address(mockGateway));
 
         // by default, we don't sync deposits or withdraws
         // we set it for individual tests
@@ -84,7 +97,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
         // setDepositRule(MC.WBNB, address(vault));
 
         // set approval rules
-        // setApprovalRule(address(vault), MC.STAKER_GATEWAY);
+        // setApprovalRule(address(vault), address(mockGateway));
 
         vault.unpause();
 
@@ -131,7 +144,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
             IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
 
         IVault.FunctionRule memory rule = IVault.FunctionRule({isActive: true, paramRules: paramRules});
-        vault.setProcessorRule(MC.STAKER_GATEWAY, funcSig, rule);
+        vault.setProcessorRule(address(mockGateway), funcSig, rule);
     }
 
     function setApprovalRule(address contractAddress, address spender) public {
@@ -153,5 +166,28 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
         IVault.FunctionRule memory rule = IVault.FunctionRule({isActive: true, paramRules: paramRules});
 
         vault.setProcessorRule(contractAddress, funcSig, rule);
+    }
+
+    function setUnstakingRule(KernelStrategy vault_, address asset) public {
+        address[] memory assets = new address[](1);
+        assets[0] = asset;
+        setUnstakingRule(vault_, assets);
+    }
+
+    function setUnstakingRule(KernelStrategy vault_, address[] memory assets) public {
+        bytes4 funcSig = bytes4(keccak256("unstake(address,uint256,string)"));
+
+        IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](3);
+
+        paramRules[0] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: assets});
+        paramRules[1] =
+            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
+
+        // since there is no verification for uints in the Guard.sol, setting the string param to uint256
+        paramRules[2] =
+            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
+
+        IVault.FunctionRule memory rule = IVault.FunctionRule({isActive: true, paramRules: paramRules});
+        vault_.setProcessorRule(address(mockGateway), funcSig, rule);
     }
 }

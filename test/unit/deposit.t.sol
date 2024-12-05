@@ -61,7 +61,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
         vm.prank(ADMIN);
         vault.setSyncDeposit(true);
 
-        uint256 beforeGatewayBalance = wbnb.balanceOf(address(MC.STAKER_GATEWAY));
+        uint256 beforeGatewayBalance = wbnb.balanceOf(address(mockGateway));
 
         vm.prank(alice);
         uint256 sharesMinted = vault.deposit(depositAmount, alice);
@@ -71,7 +71,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
 
         // Check that the vault received the tokens
         assertEq(
-            wbnb.balanceOf(address(MC.STAKER_GATEWAY)),
+            wbnb.balanceOf(address(mockGateway)),
             beforeGatewayBalance + depositAmount,
             "KernelStrategy did not receive tokens"
         );
@@ -87,7 +87,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
 
         // Check that the kernel staker gateway received the correct amount of tokens
         assertEq(
-            IStakerGateway(address(MC.STAKER_GATEWAY)).balanceOf(address(wbnb), address(vault)),
+            IStakerGateway(address(mockGateway)).balanceOf(address(wbnb), address(vault)),
             depositAmount,
             "KernelStrategy did not receive tokens"
         );
@@ -150,7 +150,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
         assertEq(sharesMinted, previewDepositAsset, "Incorrect shares minted");
 
         // Check that the vault received the tokens
-        assertEq(slisbnb.balanceOf(address(MC.STAKER_GATEWAY)), depositAmount, "KernelStrategy did not receive tokens");
+        assertEq(slisbnb.balanceOf(address(mockGateway)), depositAmount, "KernelStrategy did not receive tokens");
 
         // Check that Alice's token balance decreased
         assertEq(slisbnb.balanceOf(alice), 0, "Alice's balance did not decrease correctly");
@@ -163,7 +163,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
 
         // Check that the kernel staker gateway received the correct amount of tokens
         assertEq(
-            IStakerGateway(address(MC.STAKER_GATEWAY)).balanceOf(address(slisbnb), address(vault)),
+            IStakerGateway(address(mockGateway)).balanceOf(address(slisbnb), address(vault)),
             depositAmount,
             "KernelStrategy did not receive tokens"
         );
