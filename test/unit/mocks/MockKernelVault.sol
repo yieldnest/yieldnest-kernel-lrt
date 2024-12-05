@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 contract MockKernelVault {
     address private _asset;
 
-    constructor(address asset) public {
+    constructor(address asset) {
         asset = asset;
     }
 
