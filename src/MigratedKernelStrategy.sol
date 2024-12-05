@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {IERC20} from "lib/yieldnest-vault/src/Common.sol";
+import {IERC20, IERC20Metadata} from "lib/yieldnest-vault/src/Common.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 
 contract MigratedKernelStrategy is KernelStrategy {
@@ -12,7 +12,6 @@ contract MigratedKernelStrategy is KernelStrategy {
 
     struct Asset {
         address asset;
-        uint8 decimals;
         bool active;
     }
 
@@ -22,6 +21,19 @@ contract MigratedKernelStrategy is KernelStrategy {
         }
     }
 
+    /**
+     * @notice Initializes the vault.
+     * @param admin The address of the admin.
+     * @param name The name of the vault.
+     * @param symbol The symbol of the vault.
+     * @param decimals The decimals of the vault.
+     * @param assets The assets of the vault.
+     * @param stakerGateway The staker gateway.
+     * @param syncDeposit Whether to sync deposit.
+     * @param syncWithdraw Whether to sync withdraw.
+     * @param baseWithdrawalFee The base withdrawal fee.
+     * @param countNativeAsset Whether to count native asset.
+     */
     function initializeAndMigrate(
         address admin,
         string memory name,
@@ -30,7 +42,9 @@ contract MigratedKernelStrategy is KernelStrategy {
         Asset[] calldata assets,
         address stakerGateway,
         bool syncDeposit,
-        bool syncWithdraw
+        bool syncWithdraw,
+        uint64 baseWithdrawalFee,
+        bool countNativeAsset
     ) external reinitializer(2) {
         if (admin == address(0)) {
             revert ZeroAddress();
@@ -48,6 +62,10 @@ contract MigratedKernelStrategy is KernelStrategy {
         VaultStorage storage vaultStorage = _getVaultStorage();
         vaultStorage.paused = true;
         vaultStorage.decimals = decimals;
+        vaultStorage.countNativeAsset = countNativeAsset;
+
+        FeeStorage storage fees = _getFeeStorage();
+        fees.baseWithdrawalFee = baseWithdrawalFee;
 
         StrategyStorage storage strategyStorage = _getStrategyStorage();
         strategyStorage.stakerGateway = stakerGateway;
@@ -68,7 +86,10 @@ contract MigratedKernelStrategy is KernelStrategy {
         Asset memory tempAsset;
         for (uint256 i; i < assets.length; i++) {
             tempAsset = assets[i];
-            _addAsset(tempAsset.asset, tempAsset.decimals, tempAsset.active);
+
+                    uint8 decimals_ = IERC20Metadata(tempAsset.asset).decimals();
+
+            _addAsset(tempAsset.asset, decimals_, tempAsset.active);
         }
     }
 

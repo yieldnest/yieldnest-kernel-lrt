@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {BaseVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {IERC20, Math, SafeERC20} from "lib/yieldnest-vault/src/Common.sol";
+import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
-contract KernelStrategy is BaseVault {
+contract KernelStrategy is Vault {
     bytes32 public constant ALLOCATOR_ROLE = keccak256("ALLOCATOR_ROLE");
     bytes32 public constant STRATEGY_MANAGER_ROLE = keccak256("STRATEGY_MANAGER_ROLE");
 
@@ -37,8 +37,18 @@ contract KernelStrategy is BaseVault {
      * @param admin The address of the admin.
      * @param name The name of the vault.
      * @param symbol The symbol of the vault.
+     * @param decimals The decimals of the vault.
+     * @param baseWithdrawalFee The base withdrawal fee.
+     * @param countNativeAsset Whether to count native asset.
      */
-    function initialize(address admin, string memory name, string memory symbol, uint8 decimals) external initializer {
+    function initialize(
+        address admin,
+        string memory name,
+        string memory symbol,
+        uint8 decimals,
+        uint64 baseWithdrawalFee,
+        bool countNativeAsset
+    ) external override initializer {
         if (admin == address(0)) {
             revert ZeroAddress();
         }
@@ -51,6 +61,10 @@ contract KernelStrategy is BaseVault {
         VaultStorage storage vaultStorage = _getVaultStorage();
         vaultStorage.paused = true;
         vaultStorage.decimals = decimals;
+        vaultStorage.countNativeAsset = countNativeAsset;
+
+        FeeStorage storage fees = _getFeeStorage();
+        fees.baseWithdrawalFee = baseWithdrawalFee;
     }
 
     /**
@@ -127,7 +141,8 @@ contract KernelStrategy is BaseVault {
      * @return shares The equivalent amount of shares.
      */
     function previewWithdrawAsset(address asset_, uint256 assets) public view virtual returns (uint256 shares) {
-        (shares,) = _convertToShares(asset_, assets, Math.Rounding.Floor);
+        uint256 fee = _feeOnRaw(assets);
+        (shares,) = _convertToShares(asset_, assets + fee, Math.Rounding.Ceil);
     }
 
     /**
@@ -137,6 +152,8 @@ contract KernelStrategy is BaseVault {
      */
     function previewRedeemAsset(address asset_, uint256 shares) public view virtual returns (uint256 assets) {
         (, assets) = _convertToAssets(asset_, shares, Math.Rounding.Floor);
+
+        return assets - _feeOnTotal(assets);
     }
 
     /**

@@ -16,8 +16,9 @@ import {KernelStrategy} from "src/KernelStrategy.sol";
 import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
 
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
+import {VaultUtils} from "script/VaultUtils.sol";
 
-contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
+contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     KernelRateProvider public kernelProvider;
     KernelStrategy public vault;
 
@@ -27,7 +28,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
 
         KernelStrategy implementation = new KernelStrategy();
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector, MainnetActors.ADMIN, "YieldNest Restaked BNB - Kernel", "ynWBNBk", 18
+            KernelStrategy.initialize.selector, MainnetActors.ADMIN, "YieldNest Restaked BNB - Kernel", "ynWBNBk", 18, 0, true
         );
 
         TransparentUpgradeableProxy proxy =
@@ -61,8 +62,8 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
 
         vault_.setSyncDeposit(true);
 
-        vault_.addAsset(MC.WBNB, 18, true);
-        vault_.addAsset(MC.SLISBNB, 18, true);
+        vault_.addAsset(MC.WBNB, true);
+        vault_.addAsset(MC.SLISBNB,true);
 
         // set deposit rules
         setDepositRule(vault_, MC.WBNB, address(vault_));
@@ -75,67 +76,5 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils {
         vm.stopPrank();
 
         vault_.processAccounting();
-    }
-
-    function setDepositRule(KernelStrategy vault_, address contractAddress, address receiver) public {
-        bytes4 funcSig = bytes4(keccak256("deposit(uint256,address)"));
-
-        IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](2);
-
-        paramRules[0] =
-            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
-
-        address[] memory allowList = new address[](1);
-        allowList[0] = receiver;
-
-        paramRules[1] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: allowList});
-
-        IVault.FunctionRule memory rule = IVault.FunctionRule({isActive: true, paramRules: paramRules});
-
-        vault_.setProcessorRule(contractAddress, funcSig, rule);
-    }
-
-    function setStakingRule(KernelStrategy vault_, address asset) public {
-        address[] memory assets = new address[](1);
-        assets[0] = asset;
-        setStakingRule(vault_, assets);
-    }
-
-    function setStakingRule(KernelStrategy vault_, address[] memory assets) public {
-        bytes4 funcSig = bytes4(keccak256("stake(address,uint256,string)"));
-
-        IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](3);
-
-        paramRules[0] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: assets});
-        paramRules[1] =
-            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
-
-        // since there is no verification for uints in the Guard.sol, setting the string param to uint256
-        paramRules[2] =
-            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
-
-        IVault.FunctionRule memory rule = IVault.FunctionRule({isActive: true, paramRules: paramRules});
-        vault_.setProcessorRule(MC.STAKER_GATEWAY, funcSig, rule);
-    }
-
-    function setApprovalRule(KernelStrategy vault_, address contractAddress, address spender) public {
-        address[] memory allowList = new address[](1);
-        allowList[0] = spender;
-        setApprovalRule(vault_, contractAddress, allowList);
-    }
-
-    function setApprovalRule(KernelStrategy vault_, address contractAddress, address[] memory allowList) public {
-        bytes4 funcSig = bytes4(keccak256("approve(address,uint256)"));
-
-        IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](2);
-
-        paramRules[0] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: allowList});
-
-        paramRules[1] =
-            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
-
-        IVault.FunctionRule memory rule = IVault.FunctionRule({isActive: true, paramRules: paramRules});
-
-        vault_.setProcessorRule(contractAddress, funcSig, rule);
     }
 }
