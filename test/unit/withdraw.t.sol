@@ -74,7 +74,9 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
         assertEq(vault.maxWithdrawAsset(MC.WBNB, alice), depositAmount);
     }
 
-    function test_KernelStrategy_ynBNBk_withdraw_previewWithdrawAsset(uint256 depositAmount, uint256 withdrawalAmount) public {
+    function test_KernelStrategy_ynBNBk_withdraw_previewWithdrawAsset(uint256 depositAmount, uint256 withdrawalAmount)
+        public
+    {
         depositAmount = bound(depositAmount, 11, INITIAL_BALANCE);
         withdrawalAmount = bound(withdrawalAmount, 10, depositAmount);
         // deposit amount
@@ -84,7 +86,9 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
         assertEq(depositAmount, vault.previewWithdrawAsset(MC.WBNB, depositAmount), "invalid withdraw preview");
     }
 
-    function test_KernelStrategy_ynBNBk_withdraw_previewRedeemAsset(uint256 depositAmount, uint256 withdrawalAmount) public {
+    function test_KernelStrategy_ynBNBk_withdraw_previewRedeemAsset(uint256 depositAmount, uint256 withdrawalAmount)
+        public
+    {
         depositAmount = bound(depositAmount, 11, INITIAL_BALANCE);
         withdrawalAmount = bound(withdrawalAmount, 10, depositAmount);
         // deposit amount
@@ -147,7 +151,7 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
         vm.expectRevert(IVault.ZeroAddress.selector);
         vault.withdrawAsset(address(0), withdrawalAmount, alice, alice);
     }
-   
+
     function test_KernelStrategy_ynBNBk_withdraw_revert_wrongAsset(uint256 withdrawalAmount) public {
         // uint256 withdrawalAmount = 100 * 10 ** 18;
         if (withdrawalAmount < 10) return;
