@@ -1,26 +1,29 @@
 // SPDX-License-Identifier: BSD Clause-3
 pragma solidity ^0.8.24;
 
-import "lib/forge-std/src/Test.sol";
-import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
-import {SetupVault, Vault, IVault} from "lib/yieldnest-vault/test/mainnet/helpers/SetupVault.sol";
-import {MigratedKernelStrategy} from "src/MigratedKernelStrategy.sol";
-import {MainnetContracts as MC} from "script/Contracts.sol";
-import {MainnetActors} from "script/Actors.sol";
-import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
-import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
-import {
-    ITransparentUpgradeableProxy,
-    TransparentUpgradeableProxy
-} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {Test} from "lib/forge-std/src/Test.sol";
+
 import {Initializable} from "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import {KernelStrategy} from "src/KernelStrategy.sol";
+import {ITransparentUpgradeableProxy} from
+    "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+
+import {IERC20, ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
+
+import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
+import {ISlisBnbStakeManager} from "lib/yieldnest-vault/src/interface/external/lista/ISlisBnbStakeManager.sol";
+import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 import {MainnetActors} from "script/Actors.sol";
-import {ProxyAdmin, IERC20} from "lib/yieldnest-vault/src/Common.sol";
+
+import {MainnetActors} from "script/Actors.sol";
+import {MainnetContracts as MC} from "script/Contracts.sol";
+import {KernelStrategy} from "src/KernelStrategy.sol";
+import {MigratedKernelStrategy} from "src/MigratedKernelStrategy.sol";
+
+import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
-import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
-import {ISlisBnbStakeManager} from "lib/yieldnest-vault/src/interface/external/lista/ISlisBnbStakeManager.sol";
+import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
+import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
 contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
     KernelStrategy public vault;
@@ -28,7 +31,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
     KernelRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
 
-    address bob = address(0xB0B);
+    address public bob = address(0xB0B);
 
     function setUp() public {
         kernelProvider = new KernelRateProvider();
@@ -311,13 +314,13 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils {
     }
 
     function test_Vault_ynBNBk_view_functions() public view {
-        bool syncDeposit = vault.getStrategySyncDeposit();
+        bool syncDeposit = vault.getSyncDeposit();
         assertFalse(syncDeposit, "SyncDeposit should be true");
 
-        bool syncWithdraw = vault.getStrategySyncWithdraw();
+        bool syncWithdraw = vault.getSyncWithdraw();
         assertTrue(syncWithdraw, "SyncWithdraw should be false");
 
-        address strategyGateway = vault.getStrategyGateway();
+        address strategyGateway = vault.getStakerGateway();
         assertEq(strategyGateway, MC.STAKER_GATEWAY, "incorrect staker gateway");
     }
 

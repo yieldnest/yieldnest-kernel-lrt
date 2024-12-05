@@ -2,7 +2,8 @@
 pragma solidity ^0.8.24;
 
 interface IStakerGateway {
-    /* Events ***********************************************************************************************************/
+    /* Events
+    ***********************************************************************************************************/
 
     /// An asset was staked
     event AssetStaked(address indexed staker, address indexed asset, uint256 amount, string indexed referralId);
@@ -10,7 +11,8 @@ interface IStakerGateway {
     /// An asset was unstaked
     event AssetUnstaked(address indexed staker, address indexed asset, uint256 amount, string indexed referralId);
 
-    /* Errors ***********************************************************************************************************/
+    /* Errors
+    ***********************************************************************************************************/
 
     /// Contract couldn't receive native tokens
     error CannotReceiveNativeTokens();
@@ -21,7 +23,8 @@ interface IStakerGateway {
     /// The unstaking failed
     error UnstakeFailed(string);
 
-    /* External Functions ***********************************************************************************************/
+    /* External Functions
+    ***********************************************************************************************/
 
     function initialize(address configAddr) external;
 

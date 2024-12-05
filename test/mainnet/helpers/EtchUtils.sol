@@ -2,11 +2,10 @@
 pragma solidity ^0.8.24;
 
 import {MainnetContracts as MC} from "script/Contracts.sol";
-import {MainnetActors} from "script/Actors.sol";
 
 import {Test} from "lib/forge-std/src/Test.sol";
 
-contract EtchUtils is Test, MainnetActors {
+contract EtchUtils is Test {
     function etchProvider(address provider) public {
         bytes memory code = address(provider).code;
         vm.etch(MC.PROVIDER, code);
