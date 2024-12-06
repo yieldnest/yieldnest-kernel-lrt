@@ -222,7 +222,7 @@ contract KernelStrategy is Vault {
         uint256 assets,
         uint256 shares,
         uint256 baseAssets
-    ) internal override onlyRole(ALLOCATOR_ROLE) {
+    ) internal virtual override onlyRole(ALLOCATOR_ROLE) {
         if (!_getAssetStorage().assets[asset_].active) {
             revert AssetNotActive();
         }
@@ -257,6 +257,7 @@ contract KernelStrategy is Vault {
      */
     function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
         internal
+        virtual
         override
     {
         _withdrawAsset(asset(), caller, receiver, owner, assets, shares);
@@ -279,7 +280,7 @@ contract KernelStrategy is Vault {
         address owner,
         uint256 assets,
         uint256 shares
-    ) internal onlyRole(ALLOCATOR_ROLE) {
+    ) internal virtual onlyRole(ALLOCATOR_ROLE) {
         VaultStorage storage vaultStorage = _getVaultStorage();
         vaultStorage.totalAssets -= assets;
         if (caller != owner) {

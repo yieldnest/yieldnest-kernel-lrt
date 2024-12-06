@@ -16,8 +16,6 @@ import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
 
 import {MockStakerGateway} from "../mocks/MockStakerGateway.sol";
 
-import {IValidator} from "lib/yieldnest-vault/src/interface/IVault.sol";
-
 import {VaultUtils} from "script/VaultUtils.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {EtchUtils} from "test/unit/helpers/EtchUtils.sol";

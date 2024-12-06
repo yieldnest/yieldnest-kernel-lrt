@@ -11,6 +11,7 @@ interface IContracts {
     function YNBNBX() external view returns (address);
 
     function STAKER_GATEWAY() external view returns (address);
+    function CLISBNB() external view returns (address);
 }
 
 library MainnetContracts {
@@ -63,6 +64,10 @@ contract ChapelContracts is IContracts {
     function STAKER_GATEWAY() external pure override returns (address) {
         return MainnetContracts.STAKER_GATEWAY;
     }
+
+    function CLISBNB() external pure override returns (address) {
+        return MainnetContracts.CLISBNB;
+    }
 }
 
 contract BscContracts is IContracts {
@@ -89,5 +94,9 @@ contract BscContracts is IContracts {
 
     function STAKER_GATEWAY() external pure override returns (address) {
         return MainnetContracts.STAKER_GATEWAY;
+    }
+
+    function CLISBNB() external pure override returns (address) {
+        return MainnetContracts.CLISBNB;
     }
 }
