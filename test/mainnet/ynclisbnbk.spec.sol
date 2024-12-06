@@ -32,6 +32,7 @@ contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, 
     IStakerGateway public stakerGateway;
 
     address public bob = address(0xB0B);
+    address public clisBnbVault;
 
     function setUp() public {
         kernelProvider = new KernelRateProvider();
@@ -40,6 +41,8 @@ contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, 
         vault = deployClisBNBk();
 
         stakerGateway = IStakerGateway(MC.STAKER_GATEWAY);
+
+        clisBnbVault = IKernelConfig(stakerGateway.getConfig()).getClisBnbAddress();
         vm.label(MC.STAKER_GATEWAY, "staker gateway");
         vm.label(address(vault), "kernel Strategy");
         vm.label(address(kernelProvider), "kernel strategy provider");
@@ -209,16 +212,36 @@ contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, 
 
         assertEq(previewShares, shares, "Preview shares should be equal to shares");
 
-        uint256 assetsInBNB = vault.convertToAssets(shares);
-
         assertEq(
             vault.totalSupply(), beforeTotalShares + shares, "Total shares should increase by the amount deposited"
         );
         assertEq(asset.balanceOf(bob), beforeBobBalance - amount, "Bob should not have the assets");
         assertEq(vault.balanceOf(bob), beforeBobShares + shares, "Bob should have shares after deposit");
+        assertEq(stakerGateway.balanceOf(clisBnbVault, address(vault)), amount, "vault should have shares after deposit");
+    }
 
-        address clisBNBAsset = IKernelConfig(stakerGateway.getConfig()).getClisBnbAddress();
-        
-        assertEq(stakerGateway.balanceOf(clisBNBAsset, address(vault)), amount, "vault should have shares after deposit");
+    function test_ynclisBNBk_wihtdraw_success_syncEnabled() public {
+                uint256 amount = 1 ether;
+
+        giveWBNB(bob, amount);
+
+        vm.startPrank(ADMIN);
+        vault.setSyncDeposit(true);
+        vault.setSyncWithdraw(true);
+        vm.stopPrank();
+
+        vm.prank(bob);
+        asset.approve(address(vault), amount);
+
+        vm.prank(bob);
+        uint256 shares = vault.depositAsset(MC.WBNB, amount, bob);
+
+        vault.processAccounting();
+
+        assertEq(stakerGateway.balanceOf(clisBnbVault, address(vault)), amount, "vault should have shares after deposit");
+
+        vm.prank(bob);
+        vault.withdraw(amount, bob, bob);
+
     }
 }
