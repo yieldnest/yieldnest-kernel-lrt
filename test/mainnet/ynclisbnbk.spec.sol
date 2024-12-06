@@ -25,6 +25,7 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 import {IWBNB} from "src/interface/external/IWBNB.sol";
+import "forge-std/console.sol";
 
 contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     KernelClisStrategy public vault;
@@ -38,11 +39,12 @@ contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, 
         kernelProvider = new KernelRateProvider();
         etchProvider(address(kernelProvider));
 
-        vault = deployClisBNBk();
-
         stakerGateway = IStakerGateway(MC.STAKER_GATEWAY);
 
         clisBnbVault = IKernelConfig(stakerGateway.getConfig()).getClisBnbAddress();
+
+        vault = deployClisBNBk();
+
         vm.label(MC.STAKER_GATEWAY, "staker gateway");
         vm.label(address(vault), "kernel Strategy");
         vm.label(address(kernelProvider), "kernel strategy provider");
@@ -64,6 +66,7 @@ contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, 
             new TransparentUpgradeableProxy(address(implementation), address(MainnetActors.ADMIN), initData);
 
         _vault = KernelClisStrategy(payable(address(proxy)));
+
         configureKernelClisStrategy(_vault);
     }
 
@@ -91,6 +94,7 @@ contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, 
         vault_.setSyncDeposit(true);
 
         vault_.addAsset(MC.WBNB, true);
+        vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.CLISBNB), 18, false);
 
         // set deposit rules
         setDepositRule(KernelStrategy(payable(address(vault_))), MC.WBNB, address(vault_));
@@ -193,9 +197,7 @@ contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, 
 
         IERC20 asset = IERC20(MC.WBNB);
 
-        uint256 beforeTotalAssets = vault.totalAssets();
         uint256 beforeTotalShares = vault.totalSupply();
-        uint256 beforeVaultBalance = asset.balanceOf(address(vault));
         uint256 beforeBobBalance = asset.balanceOf(bob);
         uint256 beforeBobShares = vault.balanceOf(bob);
 
@@ -221,8 +223,8 @@ contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, 
     }
 
     function test_ynclisBNBk_wihtdraw_success_syncEnabled() public {
-                uint256 amount = 1 ether;
-
+        uint256 amount = 1 ether;
+        IERC20 asset = IERC20(MC.WBNB);
         giveWBNB(bob, amount);
 
         vm.startPrank(ADMIN);
@@ -238,10 +240,36 @@ contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, 
 
         vault.processAccounting();
 
+        uint256 maxWithdraw = vault.maxWithdraw(bob);
+        uint256 vaultShares = stakerGateway.balanceOf(clisBnbVault, address(vault));
+        assertGt(vaultShares, 0, "vault should have some shares");
+        assertGt(maxWithdraw, 0, "max withdraw should not be 0");
+        assertEq(maxWithdraw, shares, "incorrect maxWithdraw amount");
+
+        
+
         assertEq(stakerGateway.balanceOf(clisBnbVault, address(vault)), amount, "vault should have shares after deposit");
 
-        vm.prank(bob);
-        vault.withdraw(amount, bob, bob);
+        uint256 withdrawAmount = vault.maxWithdraw(bob);
+        assertGt(withdrawAmount, 0, "can't withdraw 0");
 
+        uint256 beforeTotalShares = vault.totalSupply();
+        uint256 beforeBobBalance = asset.balanceOf(bob);
+        uint256 beforeBobShares = vault.balanceOf(bob);
+
+        vm.prank(bob);
+        vault.withdraw(withdrawAmount, bob, bob);
+        vault.processAccounting();
+    uint256 previewShares = vault.previewDepositAsset(MC.WBNB, amount);
+
+      assertEq(previewShares, shares, "Preview shares should be equal to shares");
+
+        assertEq(
+            vault.totalSupply(), beforeTotalShares - shares, "Total shares should decrease by the amount withdrawn"
+        );
+        assertEq(asset.balanceOf(bob), beforeBobBalance + amount, "Bob should have the assets");
+        assertEq(vault.balanceOf(bob), beforeBobShares - shares, "Bob should not have shares after withdraw");
+        assertEq(stakerGateway.balanceOf(clisBnbVault, address(vault)), 0, "vault should not have shares after deposit");
+    
     }
 }
