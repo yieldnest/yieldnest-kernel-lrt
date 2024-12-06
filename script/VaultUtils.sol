@@ -95,7 +95,7 @@ contract VaultUtils {
     }
 
     function setClisUnstakingRule(KernelClisStrategy vault_, address contractAddress) public {
-        bytes4 funcSig = bytes4(keccak256("unstake(uint256,string)"));
+        bytes4 funcSig = bytes4(keccak256("unstakeClisBNB(uint256,string)"));
 
         IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](2);
 

@@ -2,8 +2,6 @@
 pragma solidity ^0.8.24;
 
 interface IWBNB {
-    /* External Functions ***********************************************************************************************/
-
     function deposit() external payable;
 
     function withdraw(uint256 wad) external;
