@@ -15,6 +15,7 @@ import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 import {KernelClisStrategy} from "src/KernelClisStrategy.sol";
+import {KernelStrategy} from "src/KernelStrategy.sol";
 import {MigratedKernelStrategy} from "src/MigratedKernelStrategy.sol";
 
 import {VaultUtils} from "script/VaultUtils.sol";
@@ -23,6 +24,7 @@ import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
+import {IWBNB} from "src/interface/external/IWBNB.sol";
 
 contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     KernelClisStrategy public vault;
@@ -43,7 +45,7 @@ contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, 
         vm.label(address(kernelProvider), "kernel strategy provider");
     }
 
-    function deployClisBNBk() public returns(KernelClisStrategy vault) {
+    function deployClisBNBk() public returns(KernelClisStrategy _vault) {
         KernelClisStrategy implementation = new KernelClisStrategy();
          bytes memory initData = abi.encodeWithSelector(
             KernelClisStrategy.initialize.selector,
@@ -58,8 +60,8 @@ contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, 
         TransparentUpgradeableProxy proxy =
             new TransparentUpgradeableProxy(address(implementation), address(MainnetActors.ADMIN), initData);
 
-        vault = KernelClisStrategy(payable(address(proxy)));
-        configureKernelClisStrategy(vault);
+        _vault = KernelClisStrategy(payable(address(proxy)));
+        configureKernelClisStrategy(_vault);
     }
 
     function configureKernelClisStrategy(KernelClisStrategy vault_) public {
@@ -74,7 +76,7 @@ contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, 
         vault_.grantRole(vault_.UNPAUSER_ROLE(), UNPAUSER);
 
         // since we're not testing the max vault, we'll set the admin as the allocator role
-        vault_.grantRole(vault_.ALLOCATOR_ROLE(), address(ADMIN));
+        vault_.grantRole(vault_.ALLOCATOR_ROLE(), address(bob));
 
         // set strategy manager to admin for now
         vault_.grantRole(vault_.STRATEGY_MANAGER_ROLE(), address(ADMIN));
@@ -88,15 +90,135 @@ contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, 
         vault_.addAsset(MC.WBNB, true);
 
         // set deposit rules
-        setDepositRule(vault_, MC.WBNB, address(vault_));
+        setDepositRule(KernelStrategy(payable(address(vault_))), MC.WBNB, address(vault_));
 
         // set approval rules
-        setApprovalRule(vault_, address(vault_), MC.STAKER_GATEWAY);
+        setApprovalRule(KernelStrategy(payable(address(vault_))), address(vault_), MC.STAKER_GATEWAY);
 
         vault_.unpause();
 
         vm.stopPrank();
 
         vault_.processAccounting();
+    }
+
+    function stakeIntoKernel(uint256 amount) public {
+        address kernelVault = IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SLISBNB);
+        address config = IKernelVault(kernelVault).getConfig();
+        bytes32 role = IKernelConfig(config).ROLE_MANAGER();
+
+        vm.prank(MC.KERNEL_CONFIG_ADMIN);
+        IKernelConfig(config).grantRole(role, address(this));
+
+        IKernelVault(kernelVault).setDepositLimit(type(uint256).max);
+
+        address[] memory targets = new address[](1);
+
+        targets[0] = MC.STAKER_GATEWAY;
+
+        uint256[] memory values = new uint256[](1);
+        values[0] = amount;
+
+
+        bytes[] memory data = new bytes[](1);
+        data[0] = abi.encodeWithSignature("stakeClisBNB(string)", "referral_id");
+
+        vm.prank(ADMIN);
+        vault.processor(targets, values, data);
+
+        vault.processAccounting();
+    }
+
+    function depositIntoVault(address assetAddress, uint256 amount) internal returns (uint256) {
+        IERC20 asset = IERC20(assetAddress);
+
+        uint256 beforeTotalAssets = vault.totalAssets();
+        uint256 beforeTotalShares = vault.totalSupply();
+        uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+        uint256 beforeBobBalance = asset.balanceOf(bob);
+        uint256 beforeBobShares = vault.balanceOf(bob);
+
+        uint256 previewShares = vault.previewDepositAsset(assetAddress, amount);
+
+        vm.prank(bob);
+        asset.approve(address(vault), amount);
+
+        // Test the deposit function
+        vm.prank(bob);
+        uint256 shares = vault.depositAsset(assetAddress, amount, bob);
+
+        vault.processAccounting();
+
+        assertEq(previewShares, shares, "Preview shares should be equal to shares");
+
+        uint256 assetsInBNB = vault.convertToAssets(shares);
+
+        assertEqThreshold(
+            vault.totalAssets(),
+            beforeTotalAssets + assetsInBNB,
+            10,
+            "Total assets should increase by the amount deposited"
+        );
+        assertEq(
+            vault.totalSupply(), beforeTotalShares + shares, "Total shares should increase by the amount deposited"
+        );
+        assertEq(
+            asset.balanceOf(address(vault)), beforeVaultBalance + amount, "Vault should have the asset after deposit"
+        );
+        assertEq(asset.balanceOf(bob), beforeBobBalance - amount, "Bob should not have the assets");
+        assertEq(vault.balanceOf(bob), beforeBobShares + shares, "Bob should have shares after deposit");
+
+        return shares;
+    }
+
+    function giveWBNB(address account, uint256 amount)public {
+        vm.deal(account, amount);
+        uint256 beforeBalance = IWBNB(MC.WBNB).balanceOf(account);
+        vm.prank(account);
+        IWBNB(MC.WBNB).deposit{value: amount}();
+
+        assertEq(IWBNB(MC.WBNB).balanceOf(account), beforeBalance + amount, "wbnb not sent");
+    }
+
+    function test_ynclisBNBk_deposit_success_syncEnabled() public {
+        uint256 amount = 1 ether;
+
+        giveWBNB(bob, amount);
+
+        vm.prank(ADMIN);
+        vault.setSyncDeposit(true);
+
+        IERC20 asset = IERC20(MC.WBNB);
+
+        uint256 beforeTotalAssets = vault.totalAssets();
+        uint256 beforeTotalShares = vault.totalSupply();
+        uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+        uint256 beforeBobBalance = asset.balanceOf(bob);
+        uint256 beforeBobShares = vault.balanceOf(bob);
+
+        uint256 previewShares = vault.previewDepositAsset(MC.WBNB, amount);
+
+        vm.prank(bob);
+        asset.approve(address(vault), amount);
+
+        // Test the deposit function
+        vm.prank(bob);
+        uint256 shares = vault.depositAsset(MC.WBNB, amount, bob);
+
+        vault.processAccounting();
+
+        assertEq(previewShares, shares, "Preview shares should be equal to shares");
+
+        uint256 assetsInBNB = vault.convertToAssets(shares);
+
+        assertEq(
+            vault.totalSupply(), beforeTotalShares + shares, "Total shares should increase by the amount deposited"
+        );
+        assertEq(asset.balanceOf(bob), beforeBobBalance - amount, "Bob should not have the assets");
+        assertEq(vault.balanceOf(bob), beforeBobShares + shares, "Bob should have shares after deposit");
+
+        address clisBNBAsset = IKernelConfig(stakerGateway.getConfig()).getClisBnbAddress();
+        
+        assertEq(stakerGateway.balanceOf(clisBNBAsset, address(vault)), amount, "vault should have shares after deposit");
     }
 }

@@ -3,17 +3,19 @@ pragma solidity ^0.8.24;
 
 import {KernelStrategy} from "./KernelStrategy.sol";
 import {IERC20, Math, SafeERC20} from "lib/yieldnest-vault/src/Common.sol";
-import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
+
 import {IWBNB} from "src/interface/external/IWBNB.sol";
+import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 contract KernelClisStrategy is KernelStrategy {
     error InvalidDepositAmount(uint256 amount, uint256 amountDesired);
-     /**
+    /**
      * @notice Initializes the vault.
      * @param admin The address of the admin.
      * @param name The name of the vault.
      * @param symbol The symbol of the vault.
      */
+
     function initialize(address admin, string memory name, string memory symbol, uint8 decimals) external initializer {
         if (admin == address(0)) {
             revert ZeroAddress();
@@ -29,7 +31,7 @@ contract KernelClisStrategy is KernelStrategy {
         vaultStorage.decimals = decimals;
     }
 
-        /**
+    /**
      * @notice Deposits a given amount of assets and assigns the equivalent amount of shares to the receiver.
      * @param assets The amount of assets to deposit.
      * @param receiver The address of the receiver.
@@ -43,7 +45,6 @@ contract KernelClisStrategy is KernelStrategy {
         _deposit(asset(), _msgSender(), receiver, assets, shares, baseAssets);
         return shares;
     }
-
 
     /**
      * @notice Internal function to handle deposits.
@@ -74,13 +75,15 @@ contract KernelClisStrategy is KernelStrategy {
         SafeERC20.safeTransferFrom(IERC20(asset_), caller, address(this), assets);
         _mint(receiver, shares);
 
-        // unwrap WBNB
-        IWBNB(asset()).withdraw(assets);
-
         StrategyStorage storage strategyStorage = _getStrategyStorage();
+
+        // if sync deposit is false we keep the WBNB wrapped and unwrap it with the processor
 
         if (strategyStorage.syncDeposit) {
             SafeERC20.safeIncreaseAllowance(IERC20(asset_), address(strategyStorage.stakerGateway), assets);
+
+            // unwrap WBNB
+            IWBNB(asset()).withdraw(assets);
 
             // TODO: fix referralId
             string memory referralId = "";
@@ -134,7 +137,7 @@ contract KernelClisStrategy is KernelStrategy {
         uint256 vaultBalance = IERC20(asset_).balanceOf(address(this));
 
         StrategyStorage storage strategyStorage = _getStrategyStorage();
-        
+
         if (vaultBalance < assets && strategyStorage.syncWithdraw) {
             // TODO: fix referralId
             string memory referralId = "";
@@ -150,5 +153,4 @@ contract KernelClisStrategy is KernelStrategy {
 
         emit WithdrawAsset(caller, receiver, owner, asset_, assets, shares);
     }
-
 }
