@@ -20,6 +20,12 @@ library MainnetContracts {
     address public constant SLISBNB = 0xB0b84D294e0C75A6abe60171b70edEb2EFd14A1B;
     address public constant BNBX = 0x1bdd3Cf7F79cfB8EdbB955f20ad99211551BA275;
 
+    // btc tokens
+
+    address public constant BTCB = 0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c;
+    address public constant SOLVBTC = 0x4aae823a6a0b376De6A78e74eCC5b079d38cBCf7;
+    address public constant SOLVBTC_BNN = 0x1346b618dC92810EC74163e4c27004c921D446a5;
+
     address public constant CLISBNB = 0x4b30fcAA7945fE9fDEFD2895aae539ba102Ed6F6;
 
     // stake managers

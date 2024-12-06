@@ -13,19 +13,15 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 contract KernelRateProvider is BaseKernelRateProvider {
     function getRate(address asset) public view override returns (uint256) {
-        if (asset == MC.WBNB) {
+        if (asset == MC.BTCB) {
             return 1e18;
         }
 
-        if (asset == MC.BNBX) {
-            return IBNBXStakeManagerV2(MC.BNBX_STAKE_MANAGER).convertBnbXToBnb(1e18);
+        if (asset == MC.SOLVBTC) {
+            return 1e18;
         }
 
-        if (asset == MC.SLISBNB) {
-            return ISlisBnbStakeManager(MC.SLIS_BNB_STAKE_MANAGER).convertSnBnbToBnb(1e18);
-        }
-
-        if (asset == MC.CLISBNB) {
+        if (asset == MC.SOLVBTC_BNN) {
             return 1e18;
         }
 
