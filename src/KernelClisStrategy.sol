@@ -6,7 +6,7 @@ import {IERC20, Math, SafeERC20} from "lib/yieldnest-vault/src/Common.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {IWBNB} from "src/interface/external/IWBNB.sol";
 
-contract ynclisBNBk is KernelStrategy {
+contract KernelClisStrategy is KernelStrategy {
     error InvalidDepositAmount(uint256 amount, uint256 amountDesired);
      /**
      * @notice Initializes the vault.
@@ -35,7 +35,7 @@ contract ynclisBNBk is KernelStrategy {
      * @param receiver The address of the receiver.
      * @return uint256 The equivalent amount of shares.
      */
-    function deposit(uint256 assets, address receiver) public virtual nonReentrant returns (uint256) {
+    function deposit(uint256 assets, address receiver) public override nonReentrant returns (uint256) {
         if (paused()) {
             revert Paused();
         }
@@ -124,7 +124,7 @@ contract ynclisBNBk is KernelStrategy {
         address owner,
         uint256 assets,
         uint256 shares
-    ) internal onlyRole(ALLOCATOR_ROLE) {
+    ) internal override onlyRole(ALLOCATOR_ROLE) {
         VaultStorage storage vaultStorage = _getVaultStorage();
         vaultStorage.totalAssets -= assets;
         if (caller != owner) {
@@ -138,10 +138,10 @@ contract ynclisBNBk is KernelStrategy {
         if (vaultBalance < assets && strategyStorage.syncWithdraw) {
             // TODO: fix referralId
             string memory referralId = "";
-            uint256 unstakedAmount = IStakerGateway(strategyStorage.stakerGateway).unstakeClisBNB(assets, referralId);
+            IStakerGateway(strategyStorage.stakerGateway).unstakeClisBNB(assets, referralId);
 
             //wrap native token
-            IWBNB(asset()).deposit{value: unstakedAmount}();
+            IWBNB(asset()).deposit{value: assets}();
         }
 
         SafeERC20.safeTransfer(IERC20(asset_), receiver, assets);
@@ -151,48 +151,4 @@ contract ynclisBNBk is KernelStrategy {
         emit WithdrawAsset(caller, receiver, owner, asset_, assets, shares);
     }
 
-    /**
-     * @notice Internal function to get the vault storage.
-     * @return $ The vault storage.
-     */
-    function _getStrategyStorage() internal pure virtual returns (StrategyStorage storage $) {
-        assembly {
-            $.slot := 0x0ef3e973c65e9ac117f6f10039e07687b1619898ed66fe088b0fab5f5dc83d88
-        }
-    }
-
-    /**
-     * @notice Sets the staker gateway address.
-     * @param stakerGateway The address of the staker gateway.
-     */
-    function setStakerGateway(address stakerGateway) external onlyRole(STRATEGY_MANAGER_ROLE) {
-        if (stakerGateway == address(0)) revert ZeroAddress();
-
-        StrategyStorage storage strategyStorage = _getStrategyStorage();
-        strategyStorage.stakerGateway = stakerGateway;
-
-        emit SetStakerGateway(stakerGateway);
-    }
-
-    /**
-     * @notice Sets the direct deposit flag.
-     * @param syncDeposit The flag.
-     */
-    function setSyncDeposit(bool syncDeposit) external onlyRole(STRATEGY_MANAGER_ROLE) {
-        StrategyStorage storage strategyStorage = _getStrategyStorage();
-        strategyStorage.syncDeposit = syncDeposit;
-
-        emit SetSyncDeposit(syncDeposit);
-    }
-
-    /**
-     * @notice Sets the direct withdraw flag.
-     * @param syncWithdraw The flag.
-     */
-    function setSyncWithdraw(bool syncWithdraw) external onlyRole(STRATEGY_MANAGER_ROLE) {
-        StrategyStorage storage strategyStorage = _getStrategyStorage();
-        strategyStorage.syncWithdraw = syncWithdraw;
-
-        emit SetSyncWithdraw(syncWithdraw);
-    }
 }
