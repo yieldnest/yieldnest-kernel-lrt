@@ -380,18 +380,7 @@ contract KernelStrategy is Vault {
         virtual
         onlyRole(ASSET_MANAGER_ROLE)
     {
-        if (asset_ == address(0)) {
-            revert ZeroAddress();
-        }
-        AssetStorage storage assetStorage = _getAssetStorage();
-        uint256 index = assetStorage.list.length;
-        if (index > 0 && assetStorage.assets[asset_].index != 0) {
-            revert DuplicateAsset(asset_);
-        }
-        assetStorage.assets[asset_] = AssetParams({active: active_, index: index, decimals: decimals_});
-        assetStorage.list.push(asset_);
-
-        emit NewAsset(asset_, decimals_, index);
+        _addAsset(asset_, decimals_, active_);
     }
 
     /**
