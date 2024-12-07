@@ -12,6 +12,9 @@ interface IContracts {
 
     function STAKER_GATEWAY() external view returns (address);
     function CLISBNB() external view returns (address);
+    function BTCB() external view returns (address);
+    function SOLVBTC() external view returns (address);
+    function SOLVBTC_BNN() external view returns (address);
 }
 
 library MainnetContracts {
@@ -74,6 +77,18 @@ contract ChapelContracts is IContracts {
     function CLISBNB() external pure override returns (address) {
         return MainnetContracts.CLISBNB;
     }
+
+    function BTCB() external pure override returns (address) {
+        return MainnetContracts.BTCB;
+    }
+
+    function SOLVBTC() external pure override returns (address) {
+        return MainnetContracts.SOLVBTC;
+    }
+
+    function SOLVBTC_BNN() external pure override returns (address) {
+        return MainnetContracts.SOLVBTC_BNN;
+    }
 }
 
 contract BscContracts is IContracts {
@@ -104,5 +119,17 @@ contract BscContracts is IContracts {
 
     function CLISBNB() external pure override returns (address) {
         return MainnetContracts.CLISBNB;
+    }
+
+    function BTCB() external pure override returns (address) {
+        return MainnetContracts.BTCB;
+    }
+
+    function SOLVBTC() external pure override returns (address) {
+        return MainnetContracts.SOLVBTC;
+    }
+
+    function SOLVBTC_BNN() external pure override returns (address) {
+        return MainnetContracts.SOLVBTC_BNN;
     }
 }
