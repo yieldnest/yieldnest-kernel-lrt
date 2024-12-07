@@ -11,7 +11,7 @@ import {BaseKernelRateProvider} from "./BaseKernelRateProvider.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
-contract KernelRateProvider is BaseKernelRateProvider {
+contract BNBRateProvider is BaseKernelRateProvider {
     function getRate(address asset) public view override returns (uint256) {
         if (asset == MC.WBNB) {
             return 1e18;

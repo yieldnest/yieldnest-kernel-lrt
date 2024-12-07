@@ -11,7 +11,7 @@ import {VaultUtils} from "script/VaultUtils.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {MigratedKernelStrategy} from "src/MigratedKernelStrategy.sol";
-import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
+import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
@@ -28,7 +28,7 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
 
     KernelStrategy public vault;
 
-    KernelRateProvider public rateProvider;
+    BNBRateProvider public rateProvider;
 
     error UnsupportedChain();
     error InvalidSender();
@@ -48,7 +48,7 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
 
         vm.startBroadcast();
 
-        rateProvider = new KernelRateProvider();
+        rateProvider = new BNBRateProvider();
 
         deployMigrateVault();
 

@@ -9,7 +9,7 @@ import {MockSTETH} from "lib/yieldnest-vault/test/unit/mocks/MockST_ETH.sol";
 import {MockSlisBnbStakeManager} from "lib/yieldnest-vault/test/unit/mocks/MockSlisBnbStakeManager.sol";
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
-import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
+import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 import {MockStakerGateway} from "test/unit/mocks/MockStakerGateway.sol";
 
 contract EtchUtils is Test {
@@ -42,7 +42,7 @@ contract EtchUtils is Test {
     }
 
     function mockProvider() public {
-        KernelRateProvider provider = new KernelRateProvider();
+        BNBRateProvider provider = new BNBRateProvider();
         bytes memory code = address(provider).code;
         vm.etch(MC.PROVIDER, code);
     }

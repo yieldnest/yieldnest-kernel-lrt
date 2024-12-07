@@ -15,18 +15,18 @@ import {MainnetContracts as MC} from "script/Contracts.sol";
 import {IStakerGateway, KernelStrategy} from "src/KernelStrategy.sol";
 
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
-import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
+import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
 contract BufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
     KernelStrategy public vault;
-    KernelRateProvider public kernelProvider;
+    BNBRateProvider public kernelProvider;
 
     address public bob = address(0xB0B);
     IKernelVault public kernelVault;
 
     function setUp() public {
-        kernelProvider = new KernelRateProvider();
+        kernelProvider = new BNBRateProvider();
         etchProvider(address(kernelProvider));
 
         vault = deployBuffer();

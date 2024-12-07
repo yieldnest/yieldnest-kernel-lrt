@@ -21,18 +21,18 @@ import {VaultUtils} from "script/VaultUtils.sol";
 import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
-import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
+import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
 contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     KernelStrategy public vault;
-    KernelRateProvider public kernelProvider;
+    BNBRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
 
     address public bob = address(0xB0B);
 
     function setUp() public {
-        kernelProvider = new KernelRateProvider();
+        kernelProvider = new BNBRateProvider();
         etchProvider(address(kernelProvider));
 
         vault = deployMigrateVault();
