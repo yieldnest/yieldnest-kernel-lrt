@@ -9,6 +9,7 @@ interface IContracts {
     function YNBNBK() external view returns (address);
 
     function YNBNBX() external view returns (address);
+    function YNBTCX() external view returns (address);
 
     function STAKER_GATEWAY() external view returns (address);
     function CLISBNB() external view returns (address);
@@ -22,7 +23,7 @@ library MainnetContracts {
     address public constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     address public constant SLISBNB = 0xB0b84D294e0C75A6abe60171b70edEb2EFd14A1B;
     address public constant BNBX = 0x1bdd3Cf7F79cfB8EdbB955f20ad99211551BA275;
-
+    address public constant BTCX = 0x0000000000000000000000000000000000000000;
     // btc tokens
 
     address public constant BTCB = 0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c;
@@ -70,6 +71,10 @@ contract ChapelContracts is IContracts {
         return address(0);
     }
 
+    function YNBTCX() external pure override returns (address) {
+        return address(0);
+    }
+
     function STAKER_GATEWAY() external pure override returns (address) {
         return MainnetContracts.STAKER_GATEWAY;
     }
@@ -102,6 +107,10 @@ contract BscContracts is IContracts {
 
     function BNBX() external pure override returns (address) {
         return MainnetContracts.BNBX;
+    }
+
+    function YNBTCX() external pure override returns (address) {
+        return address(0);
     }
 
     function YNBNBK() external pure override returns (address) {
