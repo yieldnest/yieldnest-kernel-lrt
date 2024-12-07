@@ -4,13 +4,10 @@ pragma solidity ^0.8.24;
 import {Script} from "lib/forge-std/src/Script.sol";
 
 import {BscActors, ChapelActors, IActors} from "script/Actors.sol";
-import {MainnetContracts as MC} from "script/Contracts.sol";
 import {BscContracts, ChapelContracts, IContracts} from "script/Contracts.sol";
-import {ProxyUtils} from "script/ProxyUtils.sol";
 import {VaultUtils} from "script/VaultUtils.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
-import {MigratedKernelStrategy} from "src/MigratedKernelStrategy.sol";
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
@@ -18,8 +15,8 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-// FOUNDRY_PROFILE=mainnet forge script DeployBTCStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
-contract DeployBTCStrategy is Script, VaultUtils {
+// FOUNDRY_PROFILE=mainnet forge script DeployYnBTCkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
+contract DeployYnBTCkStrategy is Script, VaultUtils {
     IActors public actors;
 
     IContracts public contracts;
@@ -57,13 +54,7 @@ contract DeployBTCStrategy is Script, VaultUtils {
         KernelStrategy implementation = new KernelStrategy();
 
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector,
-            actors.ADMIN(),
-            "YieldNest Restaked BTC - Kernel",
-            "ynBTCk",
-            18,
-            0,
-            false
+            KernelStrategy.initialize.selector, msg.sender, "YieldNest Restaked BTC - Kernel", "ynBTCk", 18, 0, false
         );
 
         TransparentUpgradeableProxy proxy =
@@ -103,13 +94,22 @@ contract DeployBTCStrategy is Script, VaultUtils {
         // set provider
         vault_.setProvider(address(rateProvider));
 
-        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.BTCB()), false);
-        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.SOLVBTC()), false);
-        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.SOLVBTC_BNN()), false);
+        vault_.addAsset(contracts.BTCB(), true);
+        vault_.addAsset(contracts.SOLVBTC(), true);
+        vault_.addAsset(contracts.SOLVBTC_BNN(), true);
 
-        setApprovalRule(vault_, contracts.SLISBNB(), contracts.STAKER_GATEWAY());
+        IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
+        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.BTCB()), 18, false);
+        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.SOLVBTC()), 18, false);
+        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.SOLVBTC_BNN()), 18, false);
+
+        setApprovalRule(vault_, contracts.BTCB(), contracts.STAKER_GATEWAY());
         setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.BTCB());
+
+        setApprovalRule(vault_, contracts.SOLVBTC(), contracts.STAKER_GATEWAY());
         setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.SOLVBTC());
+
+        setApprovalRule(vault_, contracts.SOLVBTC_BNN(), contracts.STAKER_GATEWAY());
         setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.SOLVBTC_BNN());
 
         vault_.unpause();

@@ -4,31 +4,27 @@ pragma solidity ^0.8.24;
 import {Script} from "lib/forge-std/src/Script.sol";
 
 import {BscActors, ChapelActors, IActors} from "script/Actors.sol";
-import {MainnetContracts as MC} from "script/Contracts.sol";
 import {BscContracts, ChapelContracts, IContracts} from "script/Contracts.sol";
-import {ProxyUtils} from "script/ProxyUtils.sol";
 import {VaultUtils} from "script/VaultUtils.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
-import {MigratedKernelStrategy} from "src/MigratedKernelStrategy.sol";
-import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
+import {KernelStrategy} from "src/KernelStrategy.sol";
+import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
-import {
-    ITransparentUpgradeableProxy,
-    ProxyAdmin
-} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {TransparentUpgradeableProxy} from
+    "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-// FOUNDRY_PROFILE=mainnet forge script DeployMigrateKernelStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
-contract DeployMigrateKernelStrategy is Script, VaultUtils {
+// FOUNDRY_PROFILE=mainnet forge script DeployYnWBNBkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
+contract DeployYnWBNBkStrategy is Script, VaultUtils {
     IActors public actors;
 
     IContracts public contracts;
 
     KernelStrategy public vault;
 
-    KernelRateProvider public rateProvider;
+    BNBRateProvider public rateProvider;
 
     error UnsupportedChain();
     error InvalidSender();
@@ -48,49 +44,25 @@ contract DeployMigrateKernelStrategy is Script, VaultUtils {
 
         vm.startBroadcast();
 
-        rateProvider = new KernelRateProvider();
+        rateProvider = new BNBRateProvider();
 
-        deployMigrateVault();
+        deploy();
 
         vm.stopBroadcast();
     }
 
-    function deployMigrateVault() internal returns (KernelStrategy) {
-        address vaultAddress = contracts.YNBNBK();
+    function deploy() internal returns (KernelStrategy) {
+        KernelStrategy implementation = new KernelStrategy();
 
-        MigratedKernelStrategy implemention = new MigratedKernelStrategy();
-
-        ProxyAdmin proxyAdmin = ProxyAdmin(ProxyUtils.getProxyAdmin(vaultAddress));
-
-        if (proxyAdmin.owner() != msg.sender) {
-            revert InvalidSender();
-        }
-
-        // TODO: handle if proxy admin owner is a time lock controller
-
-        MigratedKernelStrategy.Asset[] memory assets = new MigratedKernelStrategy.Asset[](3);
-
-        assets[0] = MigratedKernelStrategy.Asset({asset: MC.WBNB, active: false});
-        assets[1] = MigratedKernelStrategy.Asset({asset: MC.SLISBNB, active: true});
-        assets[2] = MigratedKernelStrategy.Asset({asset: MC.BNBX, active: true});
-
-        proxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(vaultAddress),
-            address(implemention),
-            abi.encodeWithSelector(
-                MigratedKernelStrategy.initializeAndMigrate.selector,
-                msg.sender,
-                "YieldNest Restaked BNB - Kernel",
-                "ynBNBk",
-                18,
-                assets,
-                MC.STAKER_GATEWAY,
-                false,
-                true
-            )
+        bytes memory initData = abi.encodeWithSelector(
+            KernelStrategy.initialize.selector, msg.sender, "YieldNest WBNB Buffer - Kernel", "ynWBNBk", 18, 0, true
         );
 
-        vault = KernelStrategy(payable(address(vaultAddress)));
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(address(implementation), address(actors.ADMIN()), initData);
+
+        vault = KernelStrategy(payable(address(proxy)));
+
         configureVault(vault);
 
         return vault;
@@ -115,6 +87,7 @@ contract DeployMigrateKernelStrategy is Script, VaultUtils {
         vault_.grantRole(vault_.STRATEGY_MANAGER_ROLE(), actors.ADMIN());
 
         // set roles to msg.sender for now
+        vault_.grantRole(vault_.STRATEGY_MANAGER_ROLE(), msg.sender);
         vault_.grantRole(vault_.PROCESSOR_MANAGER_ROLE(), msg.sender);
         vault_.grantRole(vault_.PROVIDER_MANAGER_ROLE(), msg.sender);
         vault_.grantRole(vault_.ASSET_MANAGER_ROLE(), msg.sender);
@@ -123,17 +96,21 @@ contract DeployMigrateKernelStrategy is Script, VaultUtils {
         // set provider
         vault_.setProvider(address(rateProvider));
 
-        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.WBNB()), false);
-        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.SLISBNB()), false);
-        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.BNBX()), false);
+        vault_.setStakerGateway(contracts.STAKER_GATEWAY());
+        vault_.setSyncDeposit(true);
+        vault_.setSyncWithdraw(true);
 
-        setApprovalRule(vault_, contracts.SLISBNB(), contracts.STAKER_GATEWAY());
-        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.SLISBNB());
+        vault_.addAsset(contracts.WBNB(), true);
+        vault_.addAssetWithDecimals(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.WBNB()), 18, false);
+
+        setApprovalRule(vault_, contracts.WBNB(), contracts.STAKER_GATEWAY());
+        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.WBNB());
 
         vault_.unpause();
 
         vault_.processAccounting();
 
+        vault_.renounceRole(vault_.STRATEGY_MANAGER_ROLE(), msg.sender);
         vault_.renounceRole(vault_.DEFAULT_ADMIN_ROLE(), msg.sender);
         vault_.renounceRole(vault_.PROCESSOR_MANAGER_ROLE(), msg.sender);
         vault_.renounceRole(vault_.PROVIDER_MANAGER_ROLE(), msg.sender);

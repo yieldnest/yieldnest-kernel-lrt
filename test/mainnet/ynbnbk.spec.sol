@@ -21,30 +21,30 @@ import {VaultUtils} from "script/VaultUtils.sol";
 import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
-import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
+import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
 contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     KernelStrategy public vault;
-    KernelRateProvider public kernelProvider;
+    BNBRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
 
     address public bob = address(0xB0B);
 
     function setUp() public {
-        kernelProvider = new KernelRateProvider();
+        kernelProvider = new BNBRateProvider();
         etchProvider(address(kernelProvider));
 
         vault = deployMigrateVault();
 
         stakerGateway = IStakerGateway(MC.STAKER_GATEWAY);
-        vm.label(MC.STAKER_GATEWAY, "staker gateway");
-        vm.label(address(vault), "kernel Strategy");
-        vm.label(address(kernelProvider), "kernel strategy provider");
+        vm.label(MC.STAKER_GATEWAY, "kernel staker gateway");
+        vm.label(address(vault), "kernel strategy");
+        vm.label(address(kernelProvider), "kernel rate provider");
     }
 
     function deployMigrateVault() internal returns (KernelStrategy) {
-        MigratedKernelStrategy migrationVault = MigratedKernelStrategy(payable(MC.YNBNBk));
+        MigratedKernelStrategy migrationVault = MigratedKernelStrategy(payable(MC.YNBNBK));
 
         uint256 previousTotalAssets = migrationVault.totalAssets();
 
@@ -56,13 +56,13 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
 
         MigratedKernelStrategy implemention = new MigratedKernelStrategy();
 
-        ProxyAdmin proxyAdmin = ProxyAdmin(MC.YNBNBk_PROXY_ADMIN);
+        ProxyAdmin proxyAdmin = ProxyAdmin(MC.YNBNBK_PROXY_ADMIN);
 
         vm.prank(proxyAdmin.owner());
 
         vm.expectRevert(Initializable.InvalidInitialization.selector);
         proxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(MC.YNBNBk),
+            ITransparentUpgradeableProxy(MC.YNBNBK),
             address(implemention),
             abi.encodeWithSelector(
                 KernelStrategy.initialize.selector,
@@ -84,7 +84,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         vm.prank(proxyAdmin.owner());
 
         proxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(MC.YNBNBk),
+            ITransparentUpgradeableProxy(MC.YNBNBK),
             address(implemention),
             abi.encodeWithSelector(
                 MigratedKernelStrategy.initializeAndMigrate.selector,
@@ -94,10 +94,10 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
                 18,
                 assets,
                 MC.STAKER_GATEWAY,
-                false,
-                true,
-                0,
-                true
+                false, // sync deposit
+                true, // sync withdraw
+                0, // base fee
+                true // count native assets
             )
         );
 
@@ -248,10 +248,10 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
 
     function test_Vault_ynBNBk_view_functions() public view {
         bool syncDeposit = vault.getSyncDeposit();
-        assertFalse(syncDeposit, "SyncDeposit should be true");
+        assertFalse(syncDeposit, "SyncDeposit should be false");
 
         bool syncWithdraw = vault.getSyncWithdraw();
-        assertTrue(syncWithdraw, "SyncWithdraw should be false");
+        assertTrue(syncWithdraw, "SyncWithdraw should be true");
 
         address strategyGateway = vault.getStakerGateway();
         assertEq(strategyGateway, MC.STAKER_GATEWAY, "incorrect staker gateway");

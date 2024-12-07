@@ -12,17 +12,17 @@ import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 
-import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
+import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 
 import {VaultUtils} from "script/VaultUtils.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
 contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
-    KernelRateProvider public kernelProvider;
+    BNBRateProvider public kernelProvider;
     KernelStrategy public vault;
 
-    function deploy() public returns (KernelStrategy, KernelRateProvider) {
-        kernelProvider = new KernelRateProvider();
+    function deploy() public returns (KernelStrategy, BNBRateProvider) {
+        kernelProvider = new BNBRateProvider();
         etchProvider(address(kernelProvider));
 
         KernelStrategy implementation = new KernelStrategy();
