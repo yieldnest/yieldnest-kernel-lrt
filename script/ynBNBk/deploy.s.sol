@@ -86,6 +86,8 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
                 assets,
                 MC.STAKER_GATEWAY,
                 false,
+                true,
+                0,
                 true
             )
         );
@@ -123,9 +125,9 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
         // set provider
         vault_.setProvider(address(rateProvider));
 
-        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.WBNB()), false);
-        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.SLISBNB()), false);
-        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.BNBX()), false);
+        vault_.addAssetWithDecimals(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.WBNB()), 18, false);
+        vault_.addAssetWithDecimals(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.SLISBNB()), 18, false);
+        vault_.addAssetWithDecimals(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.BNBX()), 18, false);
 
         setApprovalRule(vault_, contracts.SLISBNB(), contracts.STAKER_GATEWAY());
         setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.SLISBNB());
