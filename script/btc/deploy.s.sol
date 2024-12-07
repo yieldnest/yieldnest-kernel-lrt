@@ -97,15 +97,23 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
         // set provider
         vault_.setProvider(address(rateProvider));
 
+        vault_.addAsset(contracts.BTCB(), true);
+        vault_.addAsset(contracts.SOLVBTC(), true);
+        vault_.addAsset(contracts.SOLVBTC_BNN(), true);
+
         vault_.addAssetWithDecimals(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.BTCB()), 18, false);
         vault_.addAssetWithDecimals(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.SOLVBTC()), 18, false);
         vault_.addAssetWithDecimals(
             IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.SOLVBTC_BNN()), 18, false
         );
 
-        setApprovalRule(vault_, contracts.SLISBNB(), contracts.STAKER_GATEWAY());
+        setApprovalRule(vault_, contracts.BTCB(), contracts.STAKER_GATEWAY());
         setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.BTCB());
+
+        setApprovalRule(vault_, contracts.SOLVBTC(), contracts.STAKER_GATEWAY());
         setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.SOLVBTC());
+
+        setApprovalRule(vault_, contracts.SOLVBTC_BNN(), contracts.STAKER_GATEWAY());
         setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.SOLVBTC_BNN());
 
         vault_.unpause();

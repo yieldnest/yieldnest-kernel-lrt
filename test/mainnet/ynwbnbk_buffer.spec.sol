@@ -18,7 +18,7 @@ import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
-contract BufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
+contract YnWBNBkBufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
     KernelStrategy public vault;
     BNBRateProvider public kernelProvider;
 

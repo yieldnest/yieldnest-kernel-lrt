@@ -25,7 +25,7 @@ import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 import {IAccessControl} from "lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
 
 
-contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
+contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     KernelClisStrategy public vault;
     BNBRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
@@ -43,9 +43,9 @@ contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, 
 
         vault = deployClisBNBk();
 
-        vm.label(MC.STAKER_GATEWAY, "staker gateway");
-        vm.label(address(vault), "kernel Strategy");
-        vm.label(address(kernelProvider), "kernel strategy provider");
+        vm.label(MC.STAKER_GATEWAY, "kernel staker gateway");
+        vm.label(address(vault), "kernel strategy");
+        vm.label(address(kernelProvider), "kernel rate provider");
     }
 
     function deployClisBNBk() public returns (KernelClisStrategy _vault) {

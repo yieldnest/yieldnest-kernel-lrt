@@ -38,9 +38,9 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         vault = deployMigrateVault();
 
         stakerGateway = IStakerGateway(MC.STAKER_GATEWAY);
-        vm.label(MC.STAKER_GATEWAY, "staker gateway");
-        vm.label(address(vault), "kernel Strategy");
-        vm.label(address(kernelProvider), "kernel strategy provider");
+        vm.label(MC.STAKER_GATEWAY, "kernel staker gateway");
+        vm.label(address(vault), "kernel strategy");
+        vm.label(address(kernelProvider), "kernel rate provider");
     }
 
     function deployMigrateVault() internal returns (KernelStrategy) {
@@ -94,10 +94,10 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
                 18,
                 assets,
                 MC.STAKER_GATEWAY,
-                false,
-                true,
-                0,
-                true
+                false, // sync deposit
+                true, // sync withdraw
+                0, // base fee
+                true // count native assets
             )
         );
 
@@ -248,10 +248,10 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
 
     function test_Vault_ynBNBk_view_functions() public view {
         bool syncDeposit = vault.getSyncDeposit();
-        assertFalse(syncDeposit, "SyncDeposit should be true");
+        assertFalse(syncDeposit, "SyncDeposit should be false");
 
         bool syncWithdraw = vault.getSyncWithdraw();
-        assertTrue(syncWithdraw, "SyncWithdraw should be false");
+        assertTrue(syncWithdraw, "SyncWithdraw should be true");
 
         address strategyGateway = vault.getStakerGateway();
         assertEq(strategyGateway, MC.STAKER_GATEWAY, "incorrect staker gateway");
