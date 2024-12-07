@@ -18,8 +18,8 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-// FOUNDRY_PROFILE=mainnet forge script DeployBTCStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
-contract DeployBTCStrategy is Script, VaultUtils {
+// FOUNDRY_PROFILE=mainnet forge script DeployYnBTCkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
+contract DeployYnBTCkStrategy is Script, VaultUtils {
     IActors public actors;
 
     IContracts public contracts;

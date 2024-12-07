@@ -7,13 +7,13 @@ import {IBNBXStakeManagerV2} from "lib/yieldnest-vault/src/interface/external/st
 import {MainnetContracts as MC} from "script/Contracts.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
-import {IProvider, BNBRateProvider} from "src/module/BNBRateProvider.sol";
+import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 
 contract ProviderTest is Test {
-    IProvider public provider;
+    BNBRateProvider public provider;
 
     function setUp() public {
-        provider = IProvider(new BNBRateProvider());
+        provider = new BNBRateProvider();
     }
 
     function test_Provider_GetRateWBNB() public view {
