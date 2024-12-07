@@ -9,7 +9,7 @@ import {MainnetContracts as MC} from "script/Contracts.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 
-contract ProviderTest is Test {
+contract BNBProviderTest is Test {
     BNBRateProvider public provider;
 
     function setUp() public {
