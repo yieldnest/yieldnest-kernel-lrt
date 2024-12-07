@@ -92,9 +92,6 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         vault_.grantRole(vault_.PAUSER_ROLE(), PAUSER);
         vault_.grantRole(vault_.UNPAUSER_ROLE(), UNPAUSER);
 
-        // since we're not testing the max vault, we'll set the admin as the allocator role
-        vault_.grantRole(vault_.ALLOCATOR_ROLE(), address(bob));
-
         // set strategy manager to admin for now
         vault_.grantRole(vault_.STRATEGY_MANAGER_ROLE(), address(ADMIN));
 

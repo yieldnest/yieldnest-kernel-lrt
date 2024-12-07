@@ -65,4 +65,14 @@ contract KernelStrategyAdminUintTest is SetupKernelStrategy {
         vm.expectRevert();
         vault.setSyncWithdraw(true);
     }
+
+    function test_Vault_setHasAllocator() public {
+        vm.prank(ADMIN);
+        vault.setHasAllocator(true);
+        assertEq(vault.getHasAllocator(), true);
+
+        vm.prank(ADMIN);
+        vault.setHasAllocator(false);
+        assertEq(vault.getHasAllocator(), false);
+    }
 }

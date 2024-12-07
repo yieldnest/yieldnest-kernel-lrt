@@ -38,13 +38,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
         provider = new BNBRateProvider();
         KernelStrategy implementation = new KernelStrategy();
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector,
-            MainnetActors.ADMIN,
-            "YieldNest Restaked BNB - Kernel",
-            "ynWBNBk",
-            18,
-            0,
-            true
+            KernelStrategy.initialize.selector, ADMIN, "YieldNest Restaked BNB - Kernel", "ynWBNBk", 18, 0, true
         );
 
         TransparentUpgradeableProxy proxy =
@@ -76,6 +70,8 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
         vault.grantRole(vault.PROCESSOR_MANAGER_ROLE(), PROCESSOR_MANAGER);
         vault.grantRole(vault.PAUSER_ROLE(), PAUSER);
         vault.grantRole(vault.UNPAUSER_ROLE(), UNPAUSER);
+
+        vault.setHasAllocator(true);
 
         // set allocator to alice for testing
         vault.grantRole(vault.ALLOCATOR_ROLE(), address(alice));

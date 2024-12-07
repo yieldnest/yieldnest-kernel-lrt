@@ -24,8 +24,28 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
     }
 
     function test_KernelStrategy_deposit_unauthorized() public {
-        vm.prank(address(0x123456));
+        assertTrue(vault.getHasAllocator());
+
+        vm.startPrank(ADMIN);
+
+        vault.revokeRole(vault.ALLOCATOR_ROLE(), alice);
+
+        vm.stopPrank();
+
+        vm.prank(alice);
         vm.expectRevert();
+        vault.deposit(1 ether, alice);
+    }
+
+    function test_KernelStrategy_deposit_authorized_WhenHasNoAllocator() public {
+        assertTrue(vault.getHasAllocator());
+
+        vm.startPrank(ADMIN);
+        vault.setHasAllocator(false);
+        vault.revokeRole(vault.ALLOCATOR_ROLE(), alice);
+        vm.stopPrank();
+
+        vm.prank(alice);
         vault.deposit(1 ether, alice);
     }
 
