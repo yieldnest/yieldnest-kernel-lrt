@@ -1,3 +1,4 @@
+/* solhint-disable one-contract-per-file */
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
@@ -37,8 +38,8 @@ library MainnetContracts {
     address public constant SLIS_BNB_STAKE_MANAGER = 0x1adB950d8bB3dA4bE104211D5AB038628e477fE6;
 
     // bnb vault
-    address public constant YNBNBk = 0x304B5845b9114182ECb4495Be4C91a273b74B509;
-    address public constant YNBNBk_PROXY_ADMIN = 0xB92dBb0Eb889613f5E5B49d14b1F63a199BA7b18;
+    address public constant YNBNBK = 0x304B5845b9114182ECb4495Be4C91a273b74B509;
+    address public constant YNBNBK_PROXY_ADMIN = 0xB92dBb0Eb889613f5E5B49d14b1F63a199BA7b18;
     address public constant TIMELOCK = 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a;
 
     // kernel
@@ -63,7 +64,7 @@ contract ChapelContracts is IContracts {
     }
 
     function YNBNBK() external pure override returns (address) {
-        return MainnetContracts.YNBNBk;
+        return MainnetContracts.YNBNBK;
     }
 
     // TODO: Update with deployed YNBNBX
@@ -114,7 +115,7 @@ contract BscContracts is IContracts {
     }
 
     function YNBNBK() external pure override returns (address) {
-        return MainnetContracts.YNBNBk;
+        return MainnetContracts.YNBNBK;
     }
 
     // TODO: Update with deployed YNBNBX

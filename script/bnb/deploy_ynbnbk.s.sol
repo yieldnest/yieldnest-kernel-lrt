@@ -4,7 +4,6 @@ pragma solidity ^0.8.24;
 import {Script} from "lib/forge-std/src/Script.sol";
 
 import {BscActors, ChapelActors, IActors} from "script/Actors.sol";
-import {MainnetContracts as MC} from "script/Contracts.sol";
 import {BscContracts, ChapelContracts, IContracts} from "script/Contracts.sol";
 import {ProxyUtils} from "script/ProxyUtils.sol";
 import {VaultUtils} from "script/VaultUtils.sol";
@@ -70,9 +69,9 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
 
         MigratedKernelStrategy.Asset[] memory assets = new MigratedKernelStrategy.Asset[](3);
 
-        assets[0] = MigratedKernelStrategy.Asset({asset: MC.WBNB, active: false});
-        assets[1] = MigratedKernelStrategy.Asset({asset: MC.SLISBNB, active: true});
-        assets[2] = MigratedKernelStrategy.Asset({asset: MC.BNBX, active: true});
+        assets[0] = MigratedKernelStrategy.Asset({asset: contracts.WBNB(), active: false});
+        assets[1] = MigratedKernelStrategy.Asset({asset: contracts.SLISBNB(), active: true});
+        assets[2] = MigratedKernelStrategy.Asset({asset: contracts.BNBX(), active: true});
 
         proxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(vaultAddress),
@@ -84,7 +83,7 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
                 "ynBNBk",
                 18,
                 assets,
-                MC.STAKER_GATEWAY,
+                contracts.STAKER_GATEWAY(),
                 false,
                 true,
                 0,
@@ -125,9 +124,11 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
         // set provider
         vault_.setProvider(address(rateProvider));
 
-        vault_.addAssetWithDecimals(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.WBNB()), 18, false);
-        vault_.addAssetWithDecimals(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.SLISBNB()), 18, false);
-        vault_.addAssetWithDecimals(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.BNBX()), 18, false);
+        IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
+
+        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.WBNB()), 18, false);
+        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.SLISBNB()), 18, false);
+        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.BNBX()), 18, false);
 
         setApprovalRule(vault_, contracts.SLISBNB(), contracts.STAKER_GATEWAY());
         setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.SLISBNB());

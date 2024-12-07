@@ -44,7 +44,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     }
 
     function deployMigrateVault() internal returns (KernelStrategy) {
-        MigratedKernelStrategy migrationVault = MigratedKernelStrategy(payable(MC.YNBNBk));
+        MigratedKernelStrategy migrationVault = MigratedKernelStrategy(payable(MC.YNBNBK));
 
         uint256 previousTotalAssets = migrationVault.totalAssets();
 
@@ -56,13 +56,13 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
 
         MigratedKernelStrategy implemention = new MigratedKernelStrategy();
 
-        ProxyAdmin proxyAdmin = ProxyAdmin(MC.YNBNBk_PROXY_ADMIN);
+        ProxyAdmin proxyAdmin = ProxyAdmin(MC.YNBNBK_PROXY_ADMIN);
 
         vm.prank(proxyAdmin.owner());
 
         vm.expectRevert(Initializable.InvalidInitialization.selector);
         proxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(MC.YNBNBk),
+            ITransparentUpgradeableProxy(MC.YNBNBK),
             address(implemention),
             abi.encodeWithSelector(
                 KernelStrategy.initialize.selector,
@@ -84,7 +84,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         vm.prank(proxyAdmin.owner());
 
         proxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(MC.YNBNBk),
+            ITransparentUpgradeableProxy(MC.YNBNBK),
             address(implemention),
             abi.encodeWithSelector(
                 MigratedKernelStrategy.initializeAndMigrate.selector,

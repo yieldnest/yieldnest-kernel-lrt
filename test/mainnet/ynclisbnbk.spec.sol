@@ -13,8 +13,9 @@ import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 import {KernelClisStrategy} from "src/KernelClisStrategy.sol";
-import {KernelStrategy} from "src/KernelStrategy.sol";
 
+import {IAccessControl} from
+    "lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
 import {VaultUtils} from "script/VaultUtils.sol";
 import {IWBNB} from "src/interface/external/IWBNB.sol";
 import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
@@ -22,8 +23,6 @@ import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
-import {IAccessControl} from "lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
-
 
 contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     KernelClisStrategy public vault;
@@ -69,7 +68,6 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
     }
 
     function configureKernelClisStrategy(KernelClisStrategy vault_) public {
-
         vm.startPrank(ADMIN);
 
         vault_.grantRole(vault_.PROCESSOR_ROLE(), PROCESSOR);
@@ -96,12 +94,6 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
 
         vault_.addAsset(MC.WBNB, true);
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.CLISBNB), 18, false);
-
-        // set deposit rules
-        setDepositRule(KernelStrategy(payable(address(vault_))), MC.WBNB, address(vault_));
-
-        // set approval rules
-        setApprovalRule(KernelStrategy(payable(address(vault_))), address(vault_), MC.STAKER_GATEWAY);
 
         vault_.unpause();
 
@@ -138,7 +130,7 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
 
     function test_Buffer_Vault_deposit_without_allocator() public {
         uint256 amount = 0.5 ether;
-        
+
         address depositor = address(1241251261);
         // Give some WBNB
         giveWBNB(depositor, amount);
@@ -146,9 +138,7 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         vm.startPrank(depositor);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                depositor,
-                vault.ALLOCATOR_ROLE()
+                IAccessControl.AccessControlUnauthorizedAccount.selector, depositor, vault.ALLOCATOR_ROLE()
             )
         );
         vault.depositAsset(MC.WBNB, amount, depositor);
@@ -156,7 +146,7 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
 
     function test_Buffer_Vault_withdraw_without_allocator() public {
         uint256 amount = 0.5 ether;
-        
+
         address withdrawer = address(1241251261);
         // Give some shares
         giveWBNB(bob, amount);
@@ -168,9 +158,7 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         vm.startPrank(withdrawer);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                withdrawer,
-                vault.ALLOCATOR_ROLE()
+                IAccessControl.AccessControlUnauthorizedAccount.selector, withdrawer, vault.ALLOCATOR_ROLE()
             )
         );
         vault.withdrawAsset(MC.WBNB, amount, withdrawer, withdrawer);

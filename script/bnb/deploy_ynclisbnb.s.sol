@@ -8,22 +8,23 @@ import {BscContracts, ChapelContracts, IContracts} from "script/Contracts.sol";
 import {VaultUtils} from "script/VaultUtils.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
-import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
+import {KernelStrategy} from "src/KernelStrategy.sol";
+import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-// FOUNDRY_PROFILE=mainnet forge script DeployYnBTCkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
-contract DeployYnBTCkStrategy is Script, VaultUtils {
+// FOUNDRY_PROFILE=mainnet forge script DeployYnclisBNBkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
+contract DeployYnclisBNBkStrategy is Script, VaultUtils {
     IActors public actors;
 
     IContracts public contracts;
 
     KernelStrategy public vault;
 
-    BTCRateProvider public rateProvider;
+    BNBRateProvider public rateProvider;
 
     error UnsupportedChain();
     error InvalidSender();
@@ -43,18 +44,18 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
 
         vm.startBroadcast();
 
-        rateProvider = new BTCRateProvider();
+        rateProvider = new BNBRateProvider();
 
-        deployVault();
+        deploy();
 
         vm.stopBroadcast();
     }
 
-    function deployVault() internal returns (KernelStrategy) {
+    function deploy() internal returns (KernelStrategy) {
         KernelStrategy implementation = new KernelStrategy();
 
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector, msg.sender, "YieldNest Restaked BTC - Kernel", "ynBTCk", 18, 0, false
+            KernelStrategy.initialize.selector, msg.sender, "YieldNest WBNB Buffer - Kernel", "ynWBNBk", 18, 0, true
         );
 
         TransparentUpgradeableProxy proxy =
@@ -80,12 +81,13 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
         vault_.grantRole(vault_.UNPAUSER_ROLE(), actors.UNPAUSER());
 
         // set allocator to ynbnbx
-        vault_.grantRole(vault_.ALLOCATOR_ROLE(), contracts.YNBTCX());
+        vault_.grantRole(vault_.ALLOCATOR_ROLE(), contracts.YNBNBX());
 
         // set strategy manager to admin for now
         vault_.grantRole(vault_.STRATEGY_MANAGER_ROLE(), actors.ADMIN());
 
         // set roles to msg.sender for now
+        vault_.grantRole(vault_.STRATEGY_MANAGER_ROLE(), msg.sender);
         vault_.grantRole(vault_.PROCESSOR_MANAGER_ROLE(), msg.sender);
         vault_.grantRole(vault_.PROVIDER_MANAGER_ROLE(), msg.sender);
         vault_.grantRole(vault_.ASSET_MANAGER_ROLE(), msg.sender);
@@ -94,28 +96,19 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
         // set provider
         vault_.setProvider(address(rateProvider));
 
-        vault_.addAsset(contracts.BTCB(), true);
-        vault_.addAsset(contracts.SOLVBTC(), true);
-        vault_.addAsset(contracts.SOLVBTC_BNN(), true);
+        vault_.setStakerGateway(contracts.STAKER_GATEWAY());
+        vault_.setSyncDeposit(true);
+        vault_.setSyncWithdraw(true);
 
+        vault_.addAsset(contracts.WBNB(), true);
         IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
-        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.BTCB()), 18, false);
-        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.SOLVBTC()), 18, false);
-        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.SOLVBTC_BNN()), 18, false);
-
-        setApprovalRule(vault_, contracts.BTCB(), contracts.STAKER_GATEWAY());
-        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.BTCB());
-
-        setApprovalRule(vault_, contracts.SOLVBTC(), contracts.STAKER_GATEWAY());
-        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.SOLVBTC());
-
-        setApprovalRule(vault_, contracts.SOLVBTC_BNN(), contracts.STAKER_GATEWAY());
-        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.SOLVBTC_BNN());
+        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.CLISBNB()), 18, false);
 
         vault_.unpause();
 
         vault_.processAccounting();
 
+        vault_.renounceRole(vault_.STRATEGY_MANAGER_ROLE(), msg.sender);
         vault_.renounceRole(vault_.DEFAULT_ADMIN_ROLE(), msg.sender);
         vault_.renounceRole(vault_.PROCESSOR_MANAGER_ROLE(), msg.sender);
         vault_.renounceRole(vault_.PROVIDER_MANAGER_ROLE(), msg.sender);
