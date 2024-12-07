@@ -20,8 +20,8 @@ import {
     ProxyAdmin
 } from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-// FOUNDRY_PROFILE=mainnet forge script DeployMigrateKernelStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
-contract DeployMigrateKernelStrategy is Script, VaultUtils {
+// FOUNDRY_PROFILE=mainnet forge script DeployYnBNBkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
+contract DeployYnBNBkStrategy is Script, VaultUtils {
     IActors public actors;
 
     IContracts public contracts;
