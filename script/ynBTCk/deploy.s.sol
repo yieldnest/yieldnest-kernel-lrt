@@ -57,13 +57,7 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
         KernelStrategy implementation = new KernelStrategy();
 
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector,
-            actors.ADMIN(),
-            "YieldNest Restaked BTC - Kernel",
-            "ynBTCk",
-            18,
-            0,
-            false
+            KernelStrategy.initialize.selector, msg.sender, "YieldNest Restaked BTC - Kernel", "ynBTCk", 18, 0, false
         );
 
         TransparentUpgradeableProxy proxy =
@@ -103,9 +97,11 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
         // set provider
         vault_.setProvider(address(rateProvider));
 
-        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.BTCB()), false);
-        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.SOLVBTC()), false);
-        vault_.addAsset(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.SOLVBTC_BNN()), false);
+        vault_.addAssetWithDecimals(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.BTCB()), 18, false);
+        vault_.addAssetWithDecimals(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.SOLVBTC()), 18, false);
+        vault_.addAssetWithDecimals(
+            IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.SOLVBTC_BNN()), 18, false
+        );
 
         setApprovalRule(vault_, contracts.SLISBNB(), contracts.STAKER_GATEWAY());
         setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.BTCB());
