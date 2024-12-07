@@ -71,6 +71,7 @@ contract BufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
         vault_.grantRole(vault_.PAUSER_ROLE(), PAUSER);
         vault_.grantRole(vault_.UNPAUSER_ROLE(), UNPAUSER);
 
+        vault_.setHasAllocator(true);
         // set allocator to bob
         vault_.grantRole(vault_.ALLOCATOR_ROLE(), address(bob));
 

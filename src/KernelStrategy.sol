@@ -26,11 +26,13 @@ contract KernelStrategy is Vault {
         address stakerGateway;
         bool syncDeposit;
         bool syncWithdraw;
+        bool hasAllocators;
     }
 
     event SetStakerGateway(address stakerGateway);
     event SetSyncDeposit(bool syncDeposit);
     event SetSyncWithdraw(bool syncWithdraw);
+    event SetHasAllocator(bool hasAllocator);
 
     /**
      * @notice Initializes the vault.
@@ -89,6 +91,14 @@ contract KernelStrategy is Vault {
      */
     function getStakerGateway() public view returns (address stakerGateway) {
         return _getStrategyStorage().stakerGateway;
+    }
+
+    /**
+     * @notice Returns whether the strategy has allocators.
+     * @return hasAllocators bool.
+     */
+    function getHasAllocator() public view returns (bool hasAllocators) {
+        return _getStrategyStorage().hasAllocators;
     }
 
     /**
@@ -222,7 +232,7 @@ contract KernelStrategy is Vault {
         uint256 assets,
         uint256 shares,
         uint256 baseAssets
-    ) internal virtual override onlyRole(ALLOCATOR_ROLE) {
+    ) internal virtual override onlyAllocator {
         if (!_getAssetStorage().assets[asset_].active) {
             revert AssetNotActive();
         }
@@ -280,7 +290,7 @@ contract KernelStrategy is Vault {
         address owner,
         uint256 assets,
         uint256 shares
-    ) internal virtual onlyRole(ALLOCATOR_ROLE) {
+    ) internal virtual onlyAllocator {
         VaultStorage storage vaultStorage = _getVaultStorage();
         vaultStorage.totalAssets -= assets;
         if (caller != owner) {
@@ -349,6 +359,17 @@ contract KernelStrategy is Vault {
     }
 
     /**
+     * @notice Sets whether the strategy has an allocator.
+     * @param hasAllocators_ Whether the strategy has an allocator.
+     */
+    function setHasAllocator(bool hasAllocators_) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        StrategyStorage storage strategyStorage = _getStrategyStorage();
+        strategyStorage.hasAllocators = hasAllocators_;
+
+        emit SetHasAllocator(hasAllocators_);
+    }
+
+    /**
      * @notice Adds a new asset to the vault.
      * @param asset_ The address of the asset.
      * @param decimals_ The decimals of the asset.
@@ -371,5 +392,15 @@ contract KernelStrategy is Vault {
         assetStorage.list.push(asset_);
 
         emit NewAsset(asset_, decimals_, index);
+    }
+
+    /**
+     * @notice Modifier that checks if the caller has the allocator role.
+     */
+    modifier onlyAllocator() {
+        if (_getStrategyStorage().hasAllocators && !hasRole(ALLOCATOR_ROLE, msg.sender)) {
+            revert AccessControlUnauthorizedAccount(msg.sender, ALLOCATOR_ROLE);
+        }
+        _;
     }
 }
