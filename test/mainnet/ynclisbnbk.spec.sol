@@ -22,6 +22,8 @@ import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
+import {IAccessControl} from "lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
+
 
 contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     KernelClisStrategy public vault;
@@ -67,6 +69,7 @@ contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, 
     }
 
     function configureKernelClisStrategy(KernelClisStrategy vault_) public {
+
         vm.startPrank(ADMIN);
 
         vault_.grantRole(vault_.PROCESSOR_ROLE(), PROCESSOR);
@@ -76,6 +79,8 @@ contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, 
         vault_.grantRole(vault_.PROCESSOR_MANAGER_ROLE(), PROCESSOR_MANAGER);
         vault_.grantRole(vault_.PAUSER_ROLE(), PAUSER);
         vault_.grantRole(vault_.UNPAUSER_ROLE(), UNPAUSER);
+
+        vault_.setHasAllocator(true);
 
         // since we're not testing the max vault, we'll set the admin as the allocator role
         vault_.grantRole(vault_.ALLOCATOR_ROLE(), address(bob));
@@ -129,6 +134,47 @@ contract KernelClisStrategyTest is Test, AssertUtils, MainnetActors, EtchUtils, 
         vault.processor(targets, values, data);
 
         vault.processAccounting();
+    }
+
+    function test_Buffer_Vault_deposit_without_allocator() public {
+        uint256 amount = 0.5 ether;
+        
+        address depositor = address(1241251261);
+        // Give some WBNB
+        giveWBNB(depositor, amount);
+
+        vm.startPrank(depositor);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                depositor,
+                vault.ALLOCATOR_ROLE()
+            )
+        );
+        vault.depositAsset(MC.WBNB, amount, depositor);
+    }
+
+    function test_Buffer_Vault_withdraw_without_allocator() public {
+        uint256 amount = 0.5 ether;
+        
+        address withdrawer = address(1241251261);
+        // Give some shares
+        giveWBNB(bob, amount);
+        vm.startPrank(bob);
+        IERC20(MC.WBNB).approve(address(vault), amount);
+        vault.depositAsset(MC.WBNB, amount, withdrawer);
+        vm.stopPrank();
+
+        vm.startPrank(withdrawer);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                withdrawer,
+                vault.ALLOCATOR_ROLE()
+            )
+        );
+        vault.withdrawAsset(MC.WBNB, amount, withdrawer, withdrawer);
+        vm.stopPrank();
     }
 
     function depositIntoVault(address assetAddress, uint256 amount) internal returns (uint256) {

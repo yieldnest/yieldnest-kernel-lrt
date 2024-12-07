@@ -90,19 +90,4 @@ contract MigratedKernelStrategy is KernelStrategy {
             _addAsset(tempAsset.asset, decimals, tempAsset.active);
         }
     }
-
-    function _addAsset(address asset_, uint8 decimals_, bool active_) internal {
-        if (asset_ == address(0)) {
-            revert ZeroAddress();
-        }
-        AssetStorage storage assetStorage = _getAssetStorage();
-        uint256 index = assetStorage.list.length;
-        if (index > 0 && assetStorage.assets[asset_].index != 0) {
-            revert DuplicateAsset(asset_);
-        }
-        assetStorage.assets[asset_] = AssetParams({active: active_, index: index, decimals: decimals_});
-        assetStorage.list.push(asset_);
-
-        emit NewAsset(asset_, decimals_, index);
-    }
 }
