@@ -10,14 +10,23 @@ interface IActors {
     function EXECUTOR_1() external view returns (address);
     function EXECUTOR_2() external view returns (address);
 
+    /// @dev timelock
     function PROVIDER_MANAGER() external view returns (address);
+    /// @dev timelock
     function BUFFER_MANAGER() external view returns (address);
+    /// @dev timelock
     function ASSET_MANAGER() external view returns (address);
+    /// @dev timelock
     function PROCESSOR_MANAGER() external view returns (address);
+    /// @dev multisig
     function PAUSER() external view returns (address);
+    /// @dev multisig
     function UNPAUSER() external view returns (address);
+    /// @dev timelock
     function KERNEL_DEPENDENCY_MANAGER() external view returns (address);
+    /// @dev multisig
     function DEPOSIT_MANAGER() external view returns (address);
+    /// @dev multisig
     function ALLOCATOR_MANAGER() external view returns (address);
 }
 
