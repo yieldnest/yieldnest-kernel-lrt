@@ -48,7 +48,15 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
     error UnsupportedChain();
     error InvalidSender();
 
-    function run(bool createMultiSigTx) public {
+    function symbol() public pure returns (string memory) {
+        return "ynBNBk";
+    }
+
+    function run() public {
+        runWithOption(true);
+    }
+
+    function runWithOption(bool createMultiSigTx) public {
         if (block.chainid == 97) {
             ChapelActors _actors = new ChapelActors();
             actors = IActors(_actors);
@@ -62,8 +70,10 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
         }
 
         vm.startBroadcast();
+
         deployMigrateVault(createMultiSigTx);
         saveDeployment();
+
         vm.stopBroadcast();
     }
 
@@ -83,8 +93,8 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
             uint64 startingNonce = vm.getNonce(msg.sender);
 
             // predict addresses
-            rateProvider = computeCreateAddress(msg.sender, startingNonce);
-            implementation = computeCreateAddress(msg.sender, startingNonce + 1);
+            rateProvider = vm.computeCreateAddress(msg.sender, startingNonce);
+            implementation = vm.computeCreateAddress(msg.sender, startingNonce + 1);
 
             //create rate provider creation transaction
             bytes memory rateProviderCreationCode = type(BNBRateProvider).creationCode;
@@ -104,7 +114,7 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
                         MigratedKernelStrategy.initializeAndMigrate.selector,
                         msg.sender,
                         "YieldNest Restaked BNB - Kernel",
-                        "ynBNBk",
+                        symbol(),
                         18,
                         assets,
                         contracts.STAKER_GATEWAY(),
@@ -138,7 +148,7 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
                     MigratedKernelStrategy.initializeAndMigrate.selector,
                     msg.sender,
                     "YieldNest Restaked BNB - Kernel",
-                    "ynBNBk",
+                    symbol(),
                     18,
                     assets,
                     contracts.STAKER_GATEWAY(),
@@ -479,48 +489,43 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
         );
     }
 
+    // TODO: move this to a library or base script file and use it everywhere as required
     function saveDeployment() public {
         if (transactions.length > 0) {
-            vm.serializeAddress("ynBNBk", "deployer", msg.sender);
-            vm.serializeAddress("ynBNBk", "KernelStrategy", address(vault));
-            vm.serializeAddress("ynBNBk", "rateProvider", address(rateProvider));
-            vm.serializeAddress("ynBNBk", "rateProvider", address(implementation));
+            vm.serializeAddress(symbol(), "deployer", msg.sender);
+            vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
+            vm.serializeAddress(symbol(), "rateProvider", address(rateProvider));
+            vm.serializeAddress(symbol(), string.concat(symbol(), "-implementation"), address(implementation));
 
             address[] memory targets = new address[](transactions.length);
             uint256[] memory values = new uint256[](transactions.length);
             bytes[] memory datas = new bytes[](transactions.length);
+            string[] memory txs = new string[](transactions.length);
             for (uint256 i = 0; i < transactions.length; i++) {
                 targets[i] = transactions[i].target;
                 values[i] = transactions[i].value;
                 datas[i] = transactions[i].data;
-                // vm.serializeAddress(string(abi.encodePacked(i)), "target", transactions[i].target);
-                // vm.serializeUint(string(abi.encodePacked(i)), "value", transactions[i].value);
-                // string memory temp = vm.serializeBytes(string(abi.encodePacked(i)), "data", transactions[i].data);
-                // if(i == 0){
-                // transactionsJson = vm.serializeJson(string(abi.encodePacked(i)), temp);
-                // } else {
 
-                //        transactionsJson = vm.serializeJson(string(abi.encodePacked(i)),
-                //     string.concat(string(abi.encodePacked(transactionsJson)), string(abi.encodePacked(",")),
-                //     string(abi.encodePacked(vm.serializeJson(string(abi.encodePacked(i)), temp))))
-                // );
-                // }
+                vm.serializeAddress(string(abi.encodePacked(i)), "target", transactions[i].target);
+                vm.serializeUint(string(abi.encodePacked(i)), "value", transactions[i].value);
+                string memory temp = vm.serializeBytes(string(abi.encodePacked(i)), "data", transactions[i].data);
+
+                txs[i] = temp;
             }
-            // transactionsJson = vm.serializeString("ynBNBk", "transactions", string(abi.encodePacked(transactionsJson,
-            // string(abi.encodePacked("]")))));
-            vm.serializeAddress("ynBNBk", "targets", targets);
-            vm.serializeUint("ynBNBk", "values", values);
-            string memory outputJson = vm.serializeBytes("ynBNBk", "datas", datas);
-            // string memory outputJson = vm.serializeJson("ynBNBk", string(abi.encodePacked(transactionsJson,
-            // string(abi.encodePacked("]")))));
-            vm.writeJson(outputJson, string.concat("./deployments/ynBNBk-", Strings.toString(block.chainid), ".json"));
+            string memory jsonOutput = vm.serializeString(symbol(), "transactions", txs);
+            vm.writeJson(
+                jsonOutput, string.concat("./deployments/", symbol(), "-", Strings.toString(block.chainid), ".json")
+            );
         } else {
-            vm.serializeAddress("ynBNBk", "deployer", msg.sender);
-            vm.serializeAddress("ynBNBk", "KernelStrategy", address(vault));
-            vm.serializeAddress("ynBNBk", "rateProvider", address(rateProvider));
-            string memory jsonOutput = vm.serializeAddress("ynBNBk", "implementation", address(implementation));
+            vm.serializeAddress(symbol(), "deployer", msg.sender);
+            vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
+            vm.serializeAddress(symbol(), "rateProvider", address(rateProvider));
+            string memory jsonOutput =
+                vm.serializeAddress(symbol(), string.concat(symbol(), "-implementation"), address(implementation));
 
-            vm.writeJson(jsonOutput, string.concat("./deployments/ynBNBk-", Strings.toString(block.chainid), ".json"));
+            vm.writeJson(
+                jsonOutput, string.concat("./deployments/", symbol(), "-", Strings.toString(block.chainid), ".json")
+            );
         }
     }
 }

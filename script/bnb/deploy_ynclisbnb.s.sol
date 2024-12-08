@@ -15,6 +15,7 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {Strings} from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 
 // FOUNDRY_PROFILE=mainnet forge script DeployYnclisBNBkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
 contract DeployYnclisBNBkStrategy is Script, VaultUtils {
@@ -25,9 +26,14 @@ contract DeployYnclisBNBkStrategy is Script, VaultUtils {
     KernelStrategy public vault;
 
     BNBRateProvider public rateProvider;
+    KernelStrategy public implementation;
 
     error UnsupportedChain();
     error InvalidSender();
+
+    function symbol() public pure returns (string memory) {
+        return "ynclisBNBk";
+    }
 
     function run() public {
         if (block.chainid == 97) {
@@ -45,14 +51,14 @@ contract DeployYnclisBNBkStrategy is Script, VaultUtils {
         vm.startBroadcast();
 
         rateProvider = new BNBRateProvider();
-
         deploy();
+        saveDeployment();
 
         vm.stopBroadcast();
     }
 
     function deploy() internal returns (KernelStrategy) {
-        KernelStrategy implementation = new KernelStrategy();
+        implementation = new KernelStrategy();
 
         bytes memory initData = abi.encodeWithSelector(
             KernelStrategy.initialize.selector, msg.sender, "YieldNest WBNB Buffer - Kernel", "ynWBNBk", 18, 0, true
@@ -118,5 +124,17 @@ contract DeployYnclisBNBkStrategy is Script, VaultUtils {
         vault_.renounceRole(vault_.PROVIDER_MANAGER_ROLE(), msg.sender);
         vault_.renounceRole(vault_.ASSET_MANAGER_ROLE(), msg.sender);
         vault_.renounceRole(vault_.UNPAUSER_ROLE(), msg.sender);
+    }
+
+    function saveDeployment() internal {
+        vm.serializeAddress(symbol(), "deployer", msg.sender);
+        vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
+        vm.serializeAddress(symbol(), "rateProvider", address(rateProvider));
+        string memory jsonOutput =
+            vm.serializeAddress(symbol(), string.concat(symbol(), "-implementation"), address(implementation));
+
+        vm.writeJson(
+            jsonOutput, string.concat("./deployments/", symbol(), "-", Strings.toString(block.chainid), ".json")
+        );
     }
 }

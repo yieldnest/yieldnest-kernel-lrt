@@ -30,6 +30,10 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
     error UnsupportedChain();
     error InvalidSender();
 
+    function symbol() public pure returns (string memory) {
+        return "ynBTCk";
+    }
+
     function run() public {
         if (block.chainid == 97) {
             ChapelActors _actors = new ChapelActors();
@@ -50,15 +54,13 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
         vm.startBroadcast();
 
         rateProvider = new BTCRateProvider();
-
-        deployVault();
-
-        _saveDeployment();
+        deploy();
+        saveDeployment();
 
         vm.stopBroadcast();
     }
 
-    function deployVault() internal returns (KernelStrategy) {
+    function deploy() internal returns (KernelStrategy) {
         implementation = new KernelStrategy();
 
         bytes memory initData = abi.encodeWithSelector(
@@ -139,12 +141,15 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
         vault_.renounceRole(vault_.UNPAUSER_ROLE(), msg.sender);
     }
 
-    function _saveDeployment() internal {
-        vm.serializeAddress("ynBTCk", "deployer", msg.sender);
-        vm.serializeAddress("ynBTCk", "KernelStrategy", address(vault));
-        vm.serializeAddress("ynBTCk", "rateProvider", address(rateProvider));
-        string memory jsonOutput = vm.serializeAddress("ynBTCk", "implementation", address(implementation));
+    function saveDeployment() internal {
+        vm.serializeAddress(symbol(), "deployer", msg.sender);
+        vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
+        vm.serializeAddress(symbol(), "rateProvider", address(rateProvider));
+        string memory jsonOutput =
+            vm.serializeAddress(symbol(), string.concat(symbol(), "-implementation"), address(implementation));
 
-        vm.writeJson(jsonOutput, string.concat("./deployments/ynBTCk-", Strings.toString(block.chainid), ".json"));
+        vm.writeJson(
+            jsonOutput, string.concat("./deployments/", symbol(), "-", Strings.toString(block.chainid), ".json")
+        );
     }
 }
