@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {Script} from "lib/forge-std/src/Script.sol";
+import {Script, stdJson} from "lib/forge-std/src/Script.sol";
 
 import {BscActors, ChapelActors, IActors} from "script/Actors.sol";
 import {BscContracts, ChapelContracts, IContracts} from "script/Contracts.sol";
@@ -10,19 +10,21 @@ import {VaultUtils} from "script/VaultUtils.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 
-import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
-
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {Strings} from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
+import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 // FOUNDRY_PROFILE=mainnet forge script DeployYnBTCkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
 contract DeployYnBTCkStrategy is Script, VaultUtils {
+    using stdJson for string;
+
     IActors public actors;
 
     IContracts public contracts;
 
     KernelStrategy public vault;
-
+    KernelStrategy public implementation;
     BTCRateProvider public rateProvider;
 
     error UnsupportedChain();
@@ -41,17 +43,23 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
             contracts = IContracts(new BscContracts());
         }
 
+        if (block.chainid != 56 && block.chainid != 97) {
+            revert("Unsupported chain");
+        }
+
         vm.startBroadcast();
 
         rateProvider = new BTCRateProvider();
 
         deployVault();
 
+        _saveDeployment();
+
         vm.stopBroadcast();
     }
 
     function deployVault() internal returns (KernelStrategy) {
-        KernelStrategy implementation = new KernelStrategy();
+        implementation = new KernelStrategy();
 
         bytes memory initData = abi.encodeWithSelector(
             KernelStrategy.initialize.selector, msg.sender, "YieldNest Restaked BTC - Kernel", "ynBTCk", 18, 0, false
@@ -121,5 +129,14 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
         vault_.renounceRole(vault_.PROVIDER_MANAGER_ROLE(), msg.sender);
         vault_.renounceRole(vault_.ASSET_MANAGER_ROLE(), msg.sender);
         vault_.renounceRole(vault_.UNPAUSER_ROLE(), msg.sender);
+    }
+
+    function _saveDeployment() internal {
+        vm.serializeAddress("ynBTCk", "deployer", msg.sender);
+        vm.serializeAddress("ynBTCk", "KernelStrategy", address(vault));
+        vm.serializeAddress("ynBTCk", "rateProvider", address(rateProvider));
+        string memory jsonOutput = vm.serializeAddress("ynBTCk", "implementation", address(implementation));
+
+        vm.writeJson(jsonOutput, string.concat("./deployments/ynBTCk-", Strings.toString(block.chainid), ".json"));
     }
 }

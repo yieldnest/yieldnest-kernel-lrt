@@ -18,6 +18,10 @@ fork_block_number = 44550750
 evm_version = "cancun"
 solc_version = "0.8.24"
 max-line-length = 120
+  fs_permissions = [
+    { access = "read-write", path = "./deployments" },
+    { access = "read", path = "./" },
+  ]
 
 [profile.testnet]
 src = "src"
@@ -28,6 +32,10 @@ eth_rpc_url = "https://rpc.ankr.com/bsc_testnet_chapel"
 evm_version = "cancun"
 solc_version = "0.8.24"
 max-line-length = 120
+  fs_permissions = [
+    { access = "read-write", path = "./deployments" },
+    { access = "read", path = "./" },
+  ]
 
 
 [fmt]
