@@ -492,18 +492,20 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
                 // if(i == 0){
                 // transactionsJson = vm.serializeJson(string(abi.encodePacked(i)), temp);
                 // } else {
-                 
+
                 //        transactionsJson = vm.serializeJson(string(abi.encodePacked(i)),
                 //     string.concat(string(abi.encodePacked(transactionsJson)), string(abi.encodePacked(",")),
                 //     string(abi.encodePacked(vm.serializeJson(string(abi.encodePacked(i)), temp))))
                 // );
                 // }
             }
-            // transactionsJson = vm.serializeString("ynBNBk", "transactions", string(abi.encodePacked(transactionsJson, string(abi.encodePacked("]")))));
+            // transactionsJson = vm.serializeString("ynBNBk", "transactions", string(abi.encodePacked(transactionsJson,
+            // string(abi.encodePacked("]")))));
             vm.serializeAddress("ynBNBk", "targets", targets);
             vm.serializeUint("ynBNBk", "values", values);
             string memory outputJson = vm.serializeBytes("ynBNBk", "datas", datas);
-            // string memory outputJson = vm.serializeJson("ynBNBk", string(abi.encodePacked(transactionsJson, string(abi.encodePacked("]")))));
+            // string memory outputJson = vm.serializeJson("ynBNBk", string(abi.encodePacked(transactionsJson,
+            // string(abi.encodePacked("]")))));
             vm.writeJson(outputJson, string.concat("./deployments/ynBNBk-", Strings.toString(block.chainid), ".json"));
         } else {
             vm.serializeAddress("ynBNBk", "deployer", msg.sender);
