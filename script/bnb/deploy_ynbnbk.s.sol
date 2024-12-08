@@ -479,27 +479,31 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
             vm.serializeAddress("ynBNBk", "rateProvider", address(rateProvider));
             vm.serializeAddress("ynBNBk", "rateProvider", address(implementation));
 
-            // Add predicted addresses to JSON        // Add transactions array
-            string memory transactionsJson;
+            address[] memory targets = new address[](transactions.length);
+            uint256[] memory values = new uint256[](transactions.length);
+            bytes[] memory datas = new bytes[](transactions.length);
             for (uint256 i = 0; i < transactions.length; i++) {
-                vm.serializeAddress(string(abi.encodePacked(i)), "target", transactions[i].target);
-                vm.serializeUint(string(abi.encodePacked(i)), "value", transactions[i].value);
-                string memory temp = vm.serializeBytes(string(abi.encodePacked(i)), "data", transactions[i].data);
-                transactionsJson = string.concat(
-                    string(abi.encodePacked(transactionsJson)),
-                    string(abi.encodePacked(vm.serializeJson(string(abi.encodePacked(i)), temp)))
-                );
+                targets[i] = transactions[i].target;
+                values[i] = transactions[i].value;
+                datas[i] = transactions[i].data;
+                // vm.serializeAddress(string(abi.encodePacked(i)), "target", transactions[i].target);
+                // vm.serializeUint(string(abi.encodePacked(i)), "value", transactions[i].value);
+                // string memory temp = vm.serializeBytes(string(abi.encodePacked(i)), "data", transactions[i].data);
+                // if(i == 0){
+                // transactionsJson = vm.serializeJson(string(abi.encodePacked(i)), temp);
+                // } else {
+                 
+                //        transactionsJson = vm.serializeJson(string(abi.encodePacked(i)),
+                //     string.concat(string(abi.encodePacked(transactionsJson)), string(abi.encodePacked(",")),
+                //     string(abi.encodePacked(vm.serializeJson(string(abi.encodePacked(i)), temp))))
+                // );
+                // }
             }
-
-            // string memory transactionsArray;
-            // for(uint256 i; i< transactionsJson.length; i++){
-            // transactionsArray = vm.serializeJson("key2", transactionsJson);
-            // if(i < transactionsJson.length -1){
-            //     transactionsArray = string(abi.encodePacked(transactionsArray, ","));
-            // }
-            // }
-            // transactionsArray = string(abi.encodePacked(transactionsArray, "]"));
-            string memory outputJson = vm.serializeString("ynBNBk", "transactions", transactionsJson);
+            // transactionsJson = vm.serializeString("ynBNBk", "transactions", string(abi.encodePacked(transactionsJson, string(abi.encodePacked("]")))));
+            vm.serializeAddress("ynBNBk", "targets", targets);
+            vm.serializeUint("ynBNBk", "values", values);
+            string memory outputJson = vm.serializeBytes("ynBNBk", "datas", datas);
+            // string memory outputJson = vm.serializeJson("ynBNBk", string(abi.encodePacked(transactionsJson, string(abi.encodePacked("]")))));
             vm.writeJson(outputJson, string.concat("./deployments/ynBNBk-", Strings.toString(block.chainid), ".json"));
         } else {
             vm.serializeAddress("ynBNBk", "deployer", msg.sender);
