@@ -15,18 +15,18 @@ import {MainnetContracts as MC} from "script/Contracts.sol";
 import {IStakerGateway, KernelStrategy} from "src/KernelStrategy.sol";
 
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
-import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
+import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
-contract BufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
+contract YnWBNBkBufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
     KernelStrategy public vault;
-    KernelRateProvider public kernelProvider;
+    BNBRateProvider public kernelProvider;
 
     address public bob = address(0xB0B);
     IKernelVault public kernelVault;
 
     function setUp() public {
-        kernelProvider = new KernelRateProvider();
+        kernelProvider = new BNBRateProvider();
         etchProvider(address(kernelProvider));
 
         vault = deployBuffer();
@@ -71,15 +71,17 @@ contract BufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
         vault_.grantRole(vault_.PAUSER_ROLE(), PAUSER);
         vault_.grantRole(vault_.UNPAUSER_ROLE(), UNPAUSER);
 
-        vault_.setHasAllocator(true);
         // set allocator to bob
         vault_.grantRole(vault_.ALLOCATOR_ROLE(), address(bob));
 
         // set strategy manager to admin for now
-        vault_.grantRole(vault_.STRATEGY_MANAGER_ROLE(), address(ADMIN));
+        vault_.grantRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), ADMIN);
+        vault_.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), ADMIN);
+        vault_.grantRole(vault_.ALLOCATOR_MANAGER_ROLE(), ADMIN);
 
         vault_.setProvider(address(MC.PROVIDER));
 
+        vault_.setHasAllocator(true);
         vault_.setStakerGateway(MC.STAKER_GATEWAY);
         vault_.setSyncDeposit(true);
         vault_.setSyncWithdraw(true);

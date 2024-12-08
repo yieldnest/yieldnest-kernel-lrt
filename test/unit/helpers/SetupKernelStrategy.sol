@@ -12,7 +12,7 @@ import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
-import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
+import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 
 import {MockStakerGateway} from "../mocks/MockStakerGateway.sol";
 
@@ -22,7 +22,7 @@ import {EtchUtils} from "test/unit/helpers/EtchUtils.sol";
 
 contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     KernelStrategy public vault;
-    KernelRateProvider public provider;
+    BNBRateProvider public provider;
 
     WETH9 public wbnb;
     MockSTETH public slisbnb;
@@ -35,16 +35,10 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
 
     function deploy() public {
         mockAll();
-        provider = new KernelRateProvider();
+        provider = new BNBRateProvider();
         KernelStrategy implementation = new KernelStrategy();
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector,
-            MainnetActors.ADMIN,
-            "YieldNest Restaked BNB - Kernel",
-            "ynWBNBk",
-            18,
-            0,
-            true
+            KernelStrategy.initialize.selector, ADMIN, "YieldNest Restaked BNB - Kernel", "ynWBNBk", 18, 0, true
         );
 
         TransparentUpgradeableProxy proxy =
@@ -80,14 +74,18 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
         // set allocator to alice for testing
         vault.grantRole(vault.ALLOCATOR_ROLE(), address(alice));
 
-        // set strategy manager to admin for now
-        vault.grantRole(vault.STRATEGY_MANAGER_ROLE(), address(ADMIN));
+        vault.grantRole(vault.KERNEL_DEPENDENCY_MANAGER_ROLE(), ADMIN);
+        vault.grantRole(vault.DEPOSIT_MANAGER_ROLE(), ADMIN);
+        vault.grantRole(vault.ALLOCATOR_MANAGER_ROLE(), ADMIN);
 
         // set provider
         vault.setProvider(address(provider));
 
         // set staker gateway
         vault.setStakerGateway(address(mockGateway));
+
+        // set has allocator
+        vault.setHasAllocator(true);
 
         // by default, we don't sync deposits or withdraws
         // we set it for individual tests
