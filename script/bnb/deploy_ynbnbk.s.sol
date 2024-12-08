@@ -167,9 +167,6 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
         vault_.grantRole(vault_.PAUSER_ROLE(), actors.PAUSER());
         vault_.grantRole(vault_.UNPAUSER_ROLE(), actors.UNPAUSER());
 
-        // set allocator to ynbnbx
-        vault_.grantRole(vault_.ALLOCATOR_ROLE(), contracts.YNBNBX());
-
         // set strategy manager to admin for now
         vault_.grantRole(vault_.STRATEGY_MANAGER_ROLE(), actors.ADMIN());
 

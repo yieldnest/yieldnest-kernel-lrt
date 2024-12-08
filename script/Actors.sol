@@ -91,21 +91,21 @@ contract MainnetActors is IActors {
 }
 
 contract ChapelActors is IActors {
-    address public constant ADMIN = 0x0c099101d43e9094E4ae9bC2FC38f8b9875c23c5;
+    address public constant ADMIN = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
     address public constant UNAUTHORIZED = address(0);
 
-    address public constant PROPOSER_1 = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
-    address public constant PROPOSER_2 = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
+    address public constant PROPOSER_1 = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+    address public constant PROPOSER_2 = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
 
-    address public constant EXECUTOR_1 = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
-    address public constant EXECUTOR_2 = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
+    address public constant EXECUTOR_1 = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+    address public constant EXECUTOR_2 = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
 
-    address public constant PROVIDER_MANAGER = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
-    address public constant BUFFER_MANAGER = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
-    address public constant ASSET_MANAGER = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
-    address public constant PROCESSOR_MANAGER = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
-    address public constant PAUSER = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
-    address public constant UNPAUSER = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
+    address public constant PROVIDER_MANAGER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+    address public constant BUFFER_MANAGER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+    address public constant ASSET_MANAGER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+    address public constant PROCESSOR_MANAGER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+    address public constant PAUSER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+    address public constant UNPAUSER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
 }
 
 contract BscActors is IActors {

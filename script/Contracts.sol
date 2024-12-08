@@ -52,19 +52,44 @@ library MainnetContracts {
     address public constant BUFFER = address(987654321); // TODO: Update with deployed buffer
 }
 
+library TestnetContracts {
+    // tokens
+    address public constant WBNB = 0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd;
+    address public constant SLISBNB = 0xCc752dC4ae72386986d011c2B485be0DAd98C744;
+    address public constant BNBX = 0x6cd3f51A92d022030d6e75760200c051caA7152A;
+
+    // btc tokens
+    address public constant BTCB = 0x6ce8dA28E2f864420840cF74474eFf5fD80E65B8;
+    address public constant SOLVBTC = 0x1cF0e51005971c5B78b4A8feE419832CFCCD8cf9;
+    address public constant SOLVBTC_BNN = 0xB4618618b6Fcb61b72feD991AdcC344f43EE57Ad;
+
+    // TODO: Update with deployed contracts
+    address public constant CLISBNB = address(0);
+    address public constant YNBNBK = address(0);
+    address public constant YNBNBK_PROXY_ADMIN = address(0);
+    address public constant TIMELOCK = address(0);
+
+    address public constant STAKER_GATEWAY = 0x1A42ff0BA795F6d63A7F0060809F85A794E9f1Ae;
+    address public constant KERNEL_CONFIG = 0x4847C1E3683295f6ACa2e4f17Fe35d9Cd35b3FcB;
+    address public constant KERNEL_CONFIG_ADMIN = 0xea69CCFe55Be6e68Af1164B8da2E23cF5f62808c;
+    address public constant ASSET_REGISTRY = 0xb63809662374ce93FC05d18Bd60c17d3eF184203;
+
+    address public constant PROVIDER = address(0);
+}
+
 contract ChapelContracts is IContracts {
     address public constant SLISBNB = 0x80815ee920Bd9d856562633C36D3eB0E43cb15e2;
 
     function WBNB() external pure override returns (address) {
-        return MainnetContracts.WBNB;
+        return TestnetContracts.WBNB;
     }
 
     function BNBX() external pure override returns (address) {
-        return MainnetContracts.BNBX;
+        return TestnetContracts.BNBX;
     }
 
     function YNBNBK() external pure override returns (address) {
-        return MainnetContracts.YNBNBK;
+        return TestnetContracts.YNBNBK;
     }
 
     // TODO: Update with deployed YNBNBX
@@ -77,23 +102,23 @@ contract ChapelContracts is IContracts {
     }
 
     function STAKER_GATEWAY() external pure override returns (address) {
-        return MainnetContracts.STAKER_GATEWAY;
+        return TestnetContracts.STAKER_GATEWAY;
     }
 
     function CLISBNB() external pure override returns (address) {
-        return MainnetContracts.CLISBNB;
+        return TestnetContracts.CLISBNB;
     }
 
     function BTCB() external pure override returns (address) {
-        return MainnetContracts.BTCB;
+        return TestnetContracts.BTCB;
     }
 
     function SOLVBTC() external pure override returns (address) {
-        return MainnetContracts.SOLVBTC;
+        return TestnetContracts.SOLVBTC;
     }
 
     function SOLVBTC_BNN() external pure override returns (address) {
-        return MainnetContracts.SOLVBTC_BNN;
+        return TestnetContracts.SOLVBTC_BNN;
     }
 }
 
