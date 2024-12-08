@@ -71,15 +71,17 @@ contract YnWBNBkBufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
         vault_.grantRole(vault_.PAUSER_ROLE(), PAUSER);
         vault_.grantRole(vault_.UNPAUSER_ROLE(), UNPAUSER);
 
-        vault_.setHasAllocator(true);
         // set allocator to bob
         vault_.grantRole(vault_.ALLOCATOR_ROLE(), address(bob));
 
         // set strategy manager to admin for now
-        vault_.grantRole(vault_.STRATEGY_MANAGER_ROLE(), address(ADMIN));
+        vault_.grantRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), ADMIN);
+        vault_.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), ADMIN);
+        vault_.grantRole(vault_.ALLOCATOR_MANAGER_ROLE(), ADMIN);
 
         vault_.setProvider(address(MC.PROVIDER));
 
+        vault_.setHasAllocator(true);
         vault_.setStakerGateway(MC.STAKER_GATEWAY);
         vault_.setSyncDeposit(true);
         vault_.setSyncWithdraw(true);

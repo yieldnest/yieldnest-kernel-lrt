@@ -71,19 +71,21 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
         vault.grantRole(vault.PAUSER_ROLE(), PAUSER);
         vault.grantRole(vault.UNPAUSER_ROLE(), UNPAUSER);
 
-        vault.setHasAllocator(true);
-
         // set allocator to alice for testing
         vault.grantRole(vault.ALLOCATOR_ROLE(), address(alice));
 
-        // set strategy manager to admin for now
-        vault.grantRole(vault.STRATEGY_MANAGER_ROLE(), address(ADMIN));
+        vault.grantRole(vault.KERNEL_DEPENDENCY_MANAGER_ROLE(), ADMIN);
+        vault.grantRole(vault.DEPOSIT_MANAGER_ROLE(), ADMIN);
+        vault.grantRole(vault.ALLOCATOR_MANAGER_ROLE(), ADMIN);
 
         // set provider
         vault.setProvider(address(provider));
 
         // set staker gateway
         vault.setStakerGateway(address(mockGateway));
+
+        // set has allocator
+        vault.setHasAllocator(true);
 
         // by default, we don't sync deposits or withdraws
         // we set it for individual tests

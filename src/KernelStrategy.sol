@@ -7,7 +7,9 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 contract KernelStrategy is Vault {
     bytes32 public constant ALLOCATOR_ROLE = keccak256("ALLOCATOR_ROLE");
-    bytes32 public constant STRATEGY_MANAGER_ROLE = keccak256("STRATEGY_MANAGER_ROLE");
+    bytes32 public constant KERNEL_DEPENDENCY_MANAGER_ROLE = keccak256("KERNEL_DEPENDENCY_MANAGER_ROLE");
+    bytes32 public constant DEPOSIT_MANAGER_ROLE = keccak256("DEPOSIT_MANAGER_ROLE");
+    bytes32 public constant ALLOCATOR_MANAGER_ROLE = keccak256("ALLOCATOR_MANAGER_ROLE");
 
     event DepositAsset(
         address indexed sender, address indexed receiver, address indexed asset, uint256 assets, uint256 shares
@@ -327,7 +329,7 @@ contract KernelStrategy is Vault {
      * @notice Sets the staker gateway address.
      * @param stakerGateway The address of the staker gateway.
      */
-    function setStakerGateway(address stakerGateway) external onlyRole(STRATEGY_MANAGER_ROLE) {
+    function setStakerGateway(address stakerGateway) external onlyRole(KERNEL_DEPENDENCY_MANAGER_ROLE) {
         if (stakerGateway == address(0)) revert ZeroAddress();
 
         StrategyStorage storage strategyStorage = _getStrategyStorage();
@@ -340,7 +342,7 @@ contract KernelStrategy is Vault {
      * @notice Sets the direct deposit flag.
      * @param syncDeposit The flag.
      */
-    function setSyncDeposit(bool syncDeposit) external onlyRole(STRATEGY_MANAGER_ROLE) {
+    function setSyncDeposit(bool syncDeposit) external onlyRole(DEPOSIT_MANAGER_ROLE) {
         StrategyStorage storage strategyStorage = _getStrategyStorage();
         strategyStorage.syncDeposit = syncDeposit;
 
@@ -351,7 +353,7 @@ contract KernelStrategy is Vault {
      * @notice Sets the direct withdraw flag.
      * @param syncWithdraw The flag.
      */
-    function setSyncWithdraw(bool syncWithdraw) external onlyRole(STRATEGY_MANAGER_ROLE) {
+    function setSyncWithdraw(bool syncWithdraw) external onlyRole(DEPOSIT_MANAGER_ROLE) {
         StrategyStorage storage strategyStorage = _getStrategyStorage();
         strategyStorage.syncWithdraw = syncWithdraw;
 
@@ -362,7 +364,7 @@ contract KernelStrategy is Vault {
      * @notice Sets whether the strategy has an allocator.
      * @param hasAllocators_ Whether the strategy has an allocator.
      */
-    function setHasAllocator(bool hasAllocators_) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setHasAllocator(bool hasAllocators_) external onlyRole(ALLOCATOR_MANAGER_ROLE) {
         StrategyStorage storage strategyStorage = _getStrategyStorage();
         strategyStorage.hasAllocators = hasAllocators_;
 

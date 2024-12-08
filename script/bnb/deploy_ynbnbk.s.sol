@@ -14,10 +14,10 @@ import {KernelStrategy} from "src/KernelStrategy.sol";
 import {MigratedKernelStrategy} from "src/MigratedKernelStrategy.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 
-import "forge-std/console.sol";
+// import {console} from "forge-std/console.sol";
 import {AccessControlUpgradeable} from
     "lib/openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
-import {TimelockController} from "lib/openzeppelin-contracts/contracts/governance/TimelockController.sol";
+// import {TimelockController} from "lib/openzeppelin-contracts/contracts/governance/TimelockController.sol";
 import {
     ITransparentUpgradeableProxy,
     ProxyAdmin
@@ -167,10 +167,14 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
         vault_.grantRole(vault_.PAUSER_ROLE(), actors.PAUSER());
         vault_.grantRole(vault_.UNPAUSER_ROLE(), actors.UNPAUSER());
 
-        // set strategy manager to admin for now
-        vault_.grantRole(vault_.STRATEGY_MANAGER_ROLE(), actors.STRATEGY_MANAGER());
+        vault_.grantRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), actors.KERNEL_DEPENDENCY_MANAGER());
+        vault_.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), actors.DEPOSIT_MANAGER());
+        vault_.grantRole(vault_.ALLOCATOR_MANAGER_ROLE(), actors.ALLOCATOR_MANAGER());
 
         // set roles to msg.sender for now
+        vault_.grantRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), msg.sender);
+        vault_.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), msg.sender);
+        vault_.grantRole(vault_.ALLOCATOR_MANAGER_ROLE(), msg.sender);
         vault_.grantRole(vault_.PROCESSOR_MANAGER_ROLE(), msg.sender);
         vault_.grantRole(vault_.PROVIDER_MANAGER_ROLE(), msg.sender);
         vault_.grantRole(vault_.ASSET_MANAGER_ROLE(), msg.sender);
@@ -193,6 +197,9 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
         vault_.processAccounting();
 
         vault_.renounceRole(vault_.DEFAULT_ADMIN_ROLE(), msg.sender);
+        vault_.renounceRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), msg.sender);
+        vault_.renounceRole(vault_.DEPOSIT_MANAGER_ROLE(), msg.sender);
+        vault_.renounceRole(vault_.ALLOCATOR_MANAGER_ROLE(), msg.sender);
         vault_.renounceRole(vault_.PROCESSOR_MANAGER_ROLE(), msg.sender);
         vault_.renounceRole(vault_.PROVIDER_MANAGER_ROLE(), msg.sender);
         vault_.renounceRole(vault_.ASSET_MANAGER_ROLE(), msg.sender);

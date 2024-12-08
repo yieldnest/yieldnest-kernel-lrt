@@ -93,7 +93,9 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         vault_.grantRole(vault_.UNPAUSER_ROLE(), UNPAUSER);
 
         // set strategy manager to admin for now
-        vault_.grantRole(vault_.STRATEGY_MANAGER_ROLE(), address(ADMIN));
+        vault_.grantRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), ADMIN);
+        vault_.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), ADMIN);
+        vault_.grantRole(vault_.ALLOCATOR_MANAGER_ROLE(), ADMIN);
 
         vault_.setProvider(address(kernelProvider));
 

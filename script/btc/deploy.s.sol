@@ -44,7 +44,7 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
         }
 
         if (block.chainid != 56 && block.chainid != 97) {
-            revert("Unsupported chain");
+            revert UnsupportedChain();
         }
 
         vm.startBroadcast();
@@ -87,10 +87,14 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
         vault_.grantRole(vault_.PAUSER_ROLE(), actors.PAUSER());
         vault_.grantRole(vault_.UNPAUSER_ROLE(), actors.UNPAUSER());
 
-        // set strategy manager to admin for now
-        vault_.grantRole(vault_.STRATEGY_MANAGER_ROLE(), actors.STRATEGY_MANAGER());
+        vault_.grantRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), actors.KERNEL_DEPENDENCY_MANAGER());
+        vault_.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), actors.DEPOSIT_MANAGER());
+        vault_.grantRole(vault_.ALLOCATOR_MANAGER_ROLE(), actors.ALLOCATOR_MANAGER());
 
         // set roles to msg.sender for now
+        vault_.grantRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), msg.sender);
+        vault_.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), msg.sender);
+        vault_.grantRole(vault_.ALLOCATOR_MANAGER_ROLE(), msg.sender);
         vault_.grantRole(vault_.PROCESSOR_MANAGER_ROLE(), msg.sender);
         vault_.grantRole(vault_.PROVIDER_MANAGER_ROLE(), msg.sender);
         vault_.grantRole(vault_.ASSET_MANAGER_ROLE(), msg.sender);
@@ -98,6 +102,10 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
 
         // set provider
         vault_.setProvider(address(rateProvider));
+        vault_.setHasAllocator(true);
+        vault_.setStakerGateway(contracts.STAKER_GATEWAY());
+        vault_.setSyncDeposit(true);
+        vault_.setSyncWithdraw(true);
 
         vault_.addAsset(contracts.BTCB(), true);
         vault_.addAsset(contracts.SOLVBTC(), true);
@@ -122,6 +130,9 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
         vault_.processAccounting();
 
         vault_.renounceRole(vault_.DEFAULT_ADMIN_ROLE(), msg.sender);
+        vault_.renounceRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), msg.sender);
+        vault_.renounceRole(vault_.DEPOSIT_MANAGER_ROLE(), msg.sender);
+        vault_.renounceRole(vault_.ALLOCATOR_MANAGER_ROLE(), msg.sender);
         vault_.renounceRole(vault_.PROCESSOR_MANAGER_ROLE(), msg.sender);
         vault_.renounceRole(vault_.PROVIDER_MANAGER_ROLE(), msg.sender);
         vault_.renounceRole(vault_.ASSET_MANAGER_ROLE(), msg.sender);

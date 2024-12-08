@@ -78,16 +78,17 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         vault_.grantRole(vault_.PAUSER_ROLE(), PAUSER);
         vault_.grantRole(vault_.UNPAUSER_ROLE(), UNPAUSER);
 
-        vault_.setHasAllocator(true);
-
         // since we're not testing the max vault, we'll set the admin as the allocator role
         vault_.grantRole(vault_.ALLOCATOR_ROLE(), address(bob));
 
         // set strategy manager to admin for now
-        vault_.grantRole(vault_.STRATEGY_MANAGER_ROLE(), address(ADMIN));
+        vault_.grantRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), ADMIN);
+        vault_.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), ADMIN);
+        vault_.grantRole(vault_.ALLOCATOR_MANAGER_ROLE(), ADMIN);
 
         vault_.setProvider(address(kernelProvider));
 
+        vault_.setHasAllocator(true);
         vault_.setStakerGateway(MC.STAKER_GATEWAY);
 
         vault_.setSyncDeposit(true);
