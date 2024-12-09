@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Script, stdJson} from "lib/forge-std/src/Script.sol";
 
+import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
 import {BscActors, ChapelActors, IActors} from "script/Actors.sol";
 import {BscContracts, ChapelContracts, IContracts} from "script/Contracts.sol";
 import {VaultUtils} from "script/VaultUtils.sol";
@@ -12,56 +13,44 @@ import {BTCRateProvider, TestnetBTCRateProvider} from "src/module/BTCRateProvide
 
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {TimelockController} from "lib/openzeppelin-contracts/contracts/governance/TimelockController.sol";
 import {Strings} from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
+import {BaseScript} from "script/BaseScript.sol";
 
 // FOUNDRY_PROFILE=mainnet forge script DeployYnBTCkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
-contract DeployYnBTCkStrategy is Script, VaultUtils {
-    using stdJson for string;
-
-    IActors public actors;
-
-    IContracts public contracts;
-
-    KernelStrategy public vault;
-    KernelStrategy public implementation;
-    BTCRateProvider public rateProvider;
-
-    error UnsupportedChain();
-    error InvalidSender();
-
-    function symbol() public pure returns (string memory) {
+contract DeployYnBTCkStrategy is BaseScript {
+    function symbol() public override pure returns (string memory) {
         return "ynBTCk";
+    }
+
+    function deployRateProvider() internal {
+        if (block.chainid == 97) {
+            rateProvider = IProvider(new TestnetBTCRateProvider());
+        }
+
+        if (block.chainid == 56) {
+            rateProvider = IProvider(new BTCRateProvider());
+        }
     }
 
     function run() public {
         vm.startBroadcast();
 
-        if (block.chainid == 97) {
-            ChapelActors _actors = new ChapelActors();
-            actors = IActors(_actors);
-            contracts = IContracts(new ChapelContracts());
-            rateProvider = BTCRateProvider(address(new TestnetBTCRateProvider()));
-        }
+        _setup();
+        _deployTimelockController();
+        deployRateProvider();
 
-        if (block.chainid == 56) {
-            BscActors _actors = new BscActors();
-            actors = IActors(_actors);
-            contracts = IContracts(new BscContracts());
-            rateProvider = new BTCRateProvider();
-        }
-
-        if (block.chainid != 56 && block.chainid != 97) {
-            revert UnsupportedChain();
-        }
+        _verifySetup();
 
         deploy();
-        saveDeployment();
+
+        _saveDeployment();
 
         vm.stopBroadcast();
     }
 
-    function deploy() internal returns (KernelStrategy) {
+    function deploy() internal {
         implementation = new KernelStrategy();
 
         bytes memory initData = abi.encodeWithSelector(
@@ -74,39 +63,16 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
         vault = KernelStrategy(payable(address(proxy)));
 
         configureVault(vault);
-
-        return vault;
     }
 
     function configureVault(KernelStrategy vault_) internal {
-        // set processor to admin for now
-
-        vault_.grantRole(vault_.DEFAULT_ADMIN_ROLE(), actors.ADMIN());
-        vault_.grantRole(vault_.PROCESSOR_ROLE(), actors.ADMIN());
-        vault_.grantRole(vault_.PROVIDER_MANAGER_ROLE(), actors.PROVIDER_MANAGER());
-        vault_.grantRole(vault_.ASSET_MANAGER_ROLE(), actors.ASSET_MANAGER());
-        vault_.grantRole(vault_.BUFFER_MANAGER_ROLE(), actors.BUFFER_MANAGER());
-        vault_.grantRole(vault_.PROCESSOR_MANAGER_ROLE(), actors.PROCESSOR_MANAGER());
-        vault_.grantRole(vault_.PAUSER_ROLE(), actors.PAUSER());
-        vault_.grantRole(vault_.UNPAUSER_ROLE(), actors.UNPAUSER());
-
-        vault_.grantRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), actors.KERNEL_DEPENDENCY_MANAGER());
-        vault_.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), actors.DEPOSIT_MANAGER());
-        vault_.grantRole(vault_.ALLOCATOR_MANAGER_ROLE(), actors.ALLOCATOR_MANAGER());
-
-        // set roles to msg.sender for now
-        vault_.grantRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), msg.sender);
-        vault_.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), msg.sender);
-        vault_.grantRole(vault_.ALLOCATOR_MANAGER_ROLE(), msg.sender);
-        vault_.grantRole(vault_.PROCESSOR_MANAGER_ROLE(), msg.sender);
-        vault_.grantRole(vault_.PROVIDER_MANAGER_ROLE(), msg.sender);
-        vault_.grantRole(vault_.ASSET_MANAGER_ROLE(), msg.sender);
-        vault_.grantRole(vault_.UNPAUSER_ROLE(), msg.sender);
+        _configureDefaultRoles(vault_);
+        _configureTemporaryRoles(vault_);
 
         // set provider
+        vault_.setStakerGateway(contracts.STAKER_GATEWAY());
         vault_.setProvider(address(rateProvider));
         vault_.setHasAllocator(true);
-        vault_.setStakerGateway(contracts.STAKER_GATEWAY());
         vault_.setSyncDeposit(true);
         vault_.setSyncWithdraw(true);
 
@@ -132,25 +98,7 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
 
         vault_.processAccounting();
 
-        vault_.renounceRole(vault_.DEFAULT_ADMIN_ROLE(), msg.sender);
-        vault_.renounceRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), msg.sender);
-        vault_.renounceRole(vault_.DEPOSIT_MANAGER_ROLE(), msg.sender);
-        vault_.renounceRole(vault_.ALLOCATOR_MANAGER_ROLE(), msg.sender);
-        vault_.renounceRole(vault_.PROCESSOR_MANAGER_ROLE(), msg.sender);
-        vault_.renounceRole(vault_.PROVIDER_MANAGER_ROLE(), msg.sender);
-        vault_.renounceRole(vault_.ASSET_MANAGER_ROLE(), msg.sender);
-        vault_.renounceRole(vault_.UNPAUSER_ROLE(), msg.sender);
+        _renounceTemporaryRoles(vault_);
     }
 
-    function saveDeployment() internal {
-        vm.serializeAddress(symbol(), "deployer", msg.sender);
-        vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
-        vm.serializeAddress(symbol(), "rateProvider", address(rateProvider));
-        string memory jsonOutput =
-            vm.serializeAddress(symbol(), string.concat(symbol(), "-implementation"), address(implementation));
-
-        vm.writeJson(
-            jsonOutput, string.concat("./deployments/", symbol(), "-", Strings.toString(block.chainid), ".json")
-        );
-    }
 }
