@@ -1,3 +1,4 @@
+/* solhint-disable one-contract-per-file */
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
@@ -9,12 +10,24 @@ interface IActors {
     function EXECUTOR_1() external view returns (address);
     function EXECUTOR_2() external view returns (address);
 
+    /// @dev timelock
     function PROVIDER_MANAGER() external view returns (address);
+    /// @dev timelock
     function BUFFER_MANAGER() external view returns (address);
+    /// @dev timelock
     function ASSET_MANAGER() external view returns (address);
+    /// @dev timelock
     function PROCESSOR_MANAGER() external view returns (address);
+    /// @dev multisig
     function PAUSER() external view returns (address);
+    /// @dev multisig
     function UNPAUSER() external view returns (address);
+    /// @dev timelock
+    function KERNEL_DEPENDENCY_MANAGER() external view returns (address);
+    /// @dev multisig
+    function DEPOSIT_MANAGER() external view returns (address);
+    /// @dev multisig
+    function ALLOCATOR_MANAGER() external view returns (address);
 }
 
 contract LocalActors is IActors {
@@ -33,6 +46,9 @@ contract LocalActors is IActors {
     address public constant PROCESSOR_MANAGER = address(5);
     address public constant PAUSER = address(5);
     address public constant UNPAUSER = address(5);
+    address public constant KERNEL_DEPENDENCY_MANAGER = address(5);
+    address public constant DEPOSIT_MANAGER = address(5);
+    address public constant ALLOCATOR_MANAGER = address(5);
 }
 
 contract AnvilActors is IActors {
@@ -51,25 +67,10 @@ contract AnvilActors is IActors {
     address public constant PROCESSOR_MANAGER = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
     address public constant PAUSER = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
     address public constant UNPAUSER = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
-}
 
-contract HoleskyActors is IActors {
-    address public constant ADMIN = 0x743b91CDB1C694D4F51bCDA3a4A59DcC0d02b913;
-    address public constant UNAUTHORIZED = address(0);
-    address public constant PROCESSOR = 0x743b91CDB1C694D4F51bCDA3a4A59DcC0d02b913;
-
-    address public constant PROPOSER_1 = 0x743b91CDB1C694D4F51bCDA3a4A59DcC0d02b913;
-    address public constant PROPOSER_2 = 0x9Dd8F69b62ddFd990241530F47dcEd0Dad7f7d39;
-
-    address public constant EXECUTOR_1 = 0x743b91CDB1C694D4F51bCDA3a4A59DcC0d02b913;
-    address public constant EXECUTOR_2 = 0x9Dd8F69b62ddFd990241530F47dcEd0Dad7f7d39;
-
-    address public constant PROVIDER_MANAGER = 0x743b91CDB1C694D4F51bCDA3a4A59DcC0d02b913;
-    address public constant BUFFER_MANAGER = 0x743b91CDB1C694D4F51bCDA3a4A59DcC0d02b913;
-    address public constant ASSET_MANAGER = 0x743b91CDB1C694D4F51bCDA3a4A59DcC0d02b913;
-    address public constant PROCESSOR_MANAGER = 0x743b91CDB1C694D4F51bCDA3a4A59DcC0d02b913;
-    address public constant PAUSER = 0x743b91CDB1C694D4F51bCDA3a4A59DcC0d02b913;
-    address public constant UNPAUSER = 0x743b91CDB1C694D4F51bCDA3a4A59DcC0d02b913;
+    address public constant KERNEL_DEPENDENCY_MANAGER = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+    address public constant DEPOSIT_MANAGER = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+    address public constant ALLOCATOR_MANAGER = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
 }
 
 contract MainnetActors is IActors {
@@ -87,24 +88,32 @@ contract MainnetActors is IActors {
     address public constant PROCESSOR_MANAGER = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
     address public constant PAUSER = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
     address public constant UNPAUSER = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
+
+    address public constant KERNEL_DEPENDENCY_MANAGER = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
+    address public constant DEPOSIT_MANAGER = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
+    address public constant ALLOCATOR_MANAGER = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
 }
 
 contract ChapelActors is IActors {
-    address public constant ADMIN = 0x0c099101d43e9094E4ae9bC2FC38f8b9875c23c5;
+    address public constant ADMIN = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
     address public constant UNAUTHORIZED = address(0);
 
-    address public constant PROPOSER_1 = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
-    address public constant PROPOSER_2 = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
+    address public constant PROPOSER_1 = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+    address public constant PROPOSER_2 = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
 
-    address public constant EXECUTOR_1 = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
-    address public constant EXECUTOR_2 = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
+    address public constant EXECUTOR_1 = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+    address public constant EXECUTOR_2 = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
 
-    address public constant PROVIDER_MANAGER = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
-    address public constant BUFFER_MANAGER = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
-    address public constant ASSET_MANAGER = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
-    address public constant PROCESSOR_MANAGER = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
-    address public constant PAUSER = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
-    address public constant UNPAUSER = 0x9f0A34ccb5ba9C71336F0c8Cd6181205928B8404;
+    address public constant PROVIDER_MANAGER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+    address public constant BUFFER_MANAGER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+    address public constant ASSET_MANAGER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+    address public constant PROCESSOR_MANAGER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+    address public constant PAUSER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+    address public constant UNPAUSER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+
+    address public constant KERNEL_DEPENDENCY_MANAGER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+    address public constant DEPOSIT_MANAGER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+    address public constant ALLOCATOR_MANAGER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
 }
 
 contract BscActors is IActors {
@@ -123,4 +132,8 @@ contract BscActors is IActors {
     address public constant PROCESSOR_MANAGER = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
     address public constant PAUSER = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
     address public constant UNPAUSER = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
+
+    address public constant KERNEL_DEPENDENCY_MANAGER = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
+    address public constant DEPOSIT_MANAGER = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
+    address public constant ALLOCATOR_MANAGER = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
 }

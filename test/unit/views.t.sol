@@ -69,4 +69,8 @@ contract KernelStrategyViewUnitTest is SetupKernelStrategy {
     function test_KernelStrategy_GetSyncWithdraw() public view {
         assertEq(vault.getSyncWithdraw(), false, "SyncWithdraw should be false");
     }
+
+    function test_KernelStrategy_GetHasAllocator() public view {
+        assertEq(vault.getHasAllocator(), true, "HasAllocator should be true");
+    }
 }

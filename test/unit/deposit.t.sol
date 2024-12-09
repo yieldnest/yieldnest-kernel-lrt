@@ -6,7 +6,7 @@ import {MockERC20} from "lib/yieldnest-vault/test/unit/mocks/MockERC20.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
-import {KernelRateProvider} from "src/module/KernelRateProvider.sol";
+import {BaseKernelRateProvider} from "src/module/BaseKernelRateProvider.sol";
 import {SetupKernelStrategy} from "test/unit/helpers/SetupKernelStrategy.sol";
 
 contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
@@ -24,8 +24,28 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
     }
 
     function test_KernelStrategy_deposit_unauthorized() public {
-        vm.prank(address(0x123456));
+        assertTrue(vault.getHasAllocator());
+
+        vm.startPrank(ADMIN);
+
+        vault.revokeRole(vault.ALLOCATOR_ROLE(), alice);
+
+        vm.stopPrank();
+
+        vm.prank(alice);
         vm.expectRevert();
+        vault.deposit(1 ether, alice);
+    }
+
+    function test_KernelStrategy_deposit_authorized_WhenHasNoAllocator() public {
+        assertTrue(vault.getHasAllocator());
+
+        vm.startPrank(ADMIN);
+        vault.setHasAllocator(false);
+        vault.revokeRole(vault.ALLOCATOR_ROLE(), alice);
+        vm.stopPrank();
+
+        vm.prank(alice);
         vault.deposit(1 ether, alice);
     }
 
@@ -313,7 +333,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
         // Try to deposit the random token
         randomToken.approve(address(vault), 1000);
         bytes memory encodedError =
-            abi.encodeWithSelector(KernelRateProvider.UnsupportedAsset.selector, address(randomToken));
+            abi.encodeWithSelector(BaseKernelRateProvider.UnsupportedAsset.selector, address(randomToken));
         vm.expectRevert(encodedError);
         vault.depositAsset(address(randomToken), 1000, alice);
         vm.stopPrank();
