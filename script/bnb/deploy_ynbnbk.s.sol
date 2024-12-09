@@ -65,7 +65,7 @@ contract DeployYnBNBkStrategy is BaseScript {
 
         deployMigrateVault(createMultiSigTx);
 
-        _saveDeployment();
+        saveDeployment(createMultiSigTx);
 
         vm.stopBroadcast();
     }
@@ -107,8 +107,7 @@ contract DeployYnBNBkStrategy is BaseScript {
                 )
             );
 
-            Transaction memory tx = Transaction({target: address(proxyAdmin), value: 0, data: upgradeData});
-            transactions.push(tx);
+            transactions.push(Transaction({target: address(proxyAdmin), value: 0, data: upgradeData}));
 
             createConfigureVaultTransactions(address(proxyAdmin));
 
@@ -422,9 +421,8 @@ contract DeployYnBNBkStrategy is BaseScript {
         );
     }
 
-    // TODO: move this to a library or base script file and use it everywhere as required
-    function saveDeployment() public {
-        if (transactions.length > 0) {
+    function saveDeployment(bool createMultiSigTx) public {
+        if (createMultiSigTx) {
             vm.serializeAddress(symbol(), "deployer", msg.sender);
             vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
             vm.serializeAddress(symbol(), "rateProvider", address(rateProvider));
@@ -450,15 +448,7 @@ contract DeployYnBNBkStrategy is BaseScript {
                 jsonOutput, string.concat("./deployments/", symbol(), "-", Strings.toString(block.chainid), ".json")
             );
         } else {
-            vm.serializeAddress(symbol(), "deployer", msg.sender);
-            vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
-            vm.serializeAddress(symbol(), "rateProvider", address(rateProvider));
-            string memory jsonOutput =
-                vm.serializeAddress(symbol(), string.concat(symbol(), "-implementation"), address(implementation));
-
-            vm.writeJson(
-                jsonOutput, string.concat("./deployments/", symbol(), "-", Strings.toString(block.chainid), ".json")
-            );
+            _saveDeployment();
         }
     }
 }
