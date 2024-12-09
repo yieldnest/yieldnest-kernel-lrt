@@ -8,7 +8,7 @@ import {BscContracts, ChapelContracts, IContracts} from "script/Contracts.sol";
 import {VaultUtils} from "script/VaultUtils.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
-import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
+import {BTCRateProvider, TestnetBTCRateProvider} from "src/module/BTCRateProvider.sol";
 
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -35,25 +35,26 @@ contract DeployYnBTCkStrategy is Script, VaultUtils {
     }
 
     function run() public {
+        vm.startBroadcast();
+
         if (block.chainid == 97) {
             ChapelActors _actors = new ChapelActors();
             actors = IActors(_actors);
             contracts = IContracts(new ChapelContracts());
+            rateProvider = BTCRateProvider(address(new TestnetBTCRateProvider()));
         }
 
         if (block.chainid == 56) {
             BscActors _actors = new BscActors();
             actors = IActors(_actors);
             contracts = IContracts(new BscContracts());
+            rateProvider = new BTCRateProvider();
         }
 
         if (block.chainid != 56 && block.chainid != 97) {
             revert UnsupportedChain();
         }
 
-        vm.startBroadcast();
-
-        rateProvider = new BTCRateProvider();
         deploy();
         saveDeployment();
 

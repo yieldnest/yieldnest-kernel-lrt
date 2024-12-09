@@ -9,7 +9,7 @@ import {VaultUtils} from "script/VaultUtils.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
-import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
+import {BNBRateProvider, TestnetBNBRateProvider} from "src/module/BNBRateProvider.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
@@ -36,21 +36,22 @@ contract DeployYnWBNBkStrategy is Script, VaultUtils {
     }
 
     function run() public {
+        vm.startBroadcast();
+
         if (block.chainid == 97) {
             ChapelActors _actors = new ChapelActors();
             actors = IActors(_actors);
             contracts = IContracts(new ChapelContracts());
+            rateProvider = BNBRateProvider(address(new TestnetBNBRateProvider()));
         }
 
         if (block.chainid == 56) {
             BscActors _actors = new BscActors();
             actors = IActors(_actors);
             contracts = IContracts(new BscContracts());
+            rateProvider = new BNBRateProvider();
         }
 
-        vm.startBroadcast();
-
-        rateProvider = new BNBRateProvider();
         deploy();
         saveDeployment();
 

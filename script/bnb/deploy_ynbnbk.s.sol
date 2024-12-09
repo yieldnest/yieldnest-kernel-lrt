@@ -12,7 +12,7 @@ import {VaultUtils} from "script/VaultUtils.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {MigratedKernelStrategy} from "src/MigratedKernelStrategy.sol";
-import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
+import {BNBRateProvider, TestnetBNBRateProvider} from "src/module/BNBRateProvider.sol";
 
 // import {console} from "forge-std/console.sol";
 import {AccessControlUpgradeable} from
@@ -57,6 +57,8 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
     }
 
     function runWithOption(bool createMultiSigTx) public {
+        vm.startBroadcast();
+
         if (block.chainid == 97) {
             ChapelActors _actors = new ChapelActors();
             actors = IActors(_actors);
@@ -68,8 +70,6 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
             actors = IActors(_actors);
             contracts = IContracts(new BscContracts());
         }
-
-        vm.startBroadcast();
 
         deployMigrateVault(createMultiSigTx);
         saveDeployment();
@@ -97,7 +97,15 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
             implementation = vm.computeCreateAddress(msg.sender, startingNonce + 1);
 
             //create rate provider creation transaction
-            bytes memory rateProviderCreationCode = type(BNBRateProvider).creationCode;
+            bytes memory rateProviderCreationCode;
+            if (block.chainid == 56) {
+                rateProviderCreationCode = type(BNBRateProvider).creationCode;
+            } else if (block.chainid == 97) {
+                rateProviderCreationCode = type(TestnetBNBRateProvider).creationCode;
+            } else {
+                revert UnsupportedChain();
+            }
+
             Transaction memory tx1 = Transaction({target: address(0), value: 0, data: rateProviderCreationCode});
 
             //create implementation creation tx
@@ -138,7 +146,13 @@ contract DeployYnBNBkStrategy is Script, VaultUtils {
             if (proxyAdmin.owner() != msg.sender) {
                 revert InvalidSender();
             }
-            rateProvider = address(new BNBRateProvider());
+            if (block.chainid == 56) {
+                rateProvider = address(new BNBRateProvider());
+            } else if (block.chainid == 97) {
+                rateProvider = address(new TestnetBNBRateProvider());
+            } else {
+                revert UnsupportedChain();
+            }
             implementation = address(new MigratedKernelStrategy());
 
             proxyAdmin.upgradeAndCall(
