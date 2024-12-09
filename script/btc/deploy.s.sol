@@ -1,26 +1,20 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {Script, stdJson} from "lib/forge-std/src/Script.sol";
-
 import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
-import {BscActors, ChapelActors, IActors} from "script/Actors.sol";
-import {BscContracts, ChapelContracts, IContracts} from "script/Contracts.sol";
-import {VaultUtils} from "script/VaultUtils.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {BTCRateProvider, TestnetBTCRateProvider} from "src/module/BTCRateProvider.sol";
 
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {TimelockController} from "lib/openzeppelin-contracts/contracts/governance/TimelockController.sol";
-import {Strings} from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
-import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
+
 import {BaseScript} from "script/BaseScript.sol";
+import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 // FOUNDRY_PROFILE=mainnet forge script DeployYnBTCkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
 contract DeployYnBTCkStrategy is BaseScript {
-    function symbol() public override pure returns (string memory) {
+    function symbol() public pure override returns (string memory) {
         return "ynBTCk";
     }
 
@@ -100,5 +94,4 @@ contract DeployYnBTCkStrategy is BaseScript {
 
         _renounceTemporaryRoles(vault_);
     }
-
 }

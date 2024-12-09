@@ -3,19 +3,15 @@ pragma solidity ^0.8.24;
 
 import {Script, stdJson} from "lib/forge-std/src/Script.sol";
 
-import {BscActors, ChapelActors, IActors} from "script/Actors.sol";
 import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
+import {BscActors, ChapelActors, IActors} from "script/Actors.sol";
 import {BscContracts, ChapelContracts, IContracts} from "script/Contracts.sol";
 import {VaultUtils} from "script/VaultUtils.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
-import {BTCRateProvider, TestnetBTCRateProvider} from "src/module/BTCRateProvider.sol";
 
-import {TransparentUpgradeableProxy} from
-    "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {TimelockController} from "lib/openzeppelin-contracts/contracts/governance/TimelockController.sol";
 import {Strings} from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
-import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 abstract contract BaseScript is Script, VaultUtils {
     using stdJson for string;
@@ -55,7 +51,10 @@ abstract contract BaseScript is Script, VaultUtils {
         if (block.chainid != 56 && block.chainid != 97) {
             revert UnsupportedChain();
         }
-        if (address(actors) == address(0) || address(contracts) == address(0) || address(rateProvider) == address(0) || address(timelock) == address(0)) {
+        if (
+            address(actors) == address(0) || address(contracts) == address(0) || address(rateProvider) == address(0)
+                || address(timelock) == address(0)
+        ) {
             revert InvalidSetup();
         }
     }

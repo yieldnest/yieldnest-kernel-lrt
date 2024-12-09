@@ -1,13 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {Script} from "lib/forge-std/src/Script.sol";
+import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
 
-import {BscActors, ChapelActors, IActors} from "script/Actors.sol";
-import {BscContracts, ChapelContracts, IContracts} from "script/Contracts.sol";
-import {VaultUtils} from "script/VaultUtils.sol";
-
-import {KernelStrategy} from "src/KernelStrategy.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {BNBRateProvider, TestnetBNBRateProvider} from "src/module/BNBRateProvider.sol";
 
@@ -15,45 +10,36 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {Strings} from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
+import {BaseScript} from "script/BaseScript.sol";
 
 // FOUNDRY_PROFILE=mainnet forge script DeployYnclisBNBkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
-contract DeployYnclisBNBkStrategy is Script, VaultUtils {
-    IActors public actors;
-
-    IContracts public contracts;
-
-    KernelStrategy public vault;
-
-    BNBRateProvider public rateProvider;
-    KernelStrategy public implementation;
-
-    error UnsupportedChain();
-    error InvalidSender();
-
-    function symbol() public pure returns (string memory) {
+contract DeployYnclisBNBkStrategy is BaseScript {
+    function symbol() public pure override returns (string memory) {
         return "ynclisBNBk";
+    }
+
+    function deployRateProvider() internal {
+        if (block.chainid == 97) {
+            rateProvider = IProvider(new TestnetBNBRateProvider());
+        }
+
+        if (block.chainid == 56) {
+            rateProvider = IProvider(new BNBRateProvider());
+        }
     }
 
     function run() public {
         vm.startBroadcast();
 
-        if (block.chainid == 97) {
-            ChapelActors _actors = new ChapelActors();
-            actors = IActors(_actors);
-            contracts = IContracts(new ChapelContracts());
-            rateProvider = BNBRateProvider(address(new TestnetBNBRateProvider()));
-        }
+        _setup();
+        _deployTimelockController();
+        deployRateProvider();
 
-        if (block.chainid == 56) {
-            BscActors _actors = new BscActors();
-            actors = IActors(_actors);
-            contracts = IContracts(new BscContracts());
-            rateProvider = new BNBRateProvider();
-        }
+        _verifySetup();
 
         deploy();
-        saveDeployment();
+
+        _saveDeployment();
 
         vm.stopBroadcast();
     }
@@ -76,23 +62,11 @@ contract DeployYnclisBNBkStrategy is Script, VaultUtils {
     }
 
     function configureVault(KernelStrategy vault_) internal {
-        // set processor to admin for now
-
-        vault_.grantRole(vault_.DEFAULT_ADMIN_ROLE(), actors.ADMIN());
-        vault_.grantRole(vault_.PROCESSOR_ROLE(), actors.ADMIN());
-        vault_.grantRole(vault_.PROVIDER_MANAGER_ROLE(), actors.PROVIDER_MANAGER());
-        vault_.grantRole(vault_.ASSET_MANAGER_ROLE(), actors.ASSET_MANAGER());
-        vault_.grantRole(vault_.BUFFER_MANAGER_ROLE(), actors.BUFFER_MANAGER());
-        vault_.grantRole(vault_.PROCESSOR_MANAGER_ROLE(), actors.PROCESSOR_MANAGER());
-        vault_.grantRole(vault_.PAUSER_ROLE(), actors.PAUSER());
-        vault_.grantRole(vault_.UNPAUSER_ROLE(), actors.UNPAUSER());
+        _configureDefaultRoles(vault_);
+        _configureTemporaryRoles(vault_);
 
         // set allocator to ynbnbx
         vault_.grantRole(vault_.ALLOCATOR_ROLE(), contracts.YNBNBX());
-
-        vault_.grantRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), actors.KERNEL_DEPENDENCY_MANAGER());
-        vault_.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), actors.DEPOSIT_MANAGER());
-        vault_.grantRole(vault_.ALLOCATOR_MANAGER_ROLE(), actors.ALLOCATOR_MANAGER());
 
         // set roles to msg.sender for now
         vault_.grantRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), msg.sender);
@@ -117,25 +91,6 @@ contract DeployYnclisBNBkStrategy is Script, VaultUtils {
 
         vault_.processAccounting();
 
-        vault_.renounceRole(vault_.DEFAULT_ADMIN_ROLE(), msg.sender);
-        vault_.renounceRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), msg.sender);
-        vault_.renounceRole(vault_.DEPOSIT_MANAGER_ROLE(), msg.sender);
-        vault_.renounceRole(vault_.ALLOCATOR_MANAGER_ROLE(), msg.sender);
-        vault_.renounceRole(vault_.PROCESSOR_MANAGER_ROLE(), msg.sender);
-        vault_.renounceRole(vault_.PROVIDER_MANAGER_ROLE(), msg.sender);
-        vault_.renounceRole(vault_.ASSET_MANAGER_ROLE(), msg.sender);
-        vault_.renounceRole(vault_.UNPAUSER_ROLE(), msg.sender);
-    }
-
-    function saveDeployment() internal {
-        vm.serializeAddress(symbol(), "deployer", msg.sender);
-        vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
-        vm.serializeAddress(symbol(), "rateProvider", address(rateProvider));
-        string memory jsonOutput =
-            vm.serializeAddress(symbol(), string.concat(symbol(), "-implementation"), address(implementation));
-
-        vm.writeJson(
-            jsonOutput, string.concat("./deployments/", symbol(), "-", Strings.toString(block.chainid), ".json")
-        );
+        _renounceTemporaryRoles(vault_);
     }
 }
