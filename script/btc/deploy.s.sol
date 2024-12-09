@@ -66,7 +66,7 @@ contract DeployYnBTCkStrategy is BaseScript {
         // set provider
         vault_.setStakerGateway(contracts.STAKER_GATEWAY());
         vault_.setProvider(address(rateProvider));
-        vault_.setHasAllocator(true);
+        vault_.setHasAllocator(false);
         vault_.setSyncDeposit(true);
         vault_.setSyncWithdraw(true);
 
