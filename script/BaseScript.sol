@@ -20,18 +20,21 @@ abstract contract BaseScript is Script, VaultUtils {
     IActors public actors;
     IContracts public contracts;
 
+    address public deployer;
     TimelockController public timelock;
+    IProvider public rateProvider;
     KernelStrategy public vault;
     KernelStrategy public implementation;
-    IProvider public rateProvider;
 
     error UnsupportedChain();
     error InvalidSetup();
 
     // needs to be overriden by child script
-    function symbol() public virtual returns (string memory);
+    function symbol() public view virtual returns (string memory);
 
     function _setup() public {
+        deployer = msg.sender;
+
         if (block.chainid == 97) {
             minDelay = 10 seconds;
             ChapelActors _actors = new ChapelActors();
@@ -81,10 +84,10 @@ abstract contract BaseScript is Script, VaultUtils {
         // set admin roles
         vault_.grantRole(vault_.DEFAULT_ADMIN_ROLE(), actors.ADMIN());
         vault_.grantRole(vault_.PROCESSOR_ROLE(), actors.ADMIN());
-        vault_.grantRole(vault_.PAUSER_ROLE(), actors.ADMIN());
-        vault_.grantRole(vault_.UNPAUSER_ROLE(), actors.ADMIN());
-        vault_.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), actors.ADMIN());
-        vault_.grantRole(vault_.ALLOCATOR_MANAGER_ROLE(), actors.ADMIN());
+        vault_.grantRole(vault_.PAUSER_ROLE(), actors.PAUSER());
+        vault_.grantRole(vault_.UNPAUSER_ROLE(), actors.UNPAUSER());
+        vault_.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), actors.DEPOSIT_MANAGER());
+        vault_.grantRole(vault_.ALLOCATOR_MANAGER_ROLE(), actors.ALLOCATOR_MANAGER());
 
         // set timelock roles
         vault_.grantRole(vault_.PROVIDER_MANAGER_ROLE(), address(timelock));
@@ -115,15 +118,31 @@ abstract contract BaseScript is Script, VaultUtils {
         vault_.renounceRole(vault_.UNPAUSER_ROLE(), msg.sender);
     }
 
+    function _loadDeployment() internal {
+        string memory jsonInput = vm.readFile(_deploymentFilePath());
+
+        deployer = address(vm.parseJsonAddress(jsonInput, ".deployer"));
+        timelock = TimelockController(payable(address(vm.parseJsonAddress(jsonInput, ".timelock"))));
+        rateProvider = IProvider(payable(address(vm.parseJsonAddress(jsonInput, ".rateProvider"))));
+        vault = KernelStrategy(payable(address(vm.parseJsonAddress(jsonInput, string.concat(".", symbol(), "-proxy")))));
+        implementation =
+            KernelStrategy(payable(address(vm.parseJsonAddress(jsonInput, string.concat(".", symbol(), "-implementation")))));
+    }
+
+    function _deploymentFilePath() internal view returns (string memory) {
+        return string.concat(vm.projectRoot(), "/deployments/", symbol(), "-", Strings.toString(block.chainid), ".json");
+    }
+
     function _saveDeployment() internal {
+        // minDelay
         vm.serializeAddress(symbol(), "deployer", msg.sender);
-        vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
+        vm.serializeAddress(symbol(), "admin", actors.ADMIN());
+        vm.serializeAddress(symbol(), "timelock", address(timelock));
         vm.serializeAddress(symbol(), "rateProvider", address(rateProvider));
+        vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
         string memory jsonOutput =
             vm.serializeAddress(symbol(), string.concat(symbol(), "-implementation"), address(implementation));
 
-        vm.writeJson(
-            jsonOutput, string.concat("./deployments/", symbol(), "-", Strings.toString(block.chainid), ".json")
-        );
+        vm.writeJson(jsonOutput, string.concat("./deployments/", _deploymentFilePath()));
     }
 }

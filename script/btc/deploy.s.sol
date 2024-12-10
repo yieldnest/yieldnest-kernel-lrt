@@ -9,6 +9,7 @@ import {BTCRateProvider, TestnetBTCRateProvider} from "src/module/BTCRateProvide
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
+import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {BaseScript} from "script/BaseScript.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
@@ -80,13 +81,14 @@ contract DeployYnBTCkStrategy is BaseScript {
         vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.SOLVBTC_BNN()), 18, false);
 
         setApprovalRule(vault_, contracts.BTCB(), contracts.STAKER_GATEWAY());
-        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.BTCB());
-
         setApprovalRule(vault_, contracts.SOLVBTC(), contracts.STAKER_GATEWAY());
-        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.SOLVBTC());
-
         setApprovalRule(vault_, contracts.SOLVBTC_BNN(), contracts.STAKER_GATEWAY());
-        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.SOLVBTC_BNN());
+
+        address[] memory assets = new address[](3);
+        assets[0] = contracts.BTCB();
+        assets[1] = contracts.SOLVBTC();
+        assets[2] = contracts.SOLVBTC_BNN();
+        setStakingRule(vault_, contracts.STAKER_GATEWAY(), assets);
 
         vault_.unpause();
 
