@@ -1,18 +1,11 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
-
 import {KernelStrategy} from "src/KernelStrategy.sol";
-import {BTCRateProvider, TestnetBTCRateProvider} from "src/module/BTCRateProvider.sol";
-
-import {TransparentUpgradeableProxy} from
-    "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {IValidator} from "lib/yieldnest-vault/src/interface/IVault.sol";
 import {BaseScript} from "script/BaseScript.sol";
-import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 import {Test} from "lib/forge-std/src/Test.sol";
 
@@ -57,7 +50,10 @@ abstract contract BaseVerifyScript is BaseScript, Test {
         validateDepositRule(vault_, contractAddress, assets);
     }
 
-    function validateDepositRule(KernelStrategy vault_, address contractAddress, address[] memory assets) internal view {
+    function validateDepositRule(KernelStrategy vault_, address contractAddress, address[] memory assets)
+        internal
+        view
+    {
         bytes4 funcSig = bytes4(keccak256("deposit(address,uint256)"));
 
         IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](2);
@@ -79,7 +75,10 @@ abstract contract BaseVerifyScript is BaseScript, Test {
         validateApprovalRule(vault_, contractAddress, allowList);
     }
 
-    function validateApprovalRule(KernelStrategy vault_, address contractAddress, address[] memory allowList) internal view {
+    function validateApprovalRule(KernelStrategy vault_, address contractAddress, address[] memory allowList)
+        internal
+        view
+    {
         bytes4 funcSig = bytes4(keccak256("approve(address,uint256)"));
 
         IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](2);
@@ -102,7 +101,10 @@ abstract contract BaseVerifyScript is BaseScript, Test {
         validateStakingRule(vault_, contractAddress, assets);
     }
 
-    function validateStakingRule(KernelStrategy vault_, address contractAddress, address[] memory assets) internal view {
+    function validateStakingRule(KernelStrategy vault_, address contractAddress, address[] memory assets)
+        internal
+        view
+    {
         bytes4 funcSig = bytes4(keccak256("stake(address,uint256,string)"));
 
         IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](3);
@@ -158,7 +160,10 @@ abstract contract BaseVerifyScript is BaseScript, Test {
         validateUnstakingRule(vault_, contractAddress, assets);
     }
 
-    function validateUnstakingRule(KernelStrategy vault_, address contractAddress, address[] memory assets) internal view {
+    function validateUnstakingRule(KernelStrategy vault_, address contractAddress, address[] memory assets)
+        internal
+        view
+    {
         bytes4 funcSig = bytes4(keccak256("unstake(address,uint256,string)"));
 
         IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](3);
@@ -176,7 +181,12 @@ abstract contract BaseVerifyScript is BaseScript, Test {
         validateProcessorRule(vault_, contractAddress, funcSig, rule);
     }
 
-    function validateProcessorRule(KernelStrategy vault_, address contractAddress, bytes4 funcSig, IVault.FunctionRule memory expectedResult) internal view {
+    function validateProcessorRule(
+        KernelStrategy vault_,
+        address contractAddress,
+        bytes4 funcSig,
+        IVault.FunctionRule memory expectedResult
+    ) internal view {
         IVault.FunctionRule memory rule = vault_.getProcessorRule(contractAddress, funcSig);
 
         // Add assertions

@@ -424,6 +424,8 @@ contract DeployYnBNBkStrategy is BaseScript {
     function saveDeployment(bool createMultiSigTx) public {
         if (createMultiSigTx) {
             vm.serializeAddress(symbol(), "deployer", msg.sender);
+            vm.serializeAddress(symbol(), "admin", actors.ADMIN());
+            vm.serializeAddress(symbol(), "timelock", address(timelock));
             vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
             vm.serializeAddress(symbol(), "rateProvider", address(rateProvider));
             vm.serializeAddress(symbol(), string.concat(symbol(), "-implementation"), address(implementation));

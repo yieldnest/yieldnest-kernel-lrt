@@ -125,8 +125,9 @@ abstract contract BaseScript is Script, VaultUtils {
         timelock = TimelockController(payable(address(vm.parseJsonAddress(jsonInput, ".timelock"))));
         rateProvider = IProvider(payable(address(vm.parseJsonAddress(jsonInput, ".rateProvider"))));
         vault = KernelStrategy(payable(address(vm.parseJsonAddress(jsonInput, string.concat(".", symbol(), "-proxy")))));
-        implementation =
-            KernelStrategy(payable(address(vm.parseJsonAddress(jsonInput, string.concat(".", symbol(), "-implementation")))));
+        implementation = KernelStrategy(
+            payable(address(vm.parseJsonAddress(jsonInput, string.concat(".", symbol(), "-implementation"))))
+        );
     }
 
     function _deploymentFilePath() internal view returns (string memory) {

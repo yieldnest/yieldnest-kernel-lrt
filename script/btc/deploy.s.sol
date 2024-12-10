@@ -9,7 +9,6 @@ import {BTCRateProvider, TestnetBTCRateProvider} from "src/module/BTCRateProvide
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {BaseScript} from "script/BaseScript.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
