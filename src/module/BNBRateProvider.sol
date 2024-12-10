@@ -9,6 +9,10 @@ import {MainnetContracts as MC, TestnetContracts as TC} from "script/Contracts.s
 import {BaseKernelRateProvider} from "./BaseKernelRateProvider.sol";
 
 contract BNBRateProvider is BaseKernelRateProvider {
+    function getStakerGateway() public pure override returns (address) {
+        return MC.STAKER_GATEWAY;
+    }
+
     function getRate(address asset) public view override returns (uint256) {
         if (asset == MC.WBNB) {
             return 1e18;
@@ -38,6 +42,10 @@ contract BNBRateProvider is BaseKernelRateProvider {
 }
 
 contract TestnetBNBRateProvider is BaseKernelRateProvider {
+    function getStakerGateway() public pure override returns (address) {
+        return TC.STAKER_GATEWAY;
+    }
+
     function getRate(address asset) public view override returns (uint256) {
         if (asset == TC.WBNB) {
             return 1e18;
