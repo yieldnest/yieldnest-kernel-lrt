@@ -9,6 +9,8 @@ import {BaseScript} from "script/BaseScript.sol";
 
 import {Test} from "lib/forge-std/src/Test.sol";
 
+import {BaseVaultViewer} from "lib/yieldnest-vault/src/utils/BaseVaultViewer.sol";
+
 // FOUNDRY_PROFILE=mainnet forge script VerifyYnBTCkStrategy
 abstract contract BaseVerifyScript is BaseScript, Test {
     function _verifyDefaultRoles(KernelStrategy vault_) internal view {
@@ -43,14 +45,26 @@ abstract contract BaseVerifyScript is BaseScript, Test {
         assertEq(vault_.hasRole(vault_.ALLOCATOR_MANAGER_ROLE(), deployer), false);
     }
 
-    function validateDepositRule(KernelStrategy vault_, address contractAddress, address asset) internal view {
+    function _verifyViewer() internal view {
+        assertEq(address(viewer.getVault()), address(vault));
+        BaseVaultViewer.AssetInfo[] memory assets = viewer.getAssets();
+        address[] memory assertsList = vault.getAssets();
+        assertEq(assets.length, assertsList.length);
+
+        for (uint256 i = 0; i < assets.length; i++) {
+            assertEq(assets[i].asset, assertsList[i]);
+            assertEq(assets[i].canDeposit, vault.getAsset(assertsList[i]).active);
+        }
+    }
+
+    function _verifyDepositRule(KernelStrategy vault_, address contractAddress, address asset) internal view {
         address[] memory assets = new address[](1);
         assets[0] = asset;
 
-        validateDepositRule(vault_, contractAddress, assets);
+        _verifyDepositRule(vault_, contractAddress, assets);
     }
 
-    function validateDepositRule(KernelStrategy vault_, address contractAddress, address[] memory assets)
+    function _verifyDepositRule(KernelStrategy vault_, address contractAddress, address[] memory assets)
         internal
         view
     {
@@ -65,17 +79,17 @@ abstract contract BaseVerifyScript is BaseScript, Test {
         IVault.FunctionRule memory rule =
             IVault.FunctionRule({isActive: true, paramRules: paramRules, validator: IValidator(address(0))});
 
-        validateProcessorRule(vault_, contractAddress, funcSig, rule);
+        _verifyProcessorRule(vault_, contractAddress, funcSig, rule);
     }
 
-    function validateApprovalRule(KernelStrategy vault_, address contractAddress, address spender) internal view {
+    function _verifyApprovalRule(KernelStrategy vault_, address contractAddress, address spender) internal view {
         address[] memory allowList = new address[](1);
         allowList[0] = spender;
 
-        validateApprovalRule(vault_, contractAddress, allowList);
+        _verifyApprovalRule(vault_, contractAddress, allowList);
     }
 
-    function validateApprovalRule(KernelStrategy vault_, address contractAddress, address[] memory allowList)
+    function _verifyApprovalRule(KernelStrategy vault_, address contractAddress, address[] memory allowList)
         internal
         view
     {
@@ -91,17 +105,17 @@ abstract contract BaseVerifyScript is BaseScript, Test {
         IVault.FunctionRule memory rule =
             IVault.FunctionRule({isActive: true, paramRules: paramRules, validator: IValidator(address(0))});
 
-        validateProcessorRule(vault_, contractAddress, funcSig, rule);
+        _verifyProcessorRule(vault_, contractAddress, funcSig, rule);
     }
 
-    function validateStakingRule(KernelStrategy vault_, address contractAddress, address asset) internal view {
+    function _verifyStakingRule(KernelStrategy vault_, address contractAddress, address asset) internal view {
         address[] memory assets = new address[](1);
         assets[0] = asset;
 
-        validateStakingRule(vault_, contractAddress, assets);
+        _verifyStakingRule(vault_, contractAddress, assets);
     }
 
-    function validateStakingRule(KernelStrategy vault_, address contractAddress, address[] memory assets)
+    function _verifyStakingRule(KernelStrategy vault_, address contractAddress, address[] memory assets)
         internal
         view
     {
@@ -119,10 +133,10 @@ abstract contract BaseVerifyScript is BaseScript, Test {
         IVault.FunctionRule memory rule =
             IVault.FunctionRule({isActive: true, paramRules: paramRules, validator: IValidator(address(0))});
 
-        validateProcessorRule(vault_, contractAddress, funcSig, rule);
+        _verifyProcessorRule(vault_, contractAddress, funcSig, rule);
     }
 
-    function validateClisStakingRule(KernelStrategy vault_, address contractAddress) internal view {
+    function _verifyClisStakingRule(KernelStrategy vault_, address contractAddress) internal view {
         bytes4 funcSig = bytes4(keccak256("stakeClisBNB(string)"));
 
         IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](1);
@@ -133,10 +147,10 @@ abstract contract BaseVerifyScript is BaseScript, Test {
         IVault.FunctionRule memory rule =
             IVault.FunctionRule({isActive: true, paramRules: paramRules, validator: IValidator(address(0))});
 
-        validateProcessorRule(vault_, contractAddress, funcSig, rule);
+        _verifyProcessorRule(vault_, contractAddress, funcSig, rule);
     }
 
-    function validateClisUnstakingRule(KernelStrategy vault_, address contractAddress) internal view {
+    function _verifyClisUnstakingRule(KernelStrategy vault_, address contractAddress) internal view {
         bytes4 funcSig = bytes4(keccak256("unstakeClisBNB(uint256,string)"));
 
         IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](2);
@@ -150,17 +164,17 @@ abstract contract BaseVerifyScript is BaseScript, Test {
         IVault.FunctionRule memory rule =
             IVault.FunctionRule({isActive: true, paramRules: paramRules, validator: IValidator(address(0))});
 
-        validateProcessorRule(vault_, contractAddress, funcSig, rule);
+        _verifyProcessorRule(vault_, contractAddress, funcSig, rule);
     }
 
-    function validateUnstakingRule(KernelStrategy vault_, address contractAddress, address asset) internal view {
+    function _verifyUnstakingRule(KernelStrategy vault_, address contractAddress, address asset) internal view {
         address[] memory assets = new address[](1);
         assets[0] = asset;
 
-        validateUnstakingRule(vault_, contractAddress, assets);
+        _verifyUnstakingRule(vault_, contractAddress, assets);
     }
 
-    function validateUnstakingRule(KernelStrategy vault_, address contractAddress, address[] memory assets)
+    function _verifyUnstakingRule(KernelStrategy vault_, address contractAddress, address[] memory assets)
         internal
         view
     {
@@ -178,10 +192,10 @@ abstract contract BaseVerifyScript is BaseScript, Test {
         IVault.FunctionRule memory rule =
             IVault.FunctionRule({isActive: true, paramRules: paramRules, validator: IValidator(address(0))});
 
-        validateProcessorRule(vault_, contractAddress, funcSig, rule);
+        _verifyProcessorRule(vault_, contractAddress, funcSig, rule);
     }
 
-    function validateProcessorRule(
+    function _verifyProcessorRule(
         KernelStrategy vault_,
         address contractAddress,
         bytes4 funcSig,

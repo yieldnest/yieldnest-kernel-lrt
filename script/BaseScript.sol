@@ -8,10 +8,15 @@ import {BscActors, ChapelActors, IActors} from "script/Actors.sol";
 import {BscContracts, ChapelContracts, IContracts} from "script/Contracts.sol";
 import {VaultUtils} from "script/VaultUtils.sol";
 
+import {TransparentUpgradeableProxy as TUP} from
+    "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+
 import {KernelStrategy} from "src/KernelStrategy.sol";
 
 import {TimelockController} from "lib/openzeppelin-contracts/contracts/governance/TimelockController.sol";
 import {Strings} from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
+
+import {BaseVaultViewer} from "lib/yieldnest-vault/src/utils/BaseVaultViewer.sol";
 
 abstract contract BaseScript is Script, VaultUtils {
     using stdJson for string;
@@ -25,6 +30,8 @@ abstract contract BaseScript is Script, VaultUtils {
     IProvider public rateProvider;
     KernelStrategy public vault;
     KernelStrategy public implementation;
+    BaseVaultViewer public viewer;
+    BaseVaultViewer public viewerImplementation;
 
     error UnsupportedChain();
     error InvalidSetup();
@@ -60,6 +67,20 @@ abstract contract BaseScript is Script, VaultUtils {
         ) {
             revert InvalidSetup();
         }
+    }
+
+    function _deployViewer() internal {
+        if (address(vault) == address(0)) {
+            revert InvalidSetup();
+        }
+
+        viewerImplementation = new BaseVaultViewer();
+
+        bytes memory initData = abi.encodeWithSelector(BaseVaultViewer.initialize.selector, address(vault));
+
+        TUP proxy = new TUP(address(viewerImplementation), actors.ADMIN(), initData);
+
+        viewer = BaseVaultViewer(payable(address(proxy)));
     }
 
     function _deployTimelockController() internal {
@@ -140,10 +161,12 @@ abstract contract BaseScript is Script, VaultUtils {
         vm.serializeAddress(symbol(), "admin", actors.ADMIN());
         vm.serializeAddress(symbol(), "timelock", address(timelock));
         vm.serializeAddress(symbol(), "rateProvider", address(rateProvider));
+        vm.serializeAddress(symbol(), "viewer-proxy", address(viewer));
+        vm.serializeAddress(symbol(), "viewer-implementation", address(viewerImplementation));
         vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
         string memory jsonOutput =
             vm.serializeAddress(symbol(), string.concat(symbol(), "-implementation"), address(implementation));
 
-        vm.writeJson(jsonOutput, string.concat("./deployments/", _deploymentFilePath()));
+        vm.writeJson(jsonOutput, _deploymentFilePath());
     }
 }

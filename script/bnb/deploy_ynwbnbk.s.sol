@@ -39,6 +39,8 @@ contract DeployYnWBNBkStrategy is BaseScript {
 
         deploy();
 
+        _deployViewer();
+
         _saveDeployment();
 
         vm.stopBroadcast();

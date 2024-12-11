@@ -39,6 +39,8 @@ contract DeployYnclisBNBkStrategy is BaseScript {
 
         deploy();
 
+        _deployViewer();
+
         _saveDeployment();
 
         vm.stopBroadcast();

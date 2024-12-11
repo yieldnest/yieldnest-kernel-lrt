@@ -30,6 +30,8 @@ contract VerifyYnBTCkStrategy is BaseVerifyScript {
         assertFalse(vault.getHasAllocator(), "has allocator is invalid");
         assertTrue(vault.getSyncDeposit(), "sync deposit is invalid");
         assertTrue(vault.getSyncWithdraw(), "sync withdraw is invalid");
+        assertEq(vault.baseWithdrawalFee(), 0, "base withdrawal fee is invalid");
+        assertEq(vault.countNativeAsset(), false, "count native asset is invalid");
 
         IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
 
@@ -71,19 +73,20 @@ contract VerifyYnBTCkStrategy is BaseVerifyScript {
         assertEq(asset.active, true, "asset[5].active is invalid");
         assertEq(asset.index, 5, "asset[5].index is invalid");
 
-        validateApprovalRule(vault, contracts.BTCB(), contracts.STAKER_GATEWAY());
-        validateApprovalRule(vault, contracts.SOLVBTC(), contracts.STAKER_GATEWAY());
-        validateApprovalRule(vault, contracts.SOLVBTC_BNN(), contracts.STAKER_GATEWAY());
+        _verifyApprovalRule(vault, contracts.BTCB(), contracts.STAKER_GATEWAY());
+        _verifyApprovalRule(vault, contracts.SOLVBTC(), contracts.STAKER_GATEWAY());
+        _verifyApprovalRule(vault, contracts.SOLVBTC_BNN(), contracts.STAKER_GATEWAY());
 
         address[] memory assetsForStaking = new address[](3);
         assets[0] = contracts.BTCB();
         assets[1] = contracts.SOLVBTC();
         assets[2] = contracts.SOLVBTC_BNN();
-        validateStakingRule(vault, contracts.STAKER_GATEWAY(), assetsForStaking);
+        _verifyStakingRule(vault, contracts.STAKER_GATEWAY(), assetsForStaking);
 
         assertFalse(vault.paused());
 
         _verifyDefaultRoles(vault);
         _verifyTemporaryRoles(vault);
+        _verifyViewer();
     }
 }

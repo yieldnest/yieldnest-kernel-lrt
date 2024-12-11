@@ -25,6 +25,8 @@ contract VerifyYnWBNBkStrategy is BaseVerifyScript {
         assertEq(vault.name(), "YieldNest WBNB Buffer - Kernel", "name is invalid");
         assertEq(vault.symbol(), "ynWBNBk", "symbol is invalid");
         assertEq(vault.decimals(), 18, "decimals is invalid");
+        assertEq(vault.baseWithdrawalFee(), 0, "base withdrawal fee is invalid");
+        assertEq(vault.countNativeAsset(), true, "count native asset is invalid");
 
         assertEq(vault.provider(), address(rateProvider), "provider is invalid");
         assertEq(vault.getStakerGateway(), contracts.STAKER_GATEWAY(), "staker gateway is invalid");
@@ -48,13 +50,14 @@ contract VerifyYnWBNBkStrategy is BaseVerifyScript {
         assertEq(asset.active, false, "asset[1].active is invalid");
         assertEq(asset.index, 3, "asset[1].index is invalid");
 
-        validateApprovalRule(vault, contracts.WBNB(), contracts.STAKER_GATEWAY());
-        validateStakingRule(vault, contracts.STAKER_GATEWAY(), contracts.WBNB());
+        _verifyApprovalRule(vault, contracts.WBNB(), contracts.STAKER_GATEWAY());
+        _verifyStakingRule(vault, contracts.STAKER_GATEWAY(), contracts.WBNB());
 
         assertFalse(vault.paused());
 
         _verifyDefaultRoles(vault);
         _verifyTemporaryRoles(vault);
+        _verifyViewer();
 
         assertTrue(vault.hasRole(vault.ALLOCATOR_ROLE(), contracts.YNBNBX()));
     }

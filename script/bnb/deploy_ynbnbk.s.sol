@@ -65,6 +65,8 @@ contract DeployYnBNBkStrategy is BaseScript {
 
         deployMigrateVault(createMultiSigTx);
 
+        _deployViewer();
+
         saveDeployment(createMultiSigTx);
 
         vm.stopBroadcast();
