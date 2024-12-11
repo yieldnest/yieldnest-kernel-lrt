@@ -56,6 +56,8 @@ contract DeployYnBNBkStrategy is BaseScript {
     }
 
     function runWithOption(bool createMultiSigTx) public {
+        vm.startBroadcast();
+
         _setup();
         // TODO: do not deploy a new timelock controller if one already exists
         _deployTimelockController();
