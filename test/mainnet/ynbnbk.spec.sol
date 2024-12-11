@@ -6,6 +6,7 @@ import {Test} from "lib/forge-std/src/Test.sol";
 import {Initializable} from "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {ITransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyUtils} from "script/ProxyUtils.sol";
 
 import {IERC20, ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
 
@@ -56,7 +57,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
 
         MigratedKernelStrategy implemention = new MigratedKernelStrategy();
 
-        ProxyAdmin proxyAdmin = ProxyAdmin(MC.YNBNBK_PROXY_ADMIN);
+        ProxyAdmin proxyAdmin = ProxyAdmin(ProxyUtils.getProxyAdmin(MC.YNBNBK));
 
         vm.prank(proxyAdmin.owner());
 

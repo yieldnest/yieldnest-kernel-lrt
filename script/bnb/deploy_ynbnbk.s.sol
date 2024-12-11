@@ -14,34 +14,28 @@ import {BNBRateProvider, TestnetBNBRateProvider} from "src/module/BNBRateProvide
 // import {console} from "forge-std/console.sol";
 import {AccessControlUpgradeable} from
     "lib/openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
-// import {TimelockController} from "lib/openzeppelin-contracts/contracts/governance/TimelockController.sol";
+import {TimelockController} from "lib/openzeppelin-contracts/contracts/governance/TimelockController.sol";
 import {
     ITransparentUpgradeableProxy,
     ProxyAdmin
 } from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {Strings} from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import {BaseScript} from "script/BaseScript.sol";
-import {BatchScript} from "script/BatchScript.sol";
+import {BatchScript, Operation, Transaction} from "script/BatchScript.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
-import {console} from "forge-std/console.sol";
+import {console} from "lib/forge-std/src/console.sol";
 
 // FOUNDRY_PROFILE=mainnet forge script DeployYnBNBkStrategy --sig "run(bool)" <true/false> --sender
 // 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
 contract DeployYnBNBkStrategy is BaseScript, BatchScript {
-    struct Transaction {
-        address target;
-        uint256 value;
-        bytes data;
-    }
-
-    Transaction[] public transactions;
-
     address public vaultAddress;
     ProxyAdmin public proxyAdmin;
 
+    bytes32 public constant SALT = keccak256("yieldnest.vault.kernel.bnb");
+
     error InvalidSender();
+    error AdminNotTimelockController();
 
     function symbol() public pure override returns (string memory) {
         return "ynBNBk";
@@ -65,28 +59,37 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
         vm.startBroadcast();
 
         _setup();
-        // TODO: do not deploy a new timelock controller if one already exists
-        _deployTimelockController();
-        deployRateProvider();
+
+        // load deployment if it exists (tx scheduled)
+        _loadDeployment();
+
+        if (address(rateProvider).code.length == 0) {
+            deployRateProvider();
+        }
+
+        vaultAddress = contracts.YNBNBK();
+        proxyAdmin = ProxyAdmin(ProxyUtils.getProxyAdmin(vaultAddress));
+        timelock = TimelockController(payable(proxyAdmin.owner()));
+
+        if (address(timelock).code.length == 0) {
+            revert AdminNotTimelockController();
+        }
 
         _verifySetup();
 
-        _deployViewer();
+        deployMigrateVault(isSafeTx);
 
-        saveDeployment(isSafeTx);
+        if (address(viewer).code.length == 0) {
+            _deployViewer();
+        }
+
+        _saveDeployment();
 
         vm.stopBroadcast();
     }
 
-    function deployMigrateVault(bool isSafeTx) internal returns (KernelStrategy) {
-        vaultAddress = contracts.YNBNBK();
-        proxyAdmin = ProxyAdmin(ProxyUtils.getProxyAdmin(vaultAddress));
-        console.log("proxy admin", address(proxyAdmin));
-        console.log("proxy admin owner", proxyAdmin.owner());
-
+    function deployMigrateVault(bool isSafeTx) internal {
         implementation = KernelStrategy(payable(address(new MigratedKernelStrategy())));
-
-        // check if proxy admin 's owner is a timelock controller
 
         MigratedKernelStrategy.Asset[] memory assets = new MigratedKernelStrategy.Asset[](3);
 
@@ -96,7 +99,7 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
 
         bytes memory initData = abi.encodeWithSelector(
             MigratedKernelStrategy.initializeAndMigrate.selector,
-            msg.sender,
+            actors.ADMIN(),
             "YieldNest Restaked BNB - Kernel",
             symbol(),
             18,
@@ -115,34 +118,56 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
         }
     }
 
-    function deployMigrateVaultAsSafe(bytes memory initData) internal returns (KernelStrategy) {
-        // TODO: handle if proxy admin owner is a time lock controller
+    function deployMigrateVaultAsSafe(bytes memory initData) internal isBatch(actors.ADMIN()) {
+        vault = KernelStrategy(payable(address(vaultAddress)));
         // create upgrade call transaction
         bytes memory upgradeData = abi.encodeWithSelector(
             proxyAdmin.upgradeAndCall.selector,
             abi.encode(ITransparentUpgradeableProxy(vaultAddress), implementation, initData)
         );
 
-        transactions.push(Transaction({target: address(proxyAdmin), value: 0, data: upgradeData}));
-
-        vault = KernelStrategy(payable(address(vaultAddress)));
-        createConfigureVaultTransactions();
-
-        return KernelStrategy(payable(address(vaultAddress)));
-    }
-
-    function deployMigrateVaultAsEOA(bytes memory initData) internal returns (KernelStrategy) {
-        // TODO: handle if proxy admin owner is a time lock controller
-        if (proxyAdmin.owner() != msg.sender) {
+        bool hasProcessorRole = timelock.hasRole(timelock.PROPOSER_ROLE(), actors.ADMIN());
+        if (!hasProcessorRole) {
             revert InvalidSender();
         }
 
+        bytes32 operationHash = timelock.hashOperation(address(proxyAdmin), 0, upgradeData, bytes32(0), SALT);
+
+        if (timelock.isOperationReady(operationHash)) {
+            // execute and configure
+            bytes memory executeData =
+                abi.encodeWithSelector(timelock.execute.selector, address(proxyAdmin), 0, upgradeData, bytes32(0), SALT);
+            addToBatch(address(timelock), 0, executeData);
+
+            configureVaultAsSafe();
+            return;
+        }
+
+        if (timelock.isOperationDone(operationHash)) {
+            console.log("Deployment Complete");
+            return;
+        }
+
+        if (timelock.isOperationPending(operationHash)) {
+            console.log("Deployment Pending");
+            return;
+        }
+
+        bytes memory scheduleData = abi.encodeWithSelector(
+            timelock.schedule.selector, address(proxyAdmin), 0, upgradeData, bytes32(0), SALT, minDelay
+        );
+
+        Transaction memory txInfo =
+            Transaction({operation: Operation.CALL, to: address(timelock), value: 0, data: scheduleData});
+
+        saveTransaction("schedule", txInfo);
+    }
+
+    function deployMigrateVaultAsEOA(bytes memory initData) internal {
         proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(vaultAddress), address(implementation), initData);
 
         vault = KernelStrategy(payable(address(vaultAddress)));
         configureVaultAsEOA();
-
-        return vault;
     }
 
     function configureVaultAsEOA() internal {
@@ -168,283 +193,226 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
         _renounceTemporaryRoles(vault);
     }
 
-    function createConfigureVaultTransactions() internal {
-        // TODO: fix these transactions to mirror `configureVault` above, particularly fix timelock
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    AccessControlUpgradeable.grantRole.selector, keccak256("DEFAULT_ADMIN_ROLE"), actors.ADMIN()
-                )
-            })
+    function configureVaultAsSafe() internal {
+        // set default roles
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.grantRole.selector, keccak256("DEFAULT_ADMIN_ROLE"), actors.ADMIN()
+            )
         );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    AccessControlUpgradeable.grantRole.selector, keccak256("PROCESSOR_ROLE"), actors.ADMIN()
-                )
-            })
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.grantRole.selector, keccak256("PROCESSOR_ROLE"), actors.ADMIN()
+            )
         );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    AccessControlUpgradeable.grantRole.selector,
-                    keccak256("PROVIDER_MANAGER_ROLE"),
-                    actors.PROVIDER_MANAGER()
-                )
-            })
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.grantRole.selector, keccak256("PAUSER_ROLE"), actors.PAUSER()
+            )
         );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    AccessControlUpgradeable.grantRole.selector, keccak256("ASSET_MANAGER_ROLE"), actors.ASSET_MANAGER()
-                )
-            })
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.grantRole.selector, keccak256("UNPAUSER_ROLE"), actors.UNPAUSER()
+            )
         );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    AccessControlUpgradeable.grantRole.selector, keccak256("BUFFER_MANAGER_ROLE"), actors.BUFFER_MANAGER()
-                )
-            })
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.grantRole.selector, keccak256("DEPOSIT_MANAGER_ROLE"), actors.DEPOSIT_MANAGER()
+            )
         );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    AccessControlUpgradeable.grantRole.selector,
-                    keccak256("PROCESSOR_MANAGER_ROLE"),
-                    actors.PROCESSOR_MANAGER()
-                )
-            })
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.grantRole.selector,
+                keccak256("ALLOCATOR_MANAGER_ROLE"),
+                actors.ALLOCATOR_MANAGER()
+            )
         );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    AccessControlUpgradeable.grantRole.selector, keccak256("PAUSER_ROLE"), actors.PAUSER()
-                )
-            })
+
+        // set timelock roles
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.grantRole.selector, keccak256("PROVIDER_MANAGER_ROLE"), address(timelock)
+            )
         );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    AccessControlUpgradeable.grantRole.selector, keccak256("UNPAUSER_ROLE"), actors.UNPAUSER()
-                )
-            })
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.grantRole.selector, keccak256("ASSET_MANAGER_ROLE"), address(timelock)
+            )
         );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    AccessControlUpgradeable.grantRole.selector, keccak256("PROCESSOR_MANAGER_ROLE"), msg.sender
-                )
-            })
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.grantRole.selector, keccak256("BUFFER_MANAGER_ROLE"), address(timelock)
+            )
         );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    AccessControlUpgradeable.grantRole.selector, keccak256("PROVIDER_MANAGER_ROLE"), msg.sender
-                )
-            })
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.grantRole.selector, keccak256("PROCESSOR_MANAGER_ROLE"), address(timelock)
+            )
         );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    AccessControlUpgradeable.grantRole.selector, keccak256("ASSET_MANAGER_ROLE"), msg.sender
-                )
-            })
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.grantRole.selector,
+                keccak256("KERNEL_DEPENDENCY_MANAGER_ROLE"),
+                address(timelock)
+            )
         );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    AccessControlUpgradeable.grantRole.selector, keccak256("UNPAUSER_ROLE"), msg.sender
-                )
-            })
+
+        // set provider
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.grantRole.selector, keccak256("PROVIDER_MANAGER_ROLE"), actors.ADMIN()
+            )
         );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(IVault.setProvider.selector, address(rateProvider))
-            })
+        addToBatch(address(vault), 0, abi.encodeWithSelector(IVault.setProvider.selector, address(rateProvider)));
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.renounceRole.selector, keccak256("PROVIDER_MANAGER_ROLE"), actors.ADMIN()
+            )
         );
+
         IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    KernelStrategy.addAssetWithDecimals.selector, stakerGateway.getVault(contracts.WBNB()), 18, false
-                )
-            })
+
+        // add kernel vaults as assets
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.grantRole.selector, keccak256("ASSET_MANAGER_ROLE"), actors.ADMIN()
+            )
         );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    KernelStrategy.addAssetWithDecimals.selector, stakerGateway.getVault(contracts.SLISBNB()), 18, false
-                )
-            })
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                KernelStrategy.addAssetWithDecimals.selector, stakerGateway.getVault(contracts.WBNB()), 18, false
+            )
         );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    KernelStrategy.addAssetWithDecimals.selector, stakerGateway.getVault(contracts.BNBX()), 18, false
-                )
-            })
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                KernelStrategy.addAssetWithDecimals.selector, stakerGateway.getVault(contracts.SLISBNB()), 18, false
+            )
+        );
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                KernelStrategy.addAssetWithDecimals.selector, stakerGateway.getVault(contracts.BNBX()), 18, false
+            )
+        );
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.renounceRole.selector, keccak256("ASSET_MANAGER_ROLE"), actors.ADMIN()
+            )
         );
 
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.grantRole.selector, keccak256("PROCESSOR_MANAGER_ROLE"), actors.ADMIN()
+            )
+        );
         // create approval rule
-        bytes4 funcSig = bytes4(keccak256("approve(address,uint256)"));
-        address[] memory allowList = new address[](1);
-        allowList[0] = contracts.STAKER_GATEWAY();
+        {
+            bytes4 funcSig = bytes4(keccak256("approve(address,uint256)"));
+            address[] memory allowList = new address[](1);
+            allowList[0] = contracts.STAKER_GATEWAY();
 
-        IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](2);
+            IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](2);
 
-        paramRules[0] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: allowList});
-        paramRules[1] =
-            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
+            paramRules[0] =
+                IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: allowList});
+            paramRules[1] =
+                IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
 
-        IVault.FunctionRule memory rule =
-            IVault.FunctionRule({isActive: true, paramRules: paramRules, validator: IValidator(address(0))});
+            IVault.FunctionRule memory rule =
+                IVault.FunctionRule({isActive: true, paramRules: paramRules, validator: IValidator(address(0))});
 
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(IVault.setProcessorRule.selector, contracts.SLISBNB(), funcSig, rule)
-            })
-        );
+            addToBatch(
+                address(vault),
+                0,
+                abi.encodeWithSelector(IVault.setProcessorRule.selector, contracts.SLISBNB(), funcSig, rule)
+            );
+        }
 
         // create stakingRule
-        address[] memory assets = new address[](1);
-        assets[0] = contracts.SLISBNB();
-        bytes4 funcSigStaking = bytes4(keccak256("stake(address,uint256,string)"));
+        {
+            address[] memory assets = new address[](1);
+            assets[0] = contracts.SLISBNB();
+            bytes4 funcSig = bytes4(keccak256("stake(address,uint256,string)"));
 
-        IVault.ParamRule[] memory paramRulesStaking = new IVault.ParamRule[](3);
+            IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](3);
 
-        paramRulesStaking[0] =
-            IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: assets});
-        paramRulesStaking[1] =
-            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
+            paramRules[0] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: assets});
+            paramRules[1] =
+                IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
 
-        paramRulesStaking[2] =
-            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
+            paramRules[2] =
+                IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
 
-        IVault.FunctionRule memory ruleStaking =
-            IVault.FunctionRule({isActive: true, paramRules: paramRulesStaking, validator: IValidator(address(0))});
+            IVault.FunctionRule memory ruleStaking =
+                IVault.FunctionRule({isActive: true, paramRules: paramRules, validator: IValidator(address(0))});
 
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    IVault.setProcessorRule.selector, contracts.STAKER_GATEWAY(), funcSigStaking, ruleStaking
+            addToBatch(
+                address(vault),
+                0,
+                abi.encodeWithSelector(
+                    IVault.setProcessorRule.selector, contracts.STAKER_GATEWAY(), funcSig, ruleStaking
                 )
-            })
+            );
+        }
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.renounceRole.selector, keccak256("PROCESSOR_MANAGER_ROLE"), actors.ADMIN()
+            )
         );
-        transactions.push(
-            Transaction({target: vaultAddress, value: 0, data: abi.encodeWithSelector(IVault.unpause.selector)})
-        );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(IVault.processAccounting.selector)
-            })
-        );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    AccessControlUpgradeable.renounceRole.selector, keccak256("DEFAULT_ADMIN_ROLE"), msg.sender
-                )
-            })
-        );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    AccessControlUpgradeable.renounceRole.selector, keccak256("PROCESSOR_MANAGER_ROLE"), msg.sender
-                )
-            })
-        );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    AccessControlUpgradeable.renounceRole.selector, keccak256("PROVIDER_MANAGER_ROLE"), msg.sender
-                )
-            })
-        );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    AccessControlUpgradeable.renounceRole.selector, keccak256("ASSET_MANAGER_ROLE"), msg.sender
-                )
-            })
-        );
-        transactions.push(
-            Transaction({
-                target: vaultAddress,
-                value: 0,
-                data: abi.encodeWithSelector(
-                    AccessControlUpgradeable.renounceRole.selector, keccak256("UNPAUSER_ROLE"), msg.sender
-                )
-            })
-        );
+
+        addToBatch(address(vault), 0, abi.encodeWithSelector(IVault.unpause.selector));
+
+        addToBatch(address(vault), 0, abi.encodeWithSelector(IVault.processAccounting.selector));
+
+        Transaction memory batch = getBatch();
+        saveTransaction("execute", batch);
     }
 
-    function saveDeployment(bool isSafeTx) public {
-        if (isSafeTx) {
+    function saveTransaction(string memory key, Transaction memory tx_) public {
+        vm.serializeUint(key, "operation", uint256(tx_.operation));
+        vm.serializeAddress(key, "to", tx_.to);
+        vm.serializeUint(key, "value", tx_.value);
+        string memory txJson = vm.serializeBytes(key, "data", tx_.data);
 
-            address[] memory targets = new address[](transactions.length);
-            uint256[] memory values = new uint256[](transactions.length);
-            bytes[] memory datas = new bytes[](transactions.length);
-            string[] memory txs = new string[](transactions.length);
-
-            for (uint256 i = 0; i < transactions.length; i++) {
-                targets[i] = transactions[i].target;
-                values[i] = transactions[i].value;
-                datas[i] = transactions[i].data;
-
-                vm.serializeAddress(string(abi.encodePacked(i)), "target", transactions[i].target);
-                vm.serializeUint(string(abi.encodePacked(i)), "value", transactions[i].value);
-                string memory temp = vm.serializeBytes(string(abi.encodePacked(i)), "data", transactions[i].data);
-
-                txs[i] = temp;
-            }
-            vm.serializeString(symbol(), "transactions", txs);
-        }
-            _saveDeployment();
+        vm.serializeString(symbol(), key, txJson);
     }
 }

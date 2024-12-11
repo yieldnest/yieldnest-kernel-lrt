@@ -5,21 +5,21 @@ pragma solidity ^0.8.24;
 // @dev picked up from https://github.com/ind-igo/forge-safe
 // @dev modified to work with our script setup
 
-import {Script } from "lib/forge-std/src/Script.sol";
+import {Script} from "lib/forge-std/src/Script.sol";
+
+enum Operation {
+    CALL,
+    DELEGATECALL
+}
+
+struct Transaction {
+    Operation operation;
+    address to;
+    uint256 value;
+    bytes data;
+}
 
 abstract contract BatchScript is Script {
-    enum Operation {
-        CALL,
-        DELEGATECALL
-    }
-
-    struct TransactionInfo {
-        Operation operation;
-        address to;
-        uint256 value;
-        bytes data;
-    }
-
     address private constant SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
     address private safe;
     bytes[] public encodedTxns;
@@ -52,7 +52,7 @@ abstract contract BatchScript is Script {
         }
     }
 
-    function displayBatch() internal view returns (TransactionInfo memory) {
+    function getBatch() internal view returns (Transaction memory) {
         // Set initial batch fields
         address to = SAFE_MULTISEND_ADDRESS;
         uint256 value = 0;
@@ -66,7 +66,6 @@ abstract contract BatchScript is Script {
         }
         bytes memory txData = abi.encodeWithSignature("multiSend(bytes)", data);
 
-        return TransactionInfo(operation, to, value, txData);
+        return Transaction(operation, to, value, txData);
     }
-
 }
