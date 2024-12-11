@@ -11,7 +11,7 @@ pragma solidity ^0.8.24;
 // 🧩 MODULES
 import {Script, console, stdJson} from "lib/forge-std/src/Script.sol";
 
-import {Surl} from "surl/Surl.sol";
+import {Surl} from "lib/surl/src/Surl.sol";
 
 // ⭐️ SCRIPT
 abstract contract BatchScript is Script {
