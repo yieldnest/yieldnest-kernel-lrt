@@ -22,11 +22,14 @@ import {
 import {Strings} from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import {BaseScript} from "script/BaseScript.sol";
+import {BatchScript} from "script/BatchScript.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
+
+import {console} from "forge-std/console.sol";
 
 // FOUNDRY_PROFILE=mainnet forge script DeployYnBNBkStrategy --sig "run(bool)" <true/false> --sender
 // 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
-contract DeployYnBNBkStrategy is BaseScript {
+contract DeployYnBNBkStrategy is BaseScript, BatchScript {
     struct Transaction {
         address target;
         uint256 value;
@@ -34,6 +37,9 @@ contract DeployYnBNBkStrategy is BaseScript {
     }
 
     Transaction[] public transactions;
+
+    address public vaultAddress;
+    ProxyAdmin public proxyAdmin;
 
     error InvalidSender();
 
@@ -55,7 +61,7 @@ contract DeployYnBNBkStrategy is BaseScript {
         runWithOption(true);
     }
 
-    function runWithOption(bool createMultiSigTx) public {
+    function runWithOption(bool isSafeTx) public {
         vm.startBroadcast();
 
         _setup();
@@ -65,21 +71,22 @@ contract DeployYnBNBkStrategy is BaseScript {
 
         _verifySetup();
 
-        deployMigrateVault(createMultiSigTx);
-
         _deployViewer();
 
-        saveDeployment(createMultiSigTx);
+        saveDeployment(isSafeTx);
 
         vm.stopBroadcast();
     }
 
-    function deployMigrateVault(bool createMultiSigTx) internal returns (KernelStrategy) {
+    function deployMigrateVault(bool isSafeTx) internal returns (KernelStrategy) {
+        vaultAddress = contracts.YNBNBK();
+        proxyAdmin = ProxyAdmin(ProxyUtils.getProxyAdmin(vaultAddress));
+        console.log("proxy admin", address(proxyAdmin));
+        console.log("proxy admin owner", proxyAdmin.owner());
+
         implementation = KernelStrategy(payable(address(new MigratedKernelStrategy())));
 
-        address vaultAddress = contracts.YNBNBK();
-
-        ProxyAdmin proxyAdmin = ProxyAdmin(ProxyUtils.getProxyAdmin(vaultAddress));
+        // check if proxy admin 's owner is a timelock controller
 
         MigratedKernelStrategy.Asset[] memory assets = new MigratedKernelStrategy.Asset[](3);
 
@@ -87,89 +94,81 @@ contract DeployYnBNBkStrategy is BaseScript {
         assets[1] = MigratedKernelStrategy.Asset({asset: contracts.SLISBNB(), active: true});
         assets[2] = MigratedKernelStrategy.Asset({asset: contracts.BNBX(), active: true});
 
-        // TODO: handle if proxy admin owner is a time lock controller
-        if (createMultiSigTx) {
-            // create upgrade call transaction
-            bytes memory upgradeData = abi.encodeWithSelector(
-                proxyAdmin.upgradeAndCall.selector,
-                abi.encode(
-                    ITransparentUpgradeableProxy(vaultAddress),
-                    implementation,
-                    abi.encodeWithSelector(
-                        MigratedKernelStrategy.initializeAndMigrate.selector,
-                        msg.sender,
-                        "YieldNest Restaked BNB - Kernel",
-                        symbol(),
-                        18,
-                        assets,
-                        contracts.STAKER_GATEWAY(),
-                        false,
-                        true,
-                        0,
-                        true
-                    )
-                )
-            );
+        bytes memory initData = abi.encodeWithSelector(
+            MigratedKernelStrategy.initializeAndMigrate.selector,
+            msg.sender,
+            "YieldNest Restaked BNB - Kernel",
+            symbol(),
+            18,
+            assets,
+            contracts.STAKER_GATEWAY(),
+            false,
+            true,
+            0,
+            true
+        );
 
-            transactions.push(Transaction({target: address(proxyAdmin), value: 0, data: upgradeData}));
-
-            createConfigureVaultTransactions(address(proxyAdmin));
-
-            return KernelStrategy(payable(address(vaultAddress)));
+        if (isSafeTx) {
+            deployMigrateVaultAsSafe(initData);
         } else {
-            if (proxyAdmin.owner() != msg.sender) {
-                revert InvalidSender();
-            }
-
-            proxyAdmin.upgradeAndCall(
-                ITransparentUpgradeableProxy(vaultAddress),
-                address(implementation),
-                abi.encodeWithSelector(
-                    MigratedKernelStrategy.initializeAndMigrate.selector,
-                    msg.sender,
-                    "YieldNest Restaked BNB - Kernel",
-                    symbol(),
-                    18,
-                    assets,
-                    contracts.STAKER_GATEWAY(),
-                    false,
-                    true,
-                    0,
-                    true
-                )
-            );
-
-            vault = KernelStrategy(payable(address(vaultAddress)));
-            configureVault(vault);
-
-            return vault;
+            deployMigrateVaultAsEOA(initData);
         }
     }
 
-    function configureVault(KernelStrategy vault_) internal {
-        _configureDefaultRoles(vault_);
-        _configureTemporaryRoles(vault_);
+    function deployMigrateVaultAsSafe(bytes memory initData) internal returns (KernelStrategy) {
+        // TODO: handle if proxy admin owner is a time lock controller
+        // create upgrade call transaction
+        bytes memory upgradeData = abi.encodeWithSelector(
+            proxyAdmin.upgradeAndCall.selector,
+            abi.encode(ITransparentUpgradeableProxy(vaultAddress), implementation, initData)
+        );
+
+        transactions.push(Transaction({target: address(proxyAdmin), value: 0, data: upgradeData}));
+
+        vault = KernelStrategy(payable(address(vaultAddress)));
+        createConfigureVaultTransactions();
+
+        return KernelStrategy(payable(address(vaultAddress)));
+    }
+
+    function deployMigrateVaultAsEOA(bytes memory initData) internal returns (KernelStrategy) {
+        // TODO: handle if proxy admin owner is a time lock controller
+        if (proxyAdmin.owner() != msg.sender) {
+            revert InvalidSender();
+        }
+
+        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(vaultAddress), address(implementation), initData);
+
+        vault = KernelStrategy(payable(address(vaultAddress)));
+        configureVaultAsEOA();
+
+        return vault;
+    }
+
+    function configureVaultAsEOA() internal {
+        _configureDefaultRoles(vault);
+        _configureTemporaryRoles(vault);
 
         // set provider
-        vault_.setProvider(address(rateProvider));
+        vault.setProvider(address(rateProvider));
 
         IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
 
-        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.WBNB()), 18, false);
-        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.SLISBNB()), 18, false);
-        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.BNBX()), 18, false);
+        vault.addAssetWithDecimals(stakerGateway.getVault(contracts.WBNB()), 18, false);
+        vault.addAssetWithDecimals(stakerGateway.getVault(contracts.SLISBNB()), 18, false);
+        vault.addAssetWithDecimals(stakerGateway.getVault(contracts.BNBX()), 18, false);
 
-        setApprovalRule(vault_, contracts.SLISBNB(), contracts.STAKER_GATEWAY());
-        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.SLISBNB());
+        setApprovalRule(vault, contracts.SLISBNB(), contracts.STAKER_GATEWAY());
+        setStakingRule(vault, contracts.STAKER_GATEWAY(), contracts.SLISBNB());
 
-        vault_.unpause();
+        vault.unpause();
 
-        vault_.processAccounting();
+        vault.processAccounting();
 
-        _renounceTemporaryRoles(vault_);
+        _renounceTemporaryRoles(vault);
     }
 
-    function createConfigureVaultTransactions(address vaultAddress) internal {
+    function createConfigureVaultTransactions() internal {
         // TODO: fix these transactions to mirror `configureVault` above, particularly fix timelock
         transactions.push(
             Transaction({
@@ -425,19 +424,14 @@ contract DeployYnBNBkStrategy is BaseScript {
         );
     }
 
-    function saveDeployment(bool createMultiSigTx) public {
-        if (createMultiSigTx) {
-            vm.serializeAddress(symbol(), "deployer", msg.sender);
-            vm.serializeAddress(symbol(), "admin", actors.ADMIN());
-            vm.serializeAddress(symbol(), "timelock", address(timelock));
-            vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
-            vm.serializeAddress(symbol(), "rateProvider", address(rateProvider));
-            vm.serializeAddress(symbol(), string.concat(symbol(), "-implementation"), address(implementation));
+    function saveDeployment(bool isSafeTx) public {
+        if (isSafeTx) {
 
             address[] memory targets = new address[](transactions.length);
             uint256[] memory values = new uint256[](transactions.length);
             bytes[] memory datas = new bytes[](transactions.length);
             string[] memory txs = new string[](transactions.length);
+
             for (uint256 i = 0; i < transactions.length; i++) {
                 targets[i] = transactions[i].target;
                 values[i] = transactions[i].value;
@@ -449,12 +443,8 @@ contract DeployYnBNBkStrategy is BaseScript {
 
                 txs[i] = temp;
             }
-            string memory jsonOutput = vm.serializeString(symbol(), "transactions", txs);
-            vm.writeJson(
-                jsonOutput, string.concat("./deployments/", symbol(), "-", Strings.toString(block.chainid), ".json")
-            );
-        } else {
-            _saveDeployment();
+            vm.serializeString(symbol(), "transactions", txs);
         }
+            _saveDeployment();
     }
 }
