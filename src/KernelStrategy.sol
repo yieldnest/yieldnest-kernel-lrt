@@ -114,7 +114,7 @@ contract KernelStrategy is Vault {
             return 0;
         }
 
-        (maxAssets,) = _convertToAssets(asset(), balanceOf(owner), Math.Rounding.Floor);
+        (, maxAssets) = _convertToAssets(asset(), balanceOf(owner), Math.Rounding.Floor);
     }
 
     /**
@@ -129,6 +129,17 @@ contract KernelStrategy is Vault {
         }
 
         return balanceOf(owner);
+    }
+
+    /**
+     * @notice Previews the amount of assets that would be received for a given amount of shares.
+     * @param shares The amount of shares to redeem.
+     * @return assets The equivalent amount of assets.
+     */
+    function previewRedeem(uint256 shares) public view override returns (uint256 assets) {
+        (, assets) = _convertToAssets(asset(), shares, Math.Rounding.Floor);
+
+        return assets - _feeOnTotal(assets);
     }
 
     /**
@@ -294,7 +305,7 @@ contract KernelStrategy is Vault {
         uint256 shares
     ) internal virtual onlyAllocator {
         VaultStorage storage vaultStorage = _getVaultStorage();
-        vaultStorage.totalAssets -= assets;
+        vaultStorage.totalAssets -= _convertAssetToBase(asset_, assets);
         if (caller != owner) {
             _spendAllowance(owner, caller, shares);
         }

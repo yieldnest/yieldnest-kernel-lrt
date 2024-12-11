@@ -18,9 +18,16 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
         wbnb.deposit{value: INITIAL_BALANCE}();
         wbnb.transfer(alice, INITIAL_BALANCE);
 
+        deal(alice, INITIAL_BALANCE);
+        bnbx.deposit{value: INITIAL_BALANCE}();
+        bnbx.transfer(alice, INITIAL_BALANCE);
+
         // Approve vault to spend Alice's tokens
         vm.prank(alice);
         wbnb.approve(address(vault), type(uint256).max);
+
+        vm.prank(alice);
+        bnbx.approve(address(vault), type(uint256).max);
 
         vm.startPrank(ADMIN);
         setStakingRule(vault, address(mockGateway), address(wbnb));
@@ -427,5 +434,199 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
         assertEq(asset.balanceOf(address(vault)), redeemAmount - maxRedeem, "Vault balance should be 0");
         assertEq(asset.balanceOf(alice), beforeAliceBalance + maxRedeem, "Alice balance should increase");
         assertEq(vault.balanceOf(alice), beforeAliceShares - shares, "Alice shares should decrease");
+    }
+
+    function test_KernelStrategy_withdrawMultipleAssets(uint256 withdrawAmount, uint256 depositAmount) public {
+        withdrawAmount = bound(withdrawAmount, 10, INITIAL_BALANCE);
+        depositAmount = bound(depositAmount, withdrawAmount, INITIAL_BALANCE);
+        uint256 withdrawAmount1 = withdrawAmount / 2;
+        uint256 withdrawAmount2 = withdrawAmount;
+
+        {
+            // disable sync
+            vm.startPrank(ADMIN);
+            vault.setSyncDeposit(false);
+            vault.setSyncWithdraw(false);
+            vm.stopPrank();
+        }
+
+        IERC20 asset1 = IERC20(address(MC.WBNB));
+        IERC20 asset2 = IERC20(address(MC.BNBX));
+
+        {
+            assertEq(vault.totalAssets(), 0, "totalAssets should be 0");
+            assertEq(vault.totalSupply(), 0, "totalSupply should be 0");
+            assertEq(vault.balanceOf(alice), 0, "alice has incorrect shares");
+            assertEq(asset1.balanceOf(address(vault)), 0, "asset1 balance should be 0");
+            assertEq(asset2.balanceOf(address(vault)), 0, "asset2 balance should be 0");
+
+            vm.prank(alice);
+            uint256 shares1 = vault.depositAsset(address(asset1), depositAmount, alice);
+
+            vm.prank(alice);
+            uint256 shares2 = vault.depositAsset(address(asset2), depositAmount, alice);
+
+            assertEq(vault.balanceOf(alice), shares1 + shares2, "alice has incorrect shares");
+            assertEq(vault.totalAssets(), depositAmount + depositAmount / 2, "totalAssets should be based on rate");
+            assertEq(vault.totalSupply(), shares1 + shares2, "totalSupply is incorrect");
+            assertEq(asset1.balanceOf(address(vault)), depositAmount, "asset1 balance is incorrect");
+            assertEq(asset2.balanceOf(address(vault)), depositAmount, "asset2 balance is incorrect");
+
+            assertEqThreshold(shares2 * 2, shares1, 3, "shares should be correct");
+
+            uint256 totalShares = shares1 + shares2;
+
+            uint256 maxWithdraw = vault.maxWithdraw(alice);
+
+            uint256 maxWithdraw1 = vault.maxWithdrawAsset(address(asset1), alice);
+
+            assertEq(maxWithdraw, maxWithdraw1, "maxWithdraw is incorrect");
+
+            uint256 expectedMax1 = vault.convertToAssets(totalShares);
+
+            assertEq(maxWithdraw1, expectedMax1, "Max withdraw for asset1 is incorrect");
+
+            assertGe(maxWithdraw1, depositAmount, "Max withdraw for asset1 should be greater than depositAmount");
+
+            uint256 maxWithdraw2 = vault.maxWithdrawAsset(address(asset2), alice);
+
+            uint256 expectedMax2 = 2 * expectedMax1;
+
+            assertEq(maxWithdraw2, expectedMax2, "Max withdraw for asset2 is incorrect");
+
+            assertGe(maxWithdraw2, depositAmount, "Max withdraw for asset2 should be greater than depositAmount");
+        }
+
+        {
+            uint256 beforeAliceBalance1 = asset1.balanceOf(alice);
+            uint256 beforeAliceBalance2 = asset2.balanceOf(alice);
+            uint256 beforeAliceShares = vault.balanceOf(alice);
+            uint256 beforeTotalAssets = vault.totalAssets();
+            uint256 beforeTotalShares = vault.totalSupply();
+
+            vm.prank(alice);
+            uint256 shares1 = vault.withdrawAsset(address(asset1), withdrawAmount1, alice, alice);
+
+            assertEq(
+                asset1.balanceOf(address(vault)), depositAmount - withdrawAmount1, "asset1 balance should be correct"
+            );
+            assertEq(vault.totalAssets(), beforeTotalAssets - withdrawAmount1, "totalAssets should be correct");
+            assertEq(vault.totalSupply(), beforeTotalShares - shares1, "totalSupply should be correct");
+
+            vm.prank(alice);
+            uint256 shares2 = vault.withdrawAsset(address(asset2), withdrawAmount2, alice, alice);
+
+            assertEq(
+                asset2.balanceOf(address(vault)), depositAmount - withdrawAmount2, "asset2 balance should be correct"
+            );
+            assertEq(
+                vault.totalAssets(),
+                beforeTotalAssets - withdrawAmount1 - withdrawAmount2 / 2,
+                "totalAssets should be correct"
+            );
+            assertEq(vault.totalSupply(), beforeTotalShares - shares1 - shares2, "totalSupply should be correct");
+            assertEq(vault.balanceOf(alice), beforeAliceShares - shares1 - shares2, "alice has incorrect shares");
+
+            assertEqThreshold(shares2, shares1, 3, "rate should be correct");
+
+            assertEq(asset1.balanceOf(alice), beforeAliceBalance1 + withdrawAmount1, "asset1 balance is incorrect");
+            assertEq(asset2.balanceOf(alice), beforeAliceBalance2 + withdrawAmount2, "asset2 balance is incorrect");
+        }
+    }
+
+    function test_KernelStrategy_redeemMultipleAssets(uint256 withdrawAmount, uint256 depositAmount) public {
+        withdrawAmount = bound(withdrawAmount, 10, INITIAL_BALANCE);
+        depositAmount = bound(depositAmount, withdrawAmount, INITIAL_BALANCE);
+        uint256 redeemAmount2 = vault.convertToShares(withdrawAmount) / 2;
+        uint256 redeemAmount1 = redeemAmount2 / 2;
+
+        {
+            // disable sync
+            vm.startPrank(ADMIN);
+            vault.setSyncDeposit(false);
+            vault.setSyncWithdraw(false);
+            vm.stopPrank();
+        }
+
+        IERC20 asset1 = IERC20(address(MC.WBNB));
+        IERC20 asset2 = IERC20(address(MC.BNBX));
+
+        {
+            assertEq(vault.totalAssets(), 0, "totalAssets should be 0");
+            assertEq(vault.totalSupply(), 0, "totalSupply should be 0");
+            assertEq(vault.balanceOf(alice), 0, "alice has incorrect shares");
+            assertEq(asset1.balanceOf(address(vault)), 0, "asset1 balance should be 0");
+            assertEq(asset2.balanceOf(address(vault)), 0, "asset2 balance should be 0");
+
+            vm.prank(alice);
+            uint256 shares1 = vault.depositAsset(address(asset1), depositAmount, alice);
+
+            vm.prank(alice);
+            uint256 shares2 = vault.depositAsset(address(asset2), depositAmount, alice);
+
+            assertEq(vault.balanceOf(alice), shares1 + shares2, "alice has incorrect shares");
+            assertEq(vault.totalAssets(), depositAmount + depositAmount / 2, "totalAssets should be based on rate");
+            assertEq(vault.totalSupply(), shares1 + shares2, "totalSupply is incorrect");
+            assertEq(asset1.balanceOf(address(vault)), depositAmount, "asset1 balance is incorrect");
+            assertEq(asset2.balanceOf(address(vault)), depositAmount, "asset2 balance is incorrect");
+
+            assertEqThreshold(shares2 * 2, shares1, 3, "shares should be correct");
+
+            uint256 totalShares = shares1 + shares2;
+
+            uint256 maxWithdraw = vault.maxWithdraw(alice);
+
+            uint256 maxWithdraw1 = vault.maxWithdrawAsset(address(asset1), alice);
+
+            assertEq(maxWithdraw, maxWithdraw1, "maxWithdraw is incorrect");
+
+            uint256 expectedMax1 = vault.convertToAssets(totalShares);
+
+            assertEq(maxWithdraw1, expectedMax1, "Max withdraw for asset1 is incorrect");
+
+            assertGe(maxWithdraw1, depositAmount, "Max withdraw for asset1 should be greater than depositAmount");
+
+            uint256 maxWithdraw2 = vault.maxWithdrawAsset(address(asset2), alice);
+
+            uint256 expectedMax2 = 2 * expectedMax1;
+
+            assertEq(maxWithdraw2, expectedMax2, "Max withdraw for asset2 is incorrect");
+
+            assertGe(maxWithdraw2, depositAmount, "Max withdraw for asset2 should be greater than depositAmount");
+        }
+
+        {
+            uint256 beforeAliceBalance1 = asset1.balanceOf(alice);
+            uint256 beforeAliceBalance2 = asset2.balanceOf(alice);
+            uint256 beforeAliceShares = vault.balanceOf(alice);
+            uint256 beforeTotalAssets = vault.totalAssets();
+            uint256 beforeTotalShares = vault.totalSupply();
+
+            vm.prank(alice);
+            uint256 amount1 = vault.redeemAsset(address(asset1), redeemAmount1, alice, alice);
+
+            assertEq(asset1.balanceOf(address(vault)), depositAmount - amount1, "asset1 balance should be correct");
+            assertEq(vault.totalAssets(), beforeTotalAssets - amount1, "totalAssets should be correct");
+            assertEq(vault.totalSupply(), beforeTotalShares - redeemAmount1, "totalSupply should be correct");
+
+            vm.prank(alice);
+            uint256 amount2 = vault.redeemAsset(address(asset2), redeemAmount2, alice, alice);
+
+            assertEq(asset2.balanceOf(address(vault)), depositAmount - amount2, "asset2 balance should be correct");
+
+            assertEq(vault.totalAssets(), beforeTotalAssets - amount1 - amount2 / 2, "totalAssets should be correct");
+            assertEq(
+                vault.totalSupply(), beforeTotalShares - redeemAmount1 - redeemAmount2, "totalSupply should be correct"
+            );
+            assertEq(
+                vault.balanceOf(alice),
+                beforeAliceShares - redeemAmount1 - redeemAmount2,
+                "alice has incorrect redeemAmount"
+            );
+
+            assertEqThreshold(amount2, 4 * amount1, 3, "rate should be correct");
+            assertEq(asset1.balanceOf(alice), beforeAliceBalance1 + amount1, "asset1 balance is incorrect");
+            assertEq(asset2.balanceOf(alice), beforeAliceBalance2 + amount2, "asset2 balance is incorrect");
+        }
     }
 }
