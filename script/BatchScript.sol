@@ -1,39 +1,31 @@
 /* solhint-disable no-console, max-line-length, quotes */
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
 // @dev picked up from https://github.com/ind-igo/forge-safe
 // @dev modified to work with our script setup
 
-// 🧩 MODULES
-import {Script, console, stdJson} from "lib/forge-std/src/Script.sol";
+import {Script } from "lib/forge-std/src/Script.sol";
 
-// ⭐️ SCRIPT
 abstract contract BatchScript is Script {
-    using stdJson for string;
-
-    address private constant SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
-
-    // Chain ID, configured by chain.
-    uint256 private chainId;
-
-    // Address to send transaction from
-    address private safe;
-
     enum Operation {
         CALL,
         DELEGATECALL
     }
 
+    struct TransactionInfo {
+        Operation operation;
+        address to;
+        uint256 value;
+        bytes data;
+    }
+
+    address private constant SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
+    address private safe;
     bytes[] public encodedTxns;
 
-    // Modifiers
-
     modifier isBatch(address safe_) {
-        // Store the provided safe address
         safe = safe_;
-
-        // Run batch
         _;
     }
 
@@ -60,7 +52,7 @@ abstract contract BatchScript is Script {
         }
     }
 
-    function displayBatch() internal view {
+    function displayBatch() internal view returns (TransactionInfo memory) {
         // Set initial batch fields
         address to = SAFE_MULTISEND_ADDRESS;
         uint256 value = 0;
@@ -74,14 +66,7 @@ abstract contract BatchScript is Script {
         }
         bytes memory txData = abi.encodeWithSignature("multiSend(bytes)", data);
 
-        console.log("");
-        console.log("Safe Batch Transaction:");
-        console.log("To: ", to);
-        console.log("Operation: %d (%s)", uint256(operation), "DELEGATECALL");
-        console.log("Value: ", value);
-        console.log("Data: ");
-        console.logBytes(txData);
-        console.log("");
+        return TransactionInfo(operation, to, value, txData);
     }
 
 }
