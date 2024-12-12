@@ -91,7 +91,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
 
         // Check that the vault received the tokens
         assertEq(
-            wbnb.balanceOf(address(mockGateway)),
+            wbnb.balanceOf(address(mockGateway.getVault(address(wbnb)))),
             beforeGatewayBalance + depositAmount,
             "KernelStrategy did not receive tokens"
         );
@@ -170,7 +170,11 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
         assertEq(sharesMinted, previewDepositAsset, "Incorrect shares minted");
 
         // Check that the vault received the tokens
-        assertEq(slisbnb.balanceOf(address(mockGateway)), depositAmount, "KernelStrategy did not receive tokens");
+        assertEq(
+            slisbnb.balanceOf(address(mockGateway.getVault(address(slisbnb)))),
+            depositAmount,
+            "KernelStrategy did not receive tokens"
+        );
 
         // Check that Alice's token balance decreased
         assertEq(slisbnb.balanceOf(alice), 0, "Alice's balance did not decrease correctly");

@@ -2,9 +2,11 @@
 pragma solidity ^0.8.24;
 
 import {KernelStrategy} from "./KernelStrategy.sol";
-import {IERC20, SafeERC20} from "lib/yieldnest-vault/src/Common.sol";
+import {IERC20, Math, SafeERC20} from "lib/yieldnest-vault/src/Common.sol";
 
 import {IWBNB} from "src/interface/external/IWBNB.sol";
+
+import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 /**
@@ -16,6 +18,53 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
  * for the specific asset clisBNB.
  */
 contract KernelClisStrategy is KernelStrategy {
+    /**
+     * @notice Initializes the vault.
+     * @param admin The address of the admin.
+     * @param name The name of the vault.
+     * @param symbol The symbol of the vault.
+     * @param decimals The decimals of the vault.
+     * @param baseWithdrawalFee The base withdrawal fee.
+     * @param countNativeAsset Whether to count the native asset.
+     * @param wbnb The address of the WBNB token.
+     * @param clisbnb The address of the CLISBNB token.
+     * @param stakerGateway The address of the staker gateway.
+     */
+    function initialize(
+        address admin,
+        string memory name,
+        string memory symbol,
+        uint8 decimals,
+        uint64 baseWithdrawalFee,
+        bool countNativeAsset,
+        address wbnb,
+        address clisbnb,
+        address stakerGateway
+    ) external initializer {
+        if (admin == address(0)) {
+            revert ZeroAddress();
+        }
+        __ERC20Permit_init(name);
+        __ERC20_init(name, symbol);
+        __AccessControl_init();
+        __ReentrancyGuard_init();
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
+
+        VaultStorage storage vaultStorage = _getVaultStorage();
+        vaultStorage.paused = true;
+        vaultStorage.decimals = decimals;
+        vaultStorage.countNativeAsset = countNativeAsset;
+
+        FeeStorage storage fees = _getFeeStorage();
+        fees.baseWithdrawalFee = baseWithdrawalFee;
+
+        StrategyStorage storage strategyStorage = _getStrategyStorage();
+        strategyStorage.stakerGateway = stakerGateway;
+
+        _addAsset(wbnb, decimals, true);
+        _addAsset(IStakerGateway(strategyStorage.stakerGateway).getVault(clisbnb), decimals, false);
+    }
+
     /**
      * @notice Internal function to handle deposits.
      * @param asset_ The address of the asset.
@@ -47,11 +96,12 @@ contract KernelClisStrategy is KernelStrategy {
 
         // if sync deposit is false we keep the WBNB wrapped and unwrap it with the processor
 
-        if (strategyStorage.syncDeposit) {
+        address wbnb = _getAssetStorage().list[0];
+        if (strategyStorage.syncDeposit && asset_ == wbnb) {
             SafeERC20.safeIncreaseAllowance(IERC20(asset_), address(strategyStorage.stakerGateway), assets);
 
             // unwrap WBNB
-            IWBNB(asset()).withdraw(assets);
+            IWBNB(asset_).withdraw(assets);
 
             // TODO: fix referralId
             string memory referralId = "";
@@ -88,13 +138,14 @@ contract KernelClisStrategy is KernelStrategy {
 
         StrategyStorage storage strategyStorage = _getStrategyStorage();
 
-        if (vaultBalance < assets && strategyStorage.syncWithdraw) {
+        address wbnb = _getAssetStorage().list[0];
+        if (vaultBalance < assets && strategyStorage.syncWithdraw && asset_ == wbnb) {
             // TODO: fix referralId
             string memory referralId = "";
             IStakerGateway(strategyStorage.stakerGateway).unstakeClisBNB(assets, referralId);
 
             //wrap native token
-            IWBNB(asset()).deposit{value: assets}();
+            IWBNB(asset_).deposit{value: assets}();
         }
 
         SafeERC20.safeTransfer(IERC20(asset_), receiver, assets);
@@ -102,5 +153,33 @@ contract KernelClisStrategy is KernelStrategy {
         _burn(owner, shares);
 
         emit WithdrawAsset(caller, receiver, owner, asset_, assets, shares);
+    }
+
+    /**
+     * @dev See {maxWithdrawAsset}.
+     */
+    function _maxWithdrawAsset(address asset_, address owner) internal view override returns (uint256 maxAssets) {
+        if (!_getAssetStorage().assets[asset_].active) {
+            return 0;
+        }
+
+        (maxAssets,) = _convertToAssets(asset_, balanceOf(owner), Math.Rounding.Floor);
+
+        uint256 availableAssets = IERC20(asset_).balanceOf(address(this));
+
+        StrategyStorage storage strategyStorage = _getStrategyStorage();
+
+        address wbnb = _getAssetStorage().list[0];
+
+        if (strategyStorage.syncWithdraw && asset_ == wbnb) {
+            address vault = _getAssetStorage().list[1];
+            address clisbnb = IKernelVault(vault).getAsset();
+            uint256 availableAssetsInKernel = IERC20(clisbnb).balanceOf(address(vault));
+            availableAssets += availableAssetsInKernel;
+        }
+
+        if (availableAssets < maxAssets) {
+            maxAssets = availableAssets;
+        }
     }
 }

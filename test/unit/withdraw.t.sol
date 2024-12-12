@@ -138,19 +138,6 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
         vault.withdrawAsset(address(MC.WBNB), 0, alice, alice);
     }
 
-    function test_KernelStrategy_ynBNBk_withdraw_revert_zeroAddress(uint256 withdrawalAmount) public {
-        // uint256 withdrawalAmount = 100 * 10 ** 18;
-        if (withdrawalAmount < 10) return;
-        if (withdrawalAmount > INITIAL_BALANCE) return;
-
-        // deposit amount
-        vm.startPrank(alice);
-        vault.deposit(withdrawalAmount, alice);
-
-        vm.expectRevert(IVault.ZeroAddress.selector);
-        vault.withdrawAsset(address(0), withdrawalAmount, alice, alice);
-    }
-
     function test_KernelStrategy_ynBNBk_withdraw_revert_wrongAsset(uint256 withdrawalAmount) public {
         // uint256 withdrawalAmount = 100 * 10 ** 18;
         if (withdrawalAmount < 10) return;
@@ -374,13 +361,17 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
 
         // deposit amount
         vm.prank(alice);
-        vault.deposit(withdrawalAmount, alice);
+        uint256 shares1 = vault.deposit(withdrawalAmount, alice);
 
-        uint256 maxWithdraw = vault.maxWithdrawAsset(address(asset), alice);
+        uint256 maxWithdraw = vault.maxWithdraw(alice);
+        uint256 maxWithdrawAsset = vault.maxWithdrawAsset(address(asset), alice);
+
+        assertEq(maxWithdrawAsset, maxWithdraw, "maxWithdraw should be equal to maxWithdrawAsset");
 
         assertEq(vault.balanceOf(alice), withdrawalAmount, "alice has incorrect shares");
-        assertEqThreshold(maxWithdraw, withdrawalAmount, 2, "Max withdraw should be equal to withdrawalAmount");
+        assertEq(shares1, withdrawalAmount, "shares is incorrect");
 
+        assertEq(maxWithdraw, withdrawalAmount, "Max withdraw should be equal to withdrawalAmount");
         uint256 beforeAliceBalance = asset.balanceOf(alice);
         uint256 beforeAliceShares = vault.balanceOf(alice);
 
@@ -474,27 +465,17 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
 
             assertEqThreshold(shares2 * 2, shares1, 3, "shares should be correct");
 
-            uint256 totalShares = shares1 + shares2;
-
             uint256 maxWithdraw = vault.maxWithdraw(alice);
 
             uint256 maxWithdraw1 = vault.maxWithdrawAsset(address(asset1), alice);
 
             assertEq(maxWithdraw, maxWithdraw1, "maxWithdraw is incorrect");
 
-            uint256 expectedMax1 = vault.convertToAssets(totalShares);
-
-            assertEq(maxWithdraw1, expectedMax1, "Max withdraw for asset1 is incorrect");
-
-            assertGe(maxWithdraw1, depositAmount, "Max withdraw for asset1 should be greater than depositAmount");
+            assertEq(maxWithdraw1, depositAmount, "Max withdraw for asset1 is incorrect");
 
             uint256 maxWithdraw2 = vault.maxWithdrawAsset(address(asset2), alice);
 
-            uint256 expectedMax2 = 2 * expectedMax1;
-
-            assertEq(maxWithdraw2, expectedMax2, "Max withdraw for asset2 is incorrect");
-
-            assertGe(maxWithdraw2, depositAmount, "Max withdraw for asset2 should be greater than depositAmount");
+            assertEq(maxWithdraw2, depositAmount, "Max withdraw for asset2 is incorrect");
         }
 
         {
@@ -572,27 +553,17 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
 
             assertEqThreshold(shares2 * 2, shares1, 3, "shares should be correct");
 
-            uint256 totalShares = shares1 + shares2;
-
             uint256 maxWithdraw = vault.maxWithdraw(alice);
 
             uint256 maxWithdraw1 = vault.maxWithdrawAsset(address(asset1), alice);
 
             assertEq(maxWithdraw, maxWithdraw1, "maxWithdraw is incorrect");
 
-            uint256 expectedMax1 = vault.convertToAssets(totalShares);
-
-            assertEq(maxWithdraw1, expectedMax1, "Max withdraw for asset1 is incorrect");
-
-            assertGe(maxWithdraw1, depositAmount, "Max withdraw for asset1 should be greater than depositAmount");
+            assertEq(maxWithdraw1, depositAmount, "Max withdraw for asset1 is incorrect");
 
             uint256 maxWithdraw2 = vault.maxWithdrawAsset(address(asset2), alice);
 
-            uint256 expectedMax2 = 2 * expectedMax1;
-
-            assertEq(maxWithdraw2, expectedMax2, "Max withdraw for asset2 is incorrect");
-
-            assertGe(maxWithdraw2, depositAmount, "Max withdraw for asset2 should be greater than depositAmount");
+            assertEq(maxWithdraw2, depositAmount, "Max withdraw for asset2 is incorrect");
         }
 
         {

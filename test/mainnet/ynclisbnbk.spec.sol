@@ -12,7 +12,7 @@ import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 
 import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
-import {KernelClisStrategy, KernelStrategy} from "src/KernelClisStrategy.sol";
+import {KernelClisStrategy} from "src/KernelClisStrategy.sol";
 
 import {IAccessControl} from
     "lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
@@ -50,13 +50,16 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
     function deployClisBNBk() public returns (KernelClisStrategy _vault) {
         KernelClisStrategy implementation = new KernelClisStrategy();
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector,
+            KernelClisStrategy.initialize.selector,
             MainnetActors.ADMIN,
             "YieldNest Restaked slisBNB - Kernel",
             "ynclisWBNBk",
             18,
             0,
-            true
+            true,
+            MC.WBNB,
+            MC.CLISBNB,
+            MC.STAKER_GATEWAY
         );
 
         TransparentUpgradeableProxy proxy =
@@ -89,12 +92,8 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         vault_.setProvider(address(kernelProvider));
 
         vault_.setHasAllocator(true);
-        vault_.setStakerGateway(MC.STAKER_GATEWAY);
 
         vault_.setSyncDeposit(true);
-
-        vault_.addAsset(MC.WBNB, true);
-        vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.CLISBNB), 18, false);
 
         vault_.unpause();
 
@@ -156,13 +155,15 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         vault.depositAsset(MC.WBNB, amount, withdrawer);
         vm.stopPrank();
 
+        uint256 maxWithdraw = vault.maxWithdrawAsset(MC.WBNB, withdrawer);
+
         vm.startPrank(withdrawer);
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector, withdrawer, vault.ALLOCATOR_ROLE()
             )
         );
-        vault.withdrawAsset(MC.WBNB, amount, withdrawer, withdrawer);
+        vault.withdrawAsset(MC.WBNB, maxWithdraw, withdrawer, withdrawer);
         vm.stopPrank();
     }
 
@@ -272,11 +273,15 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
 
         vault.processAccounting();
 
-        uint256 maxWithdraw = vault.maxWithdraw(bob);
+        assertEq(shares, amount, "shares should be equal to amount");
+        uint256 maxWithdraw = vault.maxWithdrawAsset(MC.WBNB, bob);
         uint256 vaultShares = stakerGateway.balanceOf(clisBnbVault, address(vault));
         assertGt(vaultShares, 0, "vault should have some shares");
         assertGt(maxWithdraw, 0, "max withdraw should not be 0");
-        assertEq(maxWithdraw, shares, "incorrect maxWithdraw amount");
+
+        uint256 vaultBalance = asset.balanceOf(address(vault));
+        assertEq(vaultBalance, 0);
+        assertEq(maxWithdraw, amount, "incorrect maxWithdraw amount");
 
         assertEq(
             stakerGateway.balanceOf(clisBnbVault, address(vault)), amount, "vault should have shares after deposit"

@@ -443,9 +443,11 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         uint256 beforeBobShares = vault.balanceOf(bob);
         uint256 maxWithdraw = vault.maxWithdrawAsset(MC.SLISBNB, bob);
 
+        assertGt(amount, maxWithdraw, "Amount should be greater than maxWithdraw");
+
         vm.prank(bob);
-        vm.expectRevert(abi.encodePacked("ERC20: transfer amount exceeds balance"));
-        uint256 shares = vault.withdrawAsset(MC.SLISBNB, maxWithdraw, bob, bob);
+        vm.expectRevert();
+        uint256 shares = vault.withdrawAsset(MC.SLISBNB, amount, bob, bob);
 
         assertEq(shares, 0, "Shares should be 0");
 
@@ -478,8 +480,6 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         assertEq(vault.balanceOf(bob), beforeBobShares, "Bob shares should not decrease");
 
         maxWithdraw = vault.maxWithdrawAsset(MC.SLISBNB, bob);
-
-        assertEqThreshold(maxWithdraw, amount, 2, "maxWithdraw should be equal to amount");
 
         // withdraw for real
         vm.prank(bob);

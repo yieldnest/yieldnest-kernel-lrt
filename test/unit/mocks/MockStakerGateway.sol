@@ -24,12 +24,12 @@ contract MockStakerGateway {
     }
 
     function stake(address asset, uint256 amount, string calldata) external {
-        IERC20(asset).transferFrom(msg.sender, address(this), amount);
+        IERC20(asset).transferFrom(msg.sender, _vaults[asset], amount);
         _balanceOf[asset][msg.sender] += amount;
     }
 
     function unstake(address asset, uint256 amount, string calldata) external {
-        IERC20(asset).transferFrom(address(this), msg.sender, amount);
+        IERC20(asset).transferFrom(_vaults[asset], msg.sender, amount);
         _balanceOf[asset][msg.sender] -= amount;
     }
 }
