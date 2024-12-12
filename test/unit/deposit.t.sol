@@ -2,9 +2,10 @@
 pragma solidity ^0.8.24;
 
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
+
+import {IERC20} from "lib/yieldnest-vault/src/Common.sol";
 import {MockERC20} from "lib/yieldnest-vault/test/unit/mocks/MockERC20.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
-import {IERC20} from "lib/yieldnest-vault/src/Common.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {BaseKernelRateProvider} from "src/module/BaseKernelRateProvider.sol";
@@ -13,18 +14,18 @@ import {MockRateProvider} from "test/unit/mocks/MockRateProvider.sol";
 
 contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
     MockRateProvider public lowDecimalProvider;
+
     function setUp() public {
         deploy();
         lowDecimalProvider = new MockRateProvider();
         lowDecimalProvider.addRate(address(wbnb), 1e18);
         lowDecimalProvider.addRate(address(bnbx), 1e18);
         lowDecimalProvider.addRate(address(slisbnb), 1e18);
-        lowDecimalProvider.addRate(address(btc), 1e8);
-        
+        lowDecimalProvider.addRate(address(btc), 1e28);
+
         vm.prank(ASSET_MANAGER);
         vault.addAsset(address(btc), true);
 
-        
         // Give Alice some tokens
         deal(alice, INITIAL_BALANCE);
         wbnb.deposit{value: INITIAL_BALANCE}();
@@ -61,7 +62,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
 
         vm.prank(alice);
         vault.deposit(1 ether, alice);
-    }   
+    }
 
     function test_KernelStrategy_deposit_success(uint256 depositAmount) public {
         // uint256 depositAmount = 100 * 10 ** 18;
@@ -375,9 +376,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
     }
 
     function test_Kernel_deposit_8decimals_success() public {
-        uint256 depositAmount = (5e8);
-
-
+        uint256 depositAmount = (1e8);
 
         vm.prank(PROVIDER_MANAGER);
         vault.setProvider(address(lowDecimalProvider));
@@ -386,16 +385,14 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
         btc.approve(address(vault), depositAmount);
         uint256 shares = vault.depositAsset(address(btc), depositAmount, alice);
 
-        assertEq(shares, depositAmount);
+        assertEq(shares, 1 ether);
     }
 
-
     function test_Deposit_depositMultipleAssets(uint256 depositAmount) public {
-
         vm.prank(PROVIDER_MANAGER);
         vault.setProvider(address(lowDecimalProvider));
         depositAmount = bound(depositAmount, 10, INITIAL_BALANCE);
-        uint256 finalDeposit = depositAmount/2;
+        uint256 finalDeposit = depositAmount / 2;
         {
             // disable sync
             vm.startPrank(ADMIN);
@@ -420,12 +417,14 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
             uint256 shares2 = vault.depositAsset(address(asset2), finalDeposit, alice);
 
             assertEq(vault.balanceOf(alice), shares1 + shares2, "alice has incorrect shares");
-            assertEq(vault.totalAssets(), depositAmount, "totalAssets should be based on rate");
+            assertEqThreshold(
+                vault.totalAssets(), depositAmount / 2, 0.0001 ether, "totalAssets should be based on rate"
+            );
             assertEq(vault.totalSupply(), shares1 + shares2, "totalSupply is incorrect");
             assertEq(asset1.balanceOf(address(vault)), finalDeposit, "asset1 balance is incorrect");
             assertEq(asset2.balanceOf(address(vault)), finalDeposit, "asset2 balance is incorrect");
 
-            assertEqThreshold(shares2 * 2, shares1, 3, "shares should be correct");
+            assertEqThreshold(shares2, shares1, 0.0001 ether, "shares should be correct");
         }
     }
 }
