@@ -421,4 +421,50 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
             assertEq(asset2.balanceOf(address(vault)), depositAmount2, "asset2 balance is incorrect");
         }
     }
+
+    function test_Deposit_depositMultipleAssets_differentRates(uint256 depositAmount) public {
+        lowDecimalProvider.addRate(address(btc), 1e17); // 10**8 btc = 10**17 bnb
+        depositAmount = bound(depositAmount, 10e9, INITIAL_BALANCE) / 2;
+
+        // since btc is 8 decimals we divide the deposit amount by 1e10 to get equal shares
+        uint256 depositAmount1 = depositAmount / 1e9;
+        uint256 depositAmount2 = (depositAmount / 1e9) * 1e9;
+
+        {
+            // set provider
+            vm.prank(PROVIDER_MANAGER);
+            vault.setProvider(address(lowDecimalProvider));
+
+            // disable sync
+            vm.startPrank(ADMIN);
+            vault.setSyncDeposit(false);
+            vault.setSyncWithdraw(false);
+            vm.stopPrank();
+        }
+
+        IERC20 asset1 = IERC20(address(btc));
+        IERC20 asset2 = IERC20(address(wbnb));
+
+        {
+            assertEq(vault.totalAssets(), 0, "totalAssets should be 0");
+            assertEq(vault.totalSupply(), 0, "totalSupply should be 0");
+            assertEq(vault.balanceOf(alice), 0, "alice has incorrect shares");
+            assertEq(asset1.balanceOf(address(vault)), 0, "asset1 balance should be 0");
+            assertEq(asset2.balanceOf(address(vault)), 0, "asset2 balance should be 0");
+
+            vm.startPrank(alice);
+
+            uint256 shares1 = vault.depositAsset(address(asset1), depositAmount1, alice);
+            uint256 shares2 = vault.depositAsset(address(asset2), depositAmount2, alice);
+
+            vm.stopPrank();
+
+            assertEq(shares2, shares1, "shares should be correct");
+            assertEq(vault.balanceOf(alice), shares1 + shares2, "alice has incorrect shares");
+            assertEqThreshold(vault.totalAssets(), depositAmount2 * 2, 2, "totalAssets should be based on rate");
+            assertEq(vault.totalSupply(), shares1 + shares2, "totalSupply is incorrect");
+            assertEq(asset1.balanceOf(address(vault)), depositAmount1, "asset1 balance is incorrect");
+            assertEq(asset2.balanceOf(address(vault)), depositAmount2, "asset2 balance is incorrect");
+        }
+    }
 }
