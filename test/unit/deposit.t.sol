@@ -11,7 +11,7 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {BaseKernelRateProvider} from "src/module/BaseKernelRateProvider.sol";
 import {SetupKernelStrategy} from "test/unit/helpers/SetupKernelStrategy.sol";
 import {MockRateProvider} from "test/unit/mocks/MockRateProvider.sol";
-
+import "lib/forge-std/src/console.sol";
 contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
     MockRateProvider public lowDecimalProvider;
 
@@ -397,8 +397,9 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
             vm.stopPrank();
         }
 
-        IERC20 asset2 = IERC20(address(MC.WBNB));
         IERC20 asset1 = IERC20(address(btc));
+        IERC20 asset2 = IERC20(address(MC.WBNB));
+        
 
         {
             assertEq(vault.totalAssets(), 0, "totalAssets should be 0");
@@ -409,15 +410,16 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
 
             vm.startPrank(alice);
             btc.approve(address(vault), finalDeposit);
-            uint256 shares1 = vault.depositAsset(address(asset1), finalDeposit, alice);
+            uint256 shares1 = vault.depositAsset(address(asset1), finalDeposit / 1e10, alice);
             uint256 shares2 = vault.depositAsset(address(asset2), finalDeposit, alice);
-
+            console.log("SHARES 1", shares1);
+            console.log("SHARES 2", shares2);
             assertEq(vault.balanceOf(alice), shares1 + shares2, "alice has incorrect shares");
             assertEqThreshold(
-                vault.totalAssets(), depositAmount / 2, 0.0001 ether, "totalAssets should be based on rate"
+                vault.totalAssets(), depositAmount, 0.0001 ether, "totalAssets should be based on rate"
             );
             assertEq(vault.totalSupply(), shares1 + shares2, "totalSupply is incorrect");
-            assertEq(asset1.balanceOf(address(vault)), finalDeposit, "asset1 balance is incorrect");
+            assertEq(asset1.balanceOf(address(vault)), finalDeposit / 1e10, "asset1 balance is incorrect");
             assertEq(asset2.balanceOf(address(vault)), finalDeposit, "asset2 balance is incorrect");
 
             assertEqThreshold(shares2, shares1, 0.0001 ether, "shares should be correct");
