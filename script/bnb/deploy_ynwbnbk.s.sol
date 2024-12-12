@@ -4,7 +4,8 @@ pragma solidity ^0.8.24;
 import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
-import {BNBRateProvider, TestnetBNBRateProvider} from "src/module/BNBRateProvider.sol";
+import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
+import {TestnetBNBRateProvider} from "test/module/BNBRateProvider.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 

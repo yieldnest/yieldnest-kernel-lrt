@@ -4,7 +4,8 @@ pragma solidity ^0.8.24;
 import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
-import {BTCRateProvider, TestnetBTCRateProvider} from "src/module/BTCRateProvider.sol";
+import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
+import {TestnetBTCRateProvider} from "test/module/BTCRateProvider.sol";
 
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";

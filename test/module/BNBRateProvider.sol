@@ -2,25 +2,31 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {MainnetContracts as MC} from "script/Contracts.sol";
+import {TestnetContracts as TC} from "script/Contracts.sol";
 
-import {BaseKernelRateProvider} from "./BaseKernelRateProvider.sol";
+import {BaseKernelRateProvider} from "src/module/BaseKernelRateProvider.sol";
 
-contract BTCRateProvider is BaseKernelRateProvider {
+contract TestnetBNBRateProvider is BaseKernelRateProvider {
     function getStakerGateway() public pure override returns (address) {
-        return MC.STAKER_GATEWAY;
+        return TC.STAKER_GATEWAY;
     }
 
     function getRate(address asset) public view override returns (uint256) {
-        if (asset == MC.BTCB) {
+        if (asset == TC.WBNB) {
             return 1e18;
         }
 
-        if (asset == MC.SOLVBTC) {
+        if (asset == TC.BNBX) {
+            // mock bnbx rate for testnet
             return 1e18;
         }
 
-        if (asset == MC.SOLVBTC_BNN) {
+        if (asset == TC.SLISBNB) {
+            // mock slis bnb rate for testnet
+            return 1e18;
+        }
+
+        if (asset == TC.CLISBNB) {
             return 1e18;
         }
 

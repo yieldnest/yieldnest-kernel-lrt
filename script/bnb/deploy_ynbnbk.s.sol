@@ -9,7 +9,8 @@ import {ProxyUtils} from "script/ProxyUtils.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {MigratedKernelStrategy} from "src/MigratedKernelStrategy.sol";
-import {BNBRateProvider, TestnetBNBRateProvider} from "src/module/BNBRateProvider.sol";
+import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
+import {TestnetBNBRateProvider} from "test/module/BNBRateProvider.sol";
 
 // import {console} from "forge-std/console.sol";
 import {AccessControlUpgradeable} from
