@@ -40,6 +40,8 @@ contract DeployYnBTCkStrategy is BaseScript {
 
         deploy();
 
+        _deployViewer();
+
         _saveDeployment();
 
         vm.stopBroadcast();
@@ -81,13 +83,14 @@ contract DeployYnBTCkStrategy is BaseScript {
         vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.SOLVBTC_BNN()), 18, false);
 
         setApprovalRule(vault_, contracts.BTCB(), contracts.STAKER_GATEWAY());
-        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.BTCB());
-
         setApprovalRule(vault_, contracts.SOLVBTC(), contracts.STAKER_GATEWAY());
-        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.SOLVBTC());
-
         setApprovalRule(vault_, contracts.SOLVBTC_BNN(), contracts.STAKER_GATEWAY());
-        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.SOLVBTC_BNN());
+
+        address[] memory assets = new address[](3);
+        assets[0] = contracts.BTCB();
+        assets[1] = contracts.SOLVBTC();
+        assets[2] = contracts.SOLVBTC_BNN();
+        setStakingRule(vault_, contracts.STAKER_GATEWAY(), assets);
 
         vault_.unpause();
 

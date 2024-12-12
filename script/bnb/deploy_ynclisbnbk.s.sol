@@ -40,6 +40,8 @@ contract DeployYnclisBNBkStrategy is BaseScript {
 
         deploy();
 
+        _deployViewer();
+
         _saveDeployment();
 
         vm.stopBroadcast();
@@ -49,7 +51,7 @@ contract DeployYnclisBNBkStrategy is BaseScript {
         implementation = new KernelStrategy();
 
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector, msg.sender, "YieldNest WBNB Buffer - Kernel", "ynWBNBk", 18, 0, true
+            KernelStrategy.initialize.selector, msg.sender, "YieldNest Restaked clisBNB - Kernel", symbol(), 18, 0, true
         );
 
         TransparentUpgradeableProxy proxy =
@@ -68,15 +70,6 @@ contract DeployYnclisBNBkStrategy is BaseScript {
 
         // set allocator to ynbnbx
         vault_.grantRole(vault_.ALLOCATOR_ROLE(), contracts.YNBNBX());
-
-        // set roles to msg.sender for now
-        vault_.grantRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), msg.sender);
-        vault_.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), msg.sender);
-        vault_.grantRole(vault_.ALLOCATOR_MANAGER_ROLE(), msg.sender);
-        vault_.grantRole(vault_.PROCESSOR_MANAGER_ROLE(), msg.sender);
-        vault_.grantRole(vault_.PROVIDER_MANAGER_ROLE(), msg.sender);
-        vault_.grantRole(vault_.ASSET_MANAGER_ROLE(), msg.sender);
-        vault_.grantRole(vault_.UNPAUSER_ROLE(), msg.sender);
 
         vault_.setProvider(address(rateProvider));
         vault_.setHasAllocator(true);
