@@ -15,6 +15,7 @@ import {KernelStrategy} from "src/KernelStrategy.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 
 import {MockStakerGateway} from "../mocks/MockStakerGateway.sol";
+import {MockERC20LowDecimals} from "../mocks/MockERC20LowDecimals.sol";
 
 import {VaultUtils} from "script/VaultUtils.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
@@ -27,7 +28,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
     WETH9 public wbnb;
     MockSTETH public slisbnb;
     WETH9 public bnbx;
-
+    MockERC20LowDecimals public btc;
     IStakerGateway public mockGateway;
 
     address public alice = address(0xa11ce);
@@ -49,6 +50,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
         wbnb = WETH9(payable(MC.WBNB));
         slisbnb = MockSTETH(payable(MC.SLISBNB));
         bnbx = WETH9(payable(MC.BNBX));
+        btc = new MockERC20LowDecimals("BTC", "BTC");
 
         address[] memory assets = new address[](3);
         assets[0] = address(wbnb);
