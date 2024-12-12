@@ -3,8 +3,8 @@ pragma solidity ^0.8.24;
 
 import {Test} from "lib/forge-std/src/Test.sol";
 
-import {MockBNBxStakeManagerV2} from "lib/yieldnest-vault/test/unit/mocks/MockBNBxStakeManagerV2.sol";
 import {MockSTETH} from "lib/yieldnest-vault/test/unit/mocks/MockST_ETH.sol";
+import {MockBNBxStakeManager} from "test/unit/mocks/MockBNBxStakeManager.sol";
 
 import {MockSlisBnbStakeManager} from "lib/yieldnest-vault/test/unit/mocks/MockSlisBnbStakeManager.sol";
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
@@ -48,7 +48,7 @@ contract EtchUtils is Test {
     }
 
     function mockBnbxStakeManager() public {
-        MockBNBxStakeManagerV2 bnbxStakeManager = new MockBNBxStakeManagerV2();
+        MockBNBxStakeManager bnbxStakeManager = new MockBNBxStakeManager();
         bytes memory code = address(bnbxStakeManager).code;
         vm.etch(MC.BNBX_STAKE_MANAGER, code);
     }
