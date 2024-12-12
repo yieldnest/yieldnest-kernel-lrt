@@ -58,7 +58,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
         lowDecimalProvider.addRate(address(wbnb), 1e18);
         lowDecimalProvider.addRate(address(bnbx), 1e18);
         lowDecimalProvider.addRate(address(slisbnb), 1e18);
-        lowDecimalProvider.addRate(address(btc), 1e28);
+        lowDecimalProvider.addRate(address(btc), 1e18);
 
         address[] memory assets = new address[](3);
         assets[0] = address(wbnb);
