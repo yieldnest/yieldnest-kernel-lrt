@@ -7,11 +7,12 @@ import {IERC20} from "lib/yieldnest-vault/src/Common.sol";
 import {MockERC20} from "lib/yieldnest-vault/test/unit/mocks/MockERC20.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 
+import "lib/forge-std/src/console.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {BaseKernelRateProvider} from "src/module/BaseKernelRateProvider.sol";
 import {SetupKernelStrategy} from "test/unit/helpers/SetupKernelStrategy.sol";
 import {MockRateProvider} from "test/unit/mocks/MockRateProvider.sol";
-import "lib/forge-std/src/console.sol";
+
 contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
     MockRateProvider public lowDecimalProvider;
 
@@ -399,7 +400,6 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
 
         IERC20 asset1 = IERC20(address(btc));
         IERC20 asset2 = IERC20(address(MC.WBNB));
-        
 
         {
             assertEq(vault.totalAssets(), 0, "totalAssets should be 0");
@@ -415,9 +415,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
             console.log("SHARES 1", shares1);
             console.log("SHARES 2", shares2);
             assertEq(vault.balanceOf(alice), shares1 + shares2, "alice has incorrect shares");
-            assertEqThreshold(
-                vault.totalAssets(), depositAmount, 0.0001 ether, "totalAssets should be based on rate"
-            );
+            assertEqThreshold(vault.totalAssets(), depositAmount, 0.0001 ether, "totalAssets should be based on rate");
             assertEq(vault.totalSupply(), shares1 + shares2, "totalSupply is incorrect");
             assertEq(asset1.balanceOf(address(vault)), finalDeposit / 1e10, "asset1 balance is incorrect");
             assertEq(asset2.balanceOf(address(vault)), finalDeposit, "asset2 balance is incorrect");
