@@ -58,6 +58,10 @@ library TestnetContracts {
     address public constant SLISBNB = 0xCc752dC4ae72386986d011c2B485be0DAd98C744;
     address public constant BNBX = 0x6cd3f51A92d022030d6e75760200c051caA7152A;
 
+    // stake managers
+    address public constant BNBX_STAKE_MANAGER = address(0);
+    address public constant SLIS_BNB_STAKE_MANAGER = address(0);
+
     // btc tokens
     address public constant BTCB = 0x6ce8dA28E2f864420840cF74474eFf5fD80E65B8;
     address public constant SOLVBTC = 0x1cF0e51005971c5B78b4A8feE419832CFCCD8cf9;
@@ -78,10 +82,12 @@ library TestnetContracts {
 }
 
 contract ChapelContracts is IContracts {
-    address public constant SLISBNB = 0x80815ee920Bd9d856562633C36D3eB0E43cb15e2;
-
     function WBNB() external pure override returns (address) {
         return TestnetContracts.WBNB;
+    }
+
+    function SLISBNB() external pure override returns (address) {
+        return TestnetContracts.SLISBNB;
     }
 
     function BNBX() external pure override returns (address) {

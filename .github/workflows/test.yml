@@ -49,5 +49,6 @@ jobs:
       - name: Run Forge Integration tests
         env:
           FOUNDRY_PROFILE: mainnet
+          BSCSCAN_API_KEY: invalid
         run: |
           forge test -vvv 

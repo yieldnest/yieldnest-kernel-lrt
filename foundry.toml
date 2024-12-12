@@ -7,6 +7,7 @@ evm_version = "cancun"
 optimizer = true
 optimizer-runs = 200
 solc_version = "0.8.24"
+auto_detect_remappings = false
 
 [profile.mainnet]
 src = "src"
@@ -17,11 +18,12 @@ eth_rpc_url = "https://rpc.ankr.com/bsc"
 fork_block_number = 44550750
 evm_version = "cancun"
 solc_version = "0.8.24"
+auto_detect_remappings = false
 max-line-length = 120
-  fs_permissions = [
-    { access = "read-write", path = "./deployments" },
-    { access = "read", path = "./" },
-  ]
+fs_permissions = [
+  { access = "read-write", path = "./deployments" },
+  { access = "read", path = "./" },
+]
 
 [profile.testnet]
 src = "src"
@@ -32,13 +34,22 @@ eth_rpc_url = "https://rpc.ankr.com/bsc_testnet_chapel"
 evm_version = "cancun"
 solc_version = "0.8.24"
 max-line-length = 120
-  fs_permissions = [
-    { access = "read-write", path = "./deployments" },
-    { access = "read", path = "./" },
-  ]
+auto_detect_remappings = false
+fs_permissions = [
+  { access = "read-write", path = "./deployments" },
+  { access = "read", path = "./" },
+]
 
+
+[rpc_endpoints]
+bnb_mainnet = "https://rpc.ankr.com/bsc"
+bnb_testnet = "https://rpc.ankr.com/bsc_testnet_chapel"
 
 [fmt]
 sort_imports = true
 line_length = 120
 wrap_comments = true
+
+[etherscan]
+bnb_mainnet = { key = "${BSCSCAN_API_KEY}", url = "https://api.bscscan.com/api/" }
+bnb_testnet = { key = "${BSCSCAN_API_KEY}", url = "https://api-testnet.bscscan.com/api/" }

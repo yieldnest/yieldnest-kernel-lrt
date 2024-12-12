@@ -13,10 +13,10 @@ import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {BaseScript} from "script/BaseScript.sol";
 
-// FOUNDRY_PROFILE=mainnet forge script DeployYnWBNBkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
-contract DeployYnWBNBkStrategy is BaseScript {
+// FOUNDRY_PROFILE=mainnet forge script DeployYnclisBNBkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
+contract DeployYnclisBNBkStrategy is BaseScript {
     function symbol() public pure override returns (string memory) {
-        return "ynWBNBk";
+        return "ynclisBNBk";
     }
 
     function deployRateProvider() internal {
@@ -69,6 +69,15 @@ contract DeployYnWBNBkStrategy is BaseScript {
         // set allocator to ynbnbx
         vault_.grantRole(vault_.ALLOCATOR_ROLE(), contracts.YNBNBX());
 
+        // set roles to msg.sender for now
+        vault_.grantRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), msg.sender);
+        vault_.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), msg.sender);
+        vault_.grantRole(vault_.ALLOCATOR_MANAGER_ROLE(), msg.sender);
+        vault_.grantRole(vault_.PROCESSOR_MANAGER_ROLE(), msg.sender);
+        vault_.grantRole(vault_.PROVIDER_MANAGER_ROLE(), msg.sender);
+        vault_.grantRole(vault_.ASSET_MANAGER_ROLE(), msg.sender);
+        vault_.grantRole(vault_.UNPAUSER_ROLE(), msg.sender);
+
         vault_.setProvider(address(rateProvider));
         vault_.setHasAllocator(true);
         vault_.setStakerGateway(contracts.STAKER_GATEWAY());
@@ -76,10 +85,8 @@ contract DeployYnWBNBkStrategy is BaseScript {
         vault_.setSyncWithdraw(true);
 
         vault_.addAsset(contracts.WBNB(), true);
-        vault_.addAssetWithDecimals(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.WBNB()), 18, false);
-
-        setApprovalRule(vault_, contracts.WBNB(), contracts.STAKER_GATEWAY());
-        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.WBNB());
+        IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
+        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.CLISBNB()), 18, false);
 
         vault_.unpause();
 

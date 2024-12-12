@@ -1,3 +1,4 @@
 lib/forge-std=./lib/yieldnest-vault/lib/forge-std
+@openzeppelin/contracts=./lib/yieldnest-vault/lib/openzeppelin-contracts/contracts
 lib/openzeppelin-contracts=./lib/yieldnest-vault/lib/openzeppelin-contracts
 lib/openzeppelin-contracts-upgradeable=./lib/yieldnest-vault/lib/openzeppelin-contracts-upgradeable

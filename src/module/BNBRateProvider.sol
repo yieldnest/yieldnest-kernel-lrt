@@ -1,3 +1,4 @@
+/* solhint-disable one-contract-per-file */
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
@@ -8,6 +9,10 @@ import {MainnetContracts as MC} from "script/Contracts.sol";
 import {BaseKernelRateProvider} from "./BaseKernelRateProvider.sol";
 
 contract BNBRateProvider is BaseKernelRateProvider {
+    function getStakerGateway() public pure override returns (address) {
+        return MC.STAKER_GATEWAY;
+    }
+
     function getRate(address asset) public view override returns (uint256) {
         if (asset == MC.WBNB) {
             return 1e18;
