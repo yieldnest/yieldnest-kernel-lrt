@@ -142,7 +142,7 @@ contract KernelStrategy is Vault {
             return 0;
         }
 
-        (maxAssets, ) = _convertToAssets(asset_, balanceOf(owner), Math.Rounding.Floor);
+        (maxAssets,) = _convertToAssets(asset_, balanceOf(owner), Math.Rounding.Floor);
     }
 
     /**
@@ -163,7 +163,7 @@ contract KernelStrategy is Vault {
      * @return assets The equivalent amount of assets.
      */
     function previewRedeemAsset(address asset_, uint256 shares) public view virtual returns (uint256 assets) {
-        (, assets) = _convertToAssets(asset_, shares, Math.Rounding.Floor);
+        (assets,) = _convertToAssets(asset_, shares, Math.Rounding.Floor);
 
         return assets - _feeOnTotal(assets);
     }
