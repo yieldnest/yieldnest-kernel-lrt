@@ -14,8 +14,8 @@ import {MainnetContracts as MC} from "script/Contracts.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 
-import {MockStakerGateway} from "../mocks/MockStakerGateway.sol";
 import {MockERC20LowDecimals} from "../mocks/MockERC20LowDecimals.sol";
+import {MockStakerGateway} from "../mocks/MockStakerGateway.sol";
 
 import {VaultUtils} from "script/VaultUtils.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";

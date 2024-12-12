@@ -7,8 +7,7 @@ import {MainnetContracts as MC, TestnetContracts as TC} from "script/Contracts.s
 import {BaseKernelRateProvider} from "src/module/BaseKernelRateProvider.sol";
 
 contract MockRateProvider is BaseKernelRateProvider {
-
-    mapping(address => uint256)public rates;
+    mapping(address => uint256) public rates;
 
     function getStakerGateway() public pure override returns (address) {
         return MC.STAKER_GATEWAY;
@@ -17,14 +16,14 @@ contract MockRateProvider is BaseKernelRateProvider {
     function addRate(address asset, uint256 rate) public {
         rates[asset] = rate;
     }
-    
+
     function getRate(address asset) public view override returns (uint256) {
         uint256 rate = rates[asset];
-        if(rate != 0){
+        if (rate != 0) {
             return rate;
         }
 
-                // check if a kernel vault is added as an asset
+        // check if a kernel vault is added as an asset
         address vaultAsset = tryGetVaultAsset(asset);
 
         if (vaultAsset != address(0)) {
