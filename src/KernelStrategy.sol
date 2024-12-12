@@ -114,7 +114,7 @@ contract KernelStrategy is Vault {
             return 0;
         }
 
-        (, maxAssets) = _convertToAssets(asset(), balanceOf(owner), Math.Rounding.Floor);
+        (maxAssets,) = _convertToAssets(asset(), balanceOf(owner), Math.Rounding.Floor);
     }
 
     /**
@@ -132,17 +132,6 @@ contract KernelStrategy is Vault {
     }
 
     /**
-     * @notice Previews the amount of assets that would be received for a given amount of shares.
-     * @param shares The amount of shares to redeem.
-     * @return assets The equivalent amount of assets.
-     */
-    function previewRedeem(uint256 shares) public view override returns (uint256 assets) {
-        (, assets) = _convertToAssets(asset(), shares, Math.Rounding.Floor);
-
-        return assets - _feeOnTotal(assets);
-    }
-
-    /**
      * @notice Returns the maximum amount of assets that can be withdrawn by a given owner
      * @param owner The address of the owner.
      * @return maxAssets uint256 The maximum amount of assets.
@@ -153,7 +142,7 @@ contract KernelStrategy is Vault {
             return 0;
         }
 
-        (, maxAssets) = _convertToAssets(asset_, balanceOf(owner), Math.Rounding.Floor);
+        (maxAssets, ) = _convertToAssets(asset_, balanceOf(owner), Math.Rounding.Floor);
     }
 
     /**
