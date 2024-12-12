@@ -2,6 +2,8 @@
 pragma solidity ^0.8.24;
 
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
+
+import {IERC20} from "lib/yieldnest-vault/src/Common.sol";
 import {MockERC20} from "lib/yieldnest-vault/test/unit/mocks/MockERC20.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 
@@ -18,9 +20,15 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
         wbnb.deposit{value: INITIAL_BALANCE}();
         wbnb.transfer(alice, INITIAL_BALANCE);
 
+        vm.prank(alice);
+        btc.mint(INITIAL_BALANCE);
+
         // Approve vault to spend Alice's tokens
         vm.prank(alice);
         wbnb.approve(address(vault), type(uint256).max);
+
+        vm.prank(alice);
+        btc.approve(address(vault), type(uint256).max);
     }
 
     function test_KernelStrategy_deposit_unauthorized() public {
@@ -56,7 +64,6 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
 
         vm.prank(alice);
         uint256 sharesMinted = vault.deposit(depositAmount, alice);
-
         // Check that shares were minted
         assertGt(sharesMinted, 0, "No shares were minted");
 
@@ -359,5 +366,109 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
         // Check that maxDeposit is no longer zero for Alice
         maxDepositAmount = vault.maxDeposit(alice);
         assertGt(maxDepositAmount, 0, "maxDeposit should not be zero when unpaused");
+    }
+
+    function test_Kernel_deposit_8decimals_success() public {
+        uint256 depositAmount = (1e8);
+
+        vm.prank(PROVIDER_MANAGER);
+        vault.setProvider(address(lowDecimalProvider));
+
+        vm.startPrank(alice);
+        btc.approve(address(vault), depositAmount);
+        uint256 shares = vault.depositAsset(address(btc), depositAmount, alice);
+
+        assertEq(shares, 1 ether);
+    }
+
+    function test_Deposit_depositMultipleAssets(uint256 depositAmount) public {
+        depositAmount = bound(depositAmount, 10e10, INITIAL_BALANCE) / 2;
+
+        // since btc is 8 decimals we divide the deposit amount by 1e10 to get equal shares
+        uint256 depositAmount1 = depositAmount / 1e10;
+        uint256 depositAmount2 = (depositAmount / 1e10) * 1e10;
+
+        {
+            // set provider
+            vm.prank(PROVIDER_MANAGER);
+            vault.setProvider(address(lowDecimalProvider));
+
+            // disable sync
+            vm.startPrank(ADMIN);
+            vault.setSyncDeposit(false);
+            vault.setSyncWithdraw(false);
+            vm.stopPrank();
+        }
+
+        IERC20 asset1 = IERC20(address(btc));
+        IERC20 asset2 = IERC20(address(wbnb));
+
+        {
+            assertEq(vault.totalAssets(), 0, "totalAssets should be 0");
+            assertEq(vault.totalSupply(), 0, "totalSupply should be 0");
+            assertEq(vault.balanceOf(alice), 0, "alice has incorrect shares");
+            assertEq(asset1.balanceOf(address(vault)), 0, "asset1 balance should be 0");
+            assertEq(asset2.balanceOf(address(vault)), 0, "asset2 balance should be 0");
+
+            vm.startPrank(alice);
+
+            uint256 shares1 = vault.depositAsset(address(asset1), depositAmount1, alice);
+            uint256 shares2 = vault.depositAsset(address(asset2), depositAmount2, alice);
+
+            vm.stopPrank();
+
+            assertEq(shares2, shares1, "shares should be correct");
+            assertEq(vault.balanceOf(alice), shares1 + shares2, "alice has incorrect shares");
+            assertEqThreshold(vault.totalAssets(), depositAmount2 * 2, 2, "totalAssets should be based on rate");
+            assertEq(vault.totalSupply(), shares1 + shares2, "totalSupply is incorrect");
+            assertEq(asset1.balanceOf(address(vault)), depositAmount1, "asset1 balance is incorrect");
+            assertEq(asset2.balanceOf(address(vault)), depositAmount2, "asset2 balance is incorrect");
+        }
+    }
+
+    function test_Deposit_depositMultipleAssets_differentRates(uint256 depositAmount) public {
+        lowDecimalProvider.addRate(address(btc), 1e17); // 10**8 btc = 10**17 bnb
+        depositAmount = bound(depositAmount, 10e9, INITIAL_BALANCE) / 2;
+
+        // since btc is 8 decimals we divide the deposit amount by 1e10 to get equal shares
+        uint256 depositAmount1 = depositAmount / 1e9;
+        uint256 depositAmount2 = (depositAmount / 1e9) * 1e9;
+
+        {
+            // set provider
+            vm.prank(PROVIDER_MANAGER);
+            vault.setProvider(address(lowDecimalProvider));
+
+            // disable sync
+            vm.startPrank(ADMIN);
+            vault.setSyncDeposit(false);
+            vault.setSyncWithdraw(false);
+            vm.stopPrank();
+        }
+
+        IERC20 asset1 = IERC20(address(btc));
+        IERC20 asset2 = IERC20(address(wbnb));
+
+        {
+            assertEq(vault.totalAssets(), 0, "totalAssets should be 0");
+            assertEq(vault.totalSupply(), 0, "totalSupply should be 0");
+            assertEq(vault.balanceOf(alice), 0, "alice has incorrect shares");
+            assertEq(asset1.balanceOf(address(vault)), 0, "asset1 balance should be 0");
+            assertEq(asset2.balanceOf(address(vault)), 0, "asset2 balance should be 0");
+
+            vm.startPrank(alice);
+
+            uint256 shares1 = vault.depositAsset(address(asset1), depositAmount1, alice);
+            uint256 shares2 = vault.depositAsset(address(asset2), depositAmount2, alice);
+
+            vm.stopPrank();
+
+            assertEq(shares2, shares1, "shares should be correct");
+            assertEq(vault.balanceOf(alice), shares1 + shares2, "alice has incorrect shares");
+            assertEqThreshold(vault.totalAssets(), depositAmount2 * 2, 2, "totalAssets should be based on rate");
+            assertEq(vault.totalSupply(), shares1 + shares2, "totalSupply is incorrect");
+            assertEq(asset1.balanceOf(address(vault)), depositAmount1, "asset1 balance is incorrect");
+            assertEq(asset2.balanceOf(address(vault)), depositAmount2, "asset2 balance is incorrect");
+        }
     }
 }
