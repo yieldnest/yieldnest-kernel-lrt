@@ -8,11 +8,25 @@ import {MainnetContracts as MC} from "script/Contracts.sol";
 
 import {BaseKernelRateProvider} from "./BaseKernelRateProvider.sol";
 
+/**
+ * @title BNBRateProvider
+ * @author Yieldnest
+ * @notice Provides the rate of BNB for the Yieldnest Kernel
+ */
 contract BNBRateProvider is BaseKernelRateProvider {
+    /**
+     * @notice Returns the staker gateway address
+     * @return The staker gateway address
+     */
     function getStakerGateway() public pure override returns (address) {
         return MC.STAKER_GATEWAY;
     }
 
+    /**
+     * @notice Returns the rate of the given asset
+     * @param asset The asset to get the rate for
+     * @return The rate of the asset
+     */
     function getRate(address asset) public view override returns (uint256) {
         if (asset == MC.WBNB) {
             return 1e18;

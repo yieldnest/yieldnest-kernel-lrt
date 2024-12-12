@@ -5,16 +5,31 @@ import {IERC20, Math, SafeERC20} from "lib/yieldnest-vault/src/Common.sol";
 import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
+/**
+ * @title KernelStrategy
+ * @author Yieldnest
+ * @notice This contract is a strategy for Kernel. It is responsible for depositing and withdrawing assets from the
+ * vault.
+ */
 contract KernelStrategy is Vault {
+    /// @notice Role for allocator permissions
     bytes32 public constant ALLOCATOR_ROLE = keccak256("ALLOCATOR_ROLE");
+
+    /// @notice Role for kernel dependency manager permissions
     bytes32 public constant KERNEL_DEPENDENCY_MANAGER_ROLE = keccak256("KERNEL_DEPENDENCY_MANAGER_ROLE");
+
+    /// @notice Role for deposit manager permissions
     bytes32 public constant DEPOSIT_MANAGER_ROLE = keccak256("DEPOSIT_MANAGER_ROLE");
+
+    /// @notice Role for allocator manager permissions
     bytes32 public constant ALLOCATOR_MANAGER_ROLE = keccak256("ALLOCATOR_MANAGER_ROLE");
 
+    /// @notice Emitted when an asset is deposited
     event DepositAsset(
         address indexed sender, address indexed receiver, address indexed asset, uint256 assets, uint256 shares
     );
 
+    /// @notice Emitted when an asset is withdrawn
     event WithdrawAsset(
         address indexed sender,
         address indexed receiver,
@@ -24,6 +39,7 @@ contract KernelStrategy is Vault {
         uint256 shares
     );
 
+    /// @notice Storage structure for strategy-specific parameters
     struct StrategyStorage {
         address stakerGateway;
         bool syncDeposit;
@@ -31,9 +47,16 @@ contract KernelStrategy is Vault {
         bool hasAllocators;
     }
 
+    /// @notice Emitted when the staker gateway address is set
     event SetStakerGateway(address stakerGateway);
+
+    /// @notice Emitted when the sync deposit flag is set
     event SetSyncDeposit(bool syncDeposit);
+
+    /// @notice Emitted when the sync withdraw flag is set
     event SetSyncWithdraw(bool syncWithdraw);
+
+    /// @notice Emitted when the hasAllocator flag is set
     event SetHasAllocator(bool hasAllocator);
 
     /**
@@ -43,7 +66,7 @@ contract KernelStrategy is Vault {
      * @param symbol The symbol of the vault.
      * @param decimals The decimals of the vault.
      * @param baseWithdrawalFee The base withdrawal fee.
-     * @param countNativeAsset Whether to count native asset.
+     * @param countNativeAsset Whether to count the native asset.
      */
     function initialize(
         address admin,
@@ -72,24 +95,24 @@ contract KernelStrategy is Vault {
     }
 
     /**
-     * @notice Returns the Storage parameters of this strategy.
-     * @return syncDeposit bool.
+     * @notice Returns the current sync deposit flag.
+     * @return syncDeposit The sync deposit flag.
      */
     function getSyncDeposit() public view returns (bool syncDeposit) {
         return _getStrategyStorage().syncDeposit;
     }
 
     /**
-     * @notice Returns the Storage parameters of this strategy.
-     * @return syncWithdraw bool.
+     * @notice Returns the current sync withdraw flag.
+     * @return syncWithdraw The sync withdraw flag.
      */
     function getSyncWithdraw() public view returns (bool syncWithdraw) {
         return _getStrategyStorage().syncWithdraw;
     }
 
     /**
-     * @notice Returns the address of the strategy gateway.
-     * @return stakerGateway address.
+     * @notice Returns the staker gateway address.
+     * @return stakerGateway The staker gateway address.
      */
     function getStakerGateway() public view returns (address stakerGateway) {
         return _getStrategyStorage().stakerGateway;
@@ -97,7 +120,7 @@ contract KernelStrategy is Vault {
 
     /**
      * @notice Returns whether the strategy has allocators.
-     * @return hasAllocators bool.
+     * @return hasAllocators True if the strategy has allocators, otherwise false.
      */
     function getHasAllocator() public view returns (bool hasAllocators) {
         return _getStrategyStorage().hasAllocators;
@@ -106,8 +129,7 @@ contract KernelStrategy is Vault {
     /**
      * @notice Returns the maximum amount of assets that can be withdrawn by a given owner.
      * @param owner The address of the owner.
-     * @return maxAssets uint256 The maximum amount of assets.
-     * @dev override the maxWithdraw function for strategies
+     * @return maxAssets The maximum amount of assets.
      */
     function maxWithdraw(address owner) public view override returns (uint256 maxAssets) {
         if (paused()) {
@@ -120,10 +142,9 @@ contract KernelStrategy is Vault {
     /**
      * @notice Returns the maximum amount of shares that can be redeemed by a given owner.
      * @param owner The address of the owner.
-     * @return uint256 The maximum amount of shares.
-     * @dev override the maxRedeem function for strategies
+     * @return maxShares The maximum amount of shares.
      */
-    function maxRedeem(address owner) public view override returns (uint256) {
+    function maxRedeem(address owner) public view override returns (uint256 maxShares) {
         if (paused()) {
             return 0;
         }
@@ -132,10 +153,10 @@ contract KernelStrategy is Vault {
     }
 
     /**
-     * @notice Returns the maximum amount of assets that can be withdrawn by a given owner
+     * @notice Returns the maximum amount of assets that can be withdrawn for a specific asset by a given owner.
+     * @param asset_ The address of the asset.
      * @param owner The address of the owner.
-     * @return maxAssets uint256 The maximum amount of assets.
-     * @dev override the maxWithdraw function for strategies
+     * @return maxAssets The maximum amount of assets.
      */
     function maxWithdrawAsset(address asset_, address owner) public view returns (uint256 maxAssets) {
         if (paused()) {
@@ -146,8 +167,7 @@ contract KernelStrategy is Vault {
     }
 
     /**
-     * @notice Previews the amount of shares that would be received for a given amount of assets for a specific
-     * asset.
+     * @notice Previews the amount of shares that would be received for a given amount of assets.
      * @param asset_ The address of the asset.
      * @param assets The amount of assets to deposit.
      * @return shares The equivalent amount of shares.
@@ -159,6 +179,7 @@ contract KernelStrategy is Vault {
 
     /**
      * @notice Previews the amount of assets that would be received for a given amount of shares.
+     * @param asset_ The address of the asset.
      * @param shares The amount of shares to redeem.
      * @return assets The equivalent amount of assets.
      */
@@ -169,11 +190,12 @@ contract KernelStrategy is Vault {
     }
 
     /**
-     * @notice Withdraws a given amount of assets and burns the equivalent amount of shares from the owner.
+     * @notice Withdraws assets and burns equivalent shares from the owner.
+     * @param asset_ The address of the asset.
      * @param assets The amount of assets to withdraw.
      * @param receiver The address of the receiver.
      * @param owner The address of the owner.
-     * @return shares The equivalent amount of shares.
+     * @return shares The equivalent amount of shares burned.
      */
     function withdrawAsset(address asset_, uint256 assets, address receiver, address owner)
         public
@@ -193,7 +215,8 @@ contract KernelStrategy is Vault {
     }
 
     /**
-     * @notice Redeems a given amount of shares and transfers the equivalent amount of assets to the receiver.
+     * @notice Redeems shares and transfers equivalent assets to the receiver.
+     * @param asset_ The address of the asset.
      * @param shares The amount of shares to redeem.
      * @param receiver The address of the receiver.
      * @param owner The address of the owner.
@@ -223,9 +246,7 @@ contract KernelStrategy is Vault {
      * @param receiver The address of the receiver.
      * @param assets The amount of assets to deposit.
      * @param shares The amount of shares to mint.
-     * @param baseAssets The base asset convertion of shares.
-     * @dev This is an example:
-     *     The _deposit function for strategies needs an override
+     * @param baseAssets The base asset conversion of shares.
      */
     function _deposit(
         address asset_,
@@ -249,8 +270,7 @@ contract KernelStrategy is Vault {
         if (strategyStorage.syncDeposit) {
             SafeERC20.safeIncreaseAllowance(IERC20(asset_), address(strategyStorage.stakerGateway), assets);
 
-            // TODO: fix referralId
-            string memory referralId = "";
+            string memory referralId = ""; // Placeholder referral ID
             IStakerGateway(strategyStorage.stakerGateway).stake(asset_, assets, referralId);
         }
 
@@ -264,8 +284,6 @@ contract KernelStrategy is Vault {
      * @param owner The address of the owner.
      * @param assets The amount of assets to withdraw.
      * @param shares The equivalent amount of shares.
-     * @dev This is an example:
-     *     The _withdraw function for strategies needs an override
      */
     function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
         internal
@@ -276,14 +294,13 @@ contract KernelStrategy is Vault {
     }
 
     /**
-     * @notice Internal function to handle withdrawals.
+     * @notice Internal function to handle withdrawals for specific assets.
+     * @param asset_ The address of the asset.
      * @param caller The address of the caller.
      * @param receiver The address of the receiver.
      * @param owner The address of the owner.
      * @param assets The amount of assets to withdraw.
      * @param shares The equivalent amount of shares.
-     * @dev This is an example:
-     *     The _withdraw function for strategies needs an override
      */
     function _withdrawAsset(
         address asset_,
@@ -303,8 +320,7 @@ contract KernelStrategy is Vault {
 
         StrategyStorage storage strategyStorage = _getStrategyStorage();
         if (vaultBalance < assets && strategyStorage.syncWithdraw) {
-            // TODO: fix referralId
-            string memory referralId = "";
+            string memory referralId = ""; // Placeholder referral ID
             IStakerGateway(strategyStorage.stakerGateway).unstake(asset_, assets, referralId);
         }
 
@@ -316,8 +332,8 @@ contract KernelStrategy is Vault {
     }
 
     /**
-     * @notice Internal function to get the vault storage.
-     * @return $ The vault storage.
+     * @notice Retrieves the strategy storage structure.
+     * @return $ The strategy storage structure.
      */
     function _getStrategyStorage() internal pure virtual returns (StrategyStorage storage $) {
         assembly {
@@ -339,8 +355,8 @@ contract KernelStrategy is Vault {
     }
 
     /**
-     * @notice Sets the direct deposit flag.
-     * @param syncDeposit The flag.
+     * @notice Sets the sync deposit flag.
+     * @param syncDeposit The new value for the sync deposit flag.
      */
     function setSyncDeposit(bool syncDeposit) external onlyRole(DEPOSIT_MANAGER_ROLE) {
         StrategyStorage storage strategyStorage = _getStrategyStorage();
@@ -350,8 +366,8 @@ contract KernelStrategy is Vault {
     }
 
     /**
-     * @notice Sets the direct withdraw flag.
-     * @param syncWithdraw The flag.
+     * @notice Sets the sync withdraw flag.
+     * @param syncWithdraw The new value for the sync withdraw flag.
      */
     function setSyncWithdraw(bool syncWithdraw) external onlyRole(DEPOSIT_MANAGER_ROLE) {
         StrategyStorage storage strategyStorage = _getStrategyStorage();
@@ -361,8 +377,8 @@ contract KernelStrategy is Vault {
     }
 
     /**
-     * @notice Sets whether the strategy has an allocator.
-     * @param hasAllocators_ Whether the strategy has an allocator.
+     * @notice Sets whether the strategy has allocators.
+     * @param hasAllocators_ The new value for the hasAllocator flag.
      */
     function setHasAllocator(bool hasAllocators_) external onlyRole(ALLOCATOR_MANAGER_ROLE) {
         StrategyStorage storage strategyStorage = _getStrategyStorage();
@@ -375,7 +391,7 @@ contract KernelStrategy is Vault {
      * @notice Adds a new asset to the vault.
      * @param asset_ The address of the asset.
      * @param decimals_ The decimals of the asset.
-     * @param active_ Whether the asset is active or not.
+     * @param active_ Whether the asset is active.
      */
     function addAssetWithDecimals(address asset_, uint8 decimals_, bool active_)
         public
@@ -386,7 +402,7 @@ contract KernelStrategy is Vault {
     }
 
     /**
-     * @notice Modifier that checks if the caller has the allocator role.
+     * @notice Modifier to restrict access to allocator roles.
      */
     modifier onlyAllocator() {
         if (_getStrategyStorage().hasAllocators && !hasRole(ALLOCATOR_ROLE, msg.sender)) {

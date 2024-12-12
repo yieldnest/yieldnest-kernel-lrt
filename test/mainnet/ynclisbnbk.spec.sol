@@ -12,7 +12,7 @@ import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 
 import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
-import {KernelClisStrategy} from "src/KernelClisStrategy.sol";
+import {KernelClisStrategy, KernelStrategy} from "src/KernelClisStrategy.sol";
 
 import {IAccessControl} from
     "lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
@@ -50,7 +50,7 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
     function deployClisBNBk() public returns (KernelClisStrategy _vault) {
         KernelClisStrategy implementation = new KernelClisStrategy();
         bytes memory initData = abi.encodeWithSelector(
-            KernelClisStrategy.initialize.selector,
+            KernelStrategy.initialize.selector,
             MainnetActors.ADMIN,
             "YieldNest Restaked slisBNB - Kernel",
             "ynclisWBNBk",
