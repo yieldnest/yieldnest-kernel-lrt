@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {MainnetContracts as MC, TestnetContracts as TC} from "script/Contracts.sol";
+import {MainnetContracts as MC} from "script/Contracts.sol";
 
 import {BaseKernelRateProvider} from "src/module/BaseKernelRateProvider.sol";
 
