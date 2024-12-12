@@ -16,16 +16,21 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
     function setUp() public {
         deploy();
         lowDecimalProvider = new MockRateProvider();
-        lowDecimalProvider.addRate(address(wbnb), 18);
-        lowDecimalProvider.addRate(address(bnbx), 18);
-        lowDecimalProvider.addRate(address(slisbnb), 18);
-        lowDecimalProvider.addRate(address(btc), 8);
+        lowDecimalProvider.addRate(address(wbnb), 1e18);
+        lowDecimalProvider.addRate(address(bnbx), 1e18);
+        lowDecimalProvider.addRate(address(slisbnb), 1e18);
+        lowDecimalProvider.addRate(address(btc), 1e8);
         
+        vm.prank(ASSET_MANAGER);
+        vault.addAsset(address(btc), true);
 
+        
         // Give Alice some tokens
         deal(alice, INITIAL_BALANCE);
         wbnb.deposit{value: INITIAL_BALANCE}();
         wbnb.transfer(alice, INITIAL_BALANCE);
+        vm.prank(alice);
+        btc.mint(INITIAL_BALANCE);
 
         // Approve vault to spend Alice's tokens
         vm.prank(alice);
@@ -65,7 +70,6 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
 
         vm.prank(alice);
         uint256 sharesMinted = vault.deposit(depositAmount, alice);
-
         // Check that shares were minted
         assertGt(sharesMinted, 0, "No shares were minted");
 
@@ -371,13 +375,9 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
     }
 
     function test_Kernel_deposit_8decimals_success() public {
-        uint256 depositAmount = (.5 ether);
+        uint256 depositAmount = (5e8);
 
-        vm.prank(alice);
-        btc.mint(depositAmount);
 
-        vm.prank(ASSET_MANAGER);
-        vault.addAsset(address(btc), true);
 
         vm.prank(PROVIDER_MANAGER);
         vault.setProvider(address(lowDecimalProvider));
@@ -386,16 +386,16 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
         btc.approve(address(vault), depositAmount);
         uint256 shares = vault.depositAsset(address(btc), depositAmount, alice);
 
-        assertGt(shares, 1);
+        assertEq(shares, depositAmount);
     }
 
 
-    function testDeposit_depositMultipleAssets(uint256 withdrawAmount, uint256 depositAmount) public {
-        withdrawAmount = bound(withdrawAmount, 10, INITIAL_BALANCE);
-        depositAmount = bound(depositAmount, withdrawAmount, INITIAL_BALANCE);
-        uint256 redeemAmount2 = vault.convertToShares(withdrawAmount) / 2;
-        uint256 redeemAmount1 = redeemAmount2 / 2;
+    function test_Deposit_depositMultipleAssets(uint256 depositAmount) public {
 
+        vm.prank(PROVIDER_MANAGER);
+        vault.setProvider(address(lowDecimalProvider));
+        depositAmount = bound(depositAmount, 10, INITIAL_BALANCE);
+        uint256 finalDeposit = depositAmount/2;
         {
             // disable sync
             vm.startPrank(ADMIN);
@@ -404,8 +404,8 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
             vm.stopPrank();
         }
 
-        IERC20 asset1 = IERC20(address(MC.WBNB));
-        IERC20 asset2 = IERC20(address(MC.BNBX));
+        IERC20 asset2 = IERC20(address(MC.WBNB));
+        IERC20 asset1 = IERC20(address(btc));
 
         {
             assertEq(vault.totalAssets(), 0, "totalAssets should be 0");
@@ -414,17 +414,16 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
             assertEq(asset1.balanceOf(address(vault)), 0, "asset1 balance should be 0");
             assertEq(asset2.balanceOf(address(vault)), 0, "asset2 balance should be 0");
 
-            vm.prank(alice);
-            uint256 shares1 = vault.depositAsset(address(asset1), depositAmount, alice);
-
-            vm.prank(alice);
-            uint256 shares2 = vault.depositAsset(address(asset2), depositAmount, alice);
+            vm.startPrank(alice);
+            btc.approve(address(vault), finalDeposit);
+            uint256 shares1 = vault.depositAsset(address(asset1), finalDeposit, alice);
+            uint256 shares2 = vault.depositAsset(address(asset2), finalDeposit, alice);
 
             assertEq(vault.balanceOf(alice), shares1 + shares2, "alice has incorrect shares");
-            assertEq(vault.totalAssets(), depositAmount + depositAmount / 2, "totalAssets should be based on rate");
+            assertEq(vault.totalAssets(), depositAmount, "totalAssets should be based on rate");
             assertEq(vault.totalSupply(), shares1 + shares2, "totalSupply is incorrect");
-            assertEq(asset1.balanceOf(address(vault)), depositAmount, "asset1 balance is incorrect");
-            assertEq(asset2.balanceOf(address(vault)), depositAmount, "asset2 balance is incorrect");
+            assertEq(asset1.balanceOf(address(vault)), finalDeposit, "asset1 balance is incorrect");
+            assertEq(asset2.balanceOf(address(vault)), finalDeposit, "asset2 balance is incorrect");
 
             assertEqThreshold(shares2 * 2, shares1, 3, "shares should be correct");
         }
