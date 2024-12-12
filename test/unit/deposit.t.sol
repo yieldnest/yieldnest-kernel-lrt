@@ -11,26 +11,16 @@ import "lib/forge-std/src/console.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {BaseKernelRateProvider} from "src/module/BaseKernelRateProvider.sol";
 import {SetupKernelStrategy} from "test/unit/helpers/SetupKernelStrategy.sol";
-import {MockRateProvider} from "test/unit/mocks/MockRateProvider.sol";
 
 contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
-    MockRateProvider public lowDecimalProvider;
-
     function setUp() public {
         deploy();
-        lowDecimalProvider = new MockRateProvider();
-        lowDecimalProvider.addRate(address(wbnb), 1e18);
-        lowDecimalProvider.addRate(address(bnbx), 1e18);
-        lowDecimalProvider.addRate(address(slisbnb), 1e18);
-        lowDecimalProvider.addRate(address(btc), 1e28);
-
-        vm.prank(ASSET_MANAGER);
-        vault.addAsset(address(btc), true);
 
         // Give Alice some tokens
         deal(alice, INITIAL_BALANCE);
         wbnb.deposit{value: INITIAL_BALANCE}();
         wbnb.transfer(alice, INITIAL_BALANCE);
+
         vm.prank(alice);
         btc.mint(INITIAL_BALANCE);
 
@@ -410,6 +400,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
 
             vm.startPrank(alice);
             btc.approve(address(vault), finalDeposit);
+            // since btc is 8 decimals we divide the deposit amount by 1e10 to get equal shares
             uint256 shares1 = vault.depositAsset(address(asset1), finalDeposit / 1e10, alice);
             uint256 shares2 = vault.depositAsset(address(asset2), finalDeposit, alice);
             console.log("SHARES 1", shares1);
