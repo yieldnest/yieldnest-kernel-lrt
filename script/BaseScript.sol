@@ -140,11 +140,17 @@ abstract contract BaseScript is Script, VaultUtils {
     }
 
     function _loadDeployment() internal {
+        if (!vm.isFile(_deploymentFilePath())) {
+            return;
+        }
         string memory jsonInput = vm.readFile(_deploymentFilePath());
 
         deployer = address(vm.parseJsonAddress(jsonInput, ".deployer"));
         timelock = TimelockController(payable(address(vm.parseJsonAddress(jsonInput, ".timelock"))));
         rateProvider = IProvider(payable(address(vm.parseJsonAddress(jsonInput, ".rateProvider"))));
+        viewer = BaseVaultViewer(payable(address(vm.parseJsonAddress(jsonInput, ".viewer"))));
+        viewerImplementation =
+            BaseVaultViewer(payable(address(vm.parseJsonAddress(jsonInput, ".viewerImplementation"))));
         vault = KernelStrategy(payable(address(vm.parseJsonAddress(jsonInput, string.concat(".", symbol(), "-proxy")))));
         implementation = KernelStrategy(
             payable(address(vm.parseJsonAddress(jsonInput, string.concat(".", symbol(), "-implementation"))))

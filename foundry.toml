@@ -8,6 +8,8 @@ optimizer = true
 optimizer-runs = 200
 solc_version = "0.8.24"
 auto_detect_remappings = false
+max-line-length = 120
+ffi = true
 
 [profile.mainnet]
 src = "src"
@@ -20,6 +22,7 @@ evm_version = "cancun"
 solc_version = "0.8.24"
 auto_detect_remappings = false
 max-line-length = 120
+ffi = true
 fs_permissions = [
   { access = "read-write", path = "./deployments" },
   { access = "read", path = "./" },
@@ -35,6 +38,7 @@ evm_version = "cancun"
 solc_version = "0.8.24"
 max-line-length = 120
 auto_detect_remappings = false
+ffi = true
 fs_permissions = [
   { access = "read-write", path = "./deployments" },
   { access = "read", path = "./" },
