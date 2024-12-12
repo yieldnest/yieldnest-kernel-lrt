@@ -52,13 +52,13 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
         wbnb = WETH9(payable(MC.WBNB));
         slisbnb = MockSTETH(payable(MC.SLISBNB));
         bnbx = WETH9(payable(MC.BNBX));
-        btc = new MockERC20LowDecimals("BTC", "BTC");
+        btc = new MockERC20LowDecimals("BTC", "BTC"); // decimals = 8
 
         lowDecimalProvider = new MockRateProvider();
-        lowDecimalProvider.addRate(address(wbnb), 1e18);
-        lowDecimalProvider.addRate(address(bnbx), 1e18);
-        lowDecimalProvider.addRate(address(slisbnb), 1e18);
-        lowDecimalProvider.addRate(address(btc), 1e18);
+        lowDecimalProvider.addRate(address(wbnb), 1e18); // 10 ** 18 wbnb = 10 ** 18 base
+        lowDecimalProvider.addRate(address(bnbx), 1e18); // 10 ** 18 bnbx = 10 ** 18 base
+        lowDecimalProvider.addRate(address(slisbnb), 1e18); // 10 ** 18 slisbnb = 10 ** 18 base
+        lowDecimalProvider.addRate(address(btc), 1e18); // 10 ** 8 btc = 10 ** 18 base
 
         address[] memory assets = new address[](3);
         assets[0] = address(wbnb);
