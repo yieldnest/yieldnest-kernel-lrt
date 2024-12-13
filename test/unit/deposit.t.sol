@@ -378,7 +378,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
         btc.approve(address(vault), depositAmount);
         uint256 shares = vault.depositAsset(address(btc), depositAmount, alice);
 
-        assertEq(shares, 1 ether);
+        assertEq(shares, 1 ether, "incorrect shares");
     }
 
     function test_Deposit_depositMultipleAssets(uint256 depositAmount) public {
@@ -417,7 +417,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
 
             vm.stopPrank();
 
-            assertEq(shares2, shares1, "shares should be correct");
+            assertEq(shares1, shares2, "shares should be correct");
             assertEq(vault.balanceOf(alice), shares1 + shares2, "alice has incorrect shares");
             assertEqThreshold(vault.totalAssets(), depositAmount2 * 2, 2, "totalAssets should be based on rate");
             assertEq(vault.totalSupply(), shares1 + shares2, "totalSupply is incorrect");

@@ -323,7 +323,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         uint256 beforeBobShares = vault.balanceOf(bob);
         uint256 beforeVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
 
-        uint256 maxWithdraw = vault.maxWithdrawAsset(MC.BTCB, bob);
+        uint256 maxWithdraw = vault.maxWithdraw(bob);
         assertEqThreshold(maxWithdraw, amount, 2, "Max withdraw should be equal to amount");
 
         uint256 previewShares = vault.previewWithdrawAsset(MC.BTCB, maxWithdraw);

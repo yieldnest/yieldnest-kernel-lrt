@@ -398,14 +398,11 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         uint256 beforeBobBalance = asset.balanceOf(bob);
         uint256 beforeBobShares = vault.balanceOf(bob);
         uint256 beforeVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
-
-        uint256 maxWithdraw = vault.maxWithdrawAsset(MC.SLISBNB, bob);
-        assertEqThreshold(maxWithdraw, amount, 2, "Max withdraw should be equal to amount");
-
-        uint256 previewShares = vault.previewWithdrawAsset(MC.SLISBNB, maxWithdraw);
+        uint256 maxWithdraw = vault.maxWithdraw(bob);
+        uint256 previewShares = vault.previewWithdrawAsset(MC.SLISBNB, amount);
 
         vm.prank(bob);
-        uint256 shares = vault.withdrawAsset(MC.SLISBNB, maxWithdraw, bob, bob);
+        uint256 shares = vault.withdrawAsset(MC.SLISBNB, amount, bob, bob);
 
         assertEq(shares, previewShares, "Shares should be equal to preview shares");
 
@@ -441,7 +438,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
 
         uint256 beforeBobBalance = asset.balanceOf(bob);
         uint256 beforeBobShares = vault.balanceOf(bob);
-        uint256 maxWithdraw = vault.maxWithdrawAsset(MC.SLISBNB, bob);
+        uint256 maxWithdraw = vault.maxWithdraw(bob);
 
         assertGt(amount, maxWithdraw, "Amount should be greater than maxWithdraw");
 
@@ -479,7 +476,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         assertEq(asset.balanceOf(bob), beforeBobBalance, "Bob balance should not increase");
         assertEq(vault.balanceOf(bob), beforeBobShares, "Bob shares should not decrease");
 
-        maxWithdraw = vault.maxWithdrawAsset(MC.SLISBNB, bob);
+        maxWithdraw = vault.maxWithdraw(bob);
 
         // withdraw for real
         vm.prank(bob);

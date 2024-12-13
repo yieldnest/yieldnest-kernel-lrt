@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
+import "lib/forge-std/src/console.sol";
 import {IERC20, Math, SafeERC20} from "lib/yieldnest-vault/src/Common.sol";
 import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
-
 /**
  * @title KernelStrategy
  * @author Yieldnest
  * @notice This contract is a strategy for Kernel. It is responsible for depositing and withdrawing assets from the
  * vault.
  */
+
 contract KernelStrategy is Vault {
     /// @notice Role for allocator permissions
     bytes32 public constant ALLOCATOR_ROLE = keccak256("ALLOCATOR_ROLE");
@@ -75,7 +76,7 @@ contract KernelStrategy is Vault {
         uint8 decimals,
         uint64 baseWithdrawalFee,
         bool countNativeAsset
-    ) external override initializer {
+    ) external virtual override initializer {
         if (admin == address(0)) {
             revert ZeroAddress();
         }
@@ -136,7 +137,7 @@ contract KernelStrategy is Vault {
             return 0;
         }
 
-        return _maxWithdrawAsset(asset(), owner);
+        (maxAssets,) = _convertToAssets(asset(), balanceOf(owner), Math.Rounding.Floor);
     }
 
     /**
@@ -150,45 +151,6 @@ contract KernelStrategy is Vault {
         }
 
         return balanceOf(owner);
-    }
-
-    /**
-     * @notice Returns the maximum amount of assets that can be withdrawn for a specific asset by a given owner.
-     * @param asset_ The address of the asset.
-     * @param owner The address of the owner.
-     * @return maxAssets The maximum amount of assets.
-     */
-    function maxWithdrawAsset(address asset_, address owner) public view returns (uint256 maxAssets) {
-        if (paused()) {
-            return 0;
-        }
-
-        return _maxWithdrawAsset(asset_, owner);
-    }
-
-    /**
-     * @dev See {maxWithdrawAsset}.
-     */
-    function _maxWithdrawAsset(address asset_, address owner) internal view virtual returns (uint256 maxAssets) {
-        if (!_getAssetStorage().assets[asset_].active) {
-            return 0;
-        }
-
-        (maxAssets,) = _convertToAssets(asset_, balanceOf(owner), Math.Rounding.Floor);
-
-        uint256 availableAssets = IERC20(asset_).balanceOf(address(this));
-
-        StrategyStorage storage strategyStorage = _getStrategyStorage();
-
-        if (strategyStorage.syncWithdraw) {
-            address vault = IStakerGateway(strategyStorage.stakerGateway).getVault(asset_);
-            uint256 availableAssetsInKernel = IERC20(asset_).balanceOf(address(vault));
-            availableAssets += availableAssetsInKernel;
-        }
-
-        if (availableAssets < maxAssets) {
-            maxAssets = availableAssets;
-        }
     }
 
     /**
@@ -231,7 +193,7 @@ contract KernelStrategy is Vault {
         if (paused()) {
             revert Paused();
         }
-        uint256 maxAssets = maxWithdrawAsset(asset_, owner);
+        uint256 maxAssets = maxWithdraw(owner);
         if (assets > maxAssets) {
             revert ExceededMaxWithdraw(owner, assets, maxAssets);
         }
@@ -345,6 +307,7 @@ contract KernelStrategy is Vault {
 
         StrategyStorage storage strategyStorage = _getStrategyStorage();
         if (vaultBalance < assets && strategyStorage.syncWithdraw) {
+            console.log("unstaking");
             string memory referralId = ""; // Placeholder referral ID
             IStakerGateway(strategyStorage.stakerGateway).unstake(asset_, assets, referralId);
         }
