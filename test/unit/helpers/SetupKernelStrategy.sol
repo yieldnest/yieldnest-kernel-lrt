@@ -14,7 +14,9 @@ import {MainnetContracts as MC} from "script/Contracts.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 
+import {MockERC20LowDecimals} from "../mocks/MockERC20LowDecimals.sol";
 import {MockStakerGateway} from "../mocks/MockStakerGateway.sol";
+import {MockRateProvider} from "test/unit/mocks/MockRateProvider.sol";
 
 import {VaultUtils} from "script/VaultUtils.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
@@ -27,8 +29,9 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
     WETH9 public wbnb;
     MockSTETH public slisbnb;
     WETH9 public bnbx;
-
+    MockERC20LowDecimals public btc;
     IStakerGateway public mockGateway;
+    MockRateProvider public lowDecimalProvider;
 
     address public alice = address(0xa11ce);
     uint256 public constant INITIAL_BALANCE = 100_000 ether;
@@ -49,6 +52,13 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
         wbnb = WETH9(payable(MC.WBNB));
         slisbnb = MockSTETH(payable(MC.SLISBNB));
         bnbx = WETH9(payable(MC.BNBX));
+        btc = new MockERC20LowDecimals("BTC", "BTC"); // decimals = 8
+
+        lowDecimalProvider = new MockRateProvider();
+        lowDecimalProvider.addRate(address(wbnb), 1e18); // 10 ** 18 wbnb = 10 ** 18 base
+        lowDecimalProvider.addRate(address(bnbx), 1e18); // 10 ** 18 bnbx = 10 ** 18 base
+        lowDecimalProvider.addRate(address(slisbnb), 1e18); // 10 ** 18 slisbnb = 10 ** 18 base
+        lowDecimalProvider.addRate(address(btc), 1e18); // 10 ** 8 btc = 10 ** 18 base
 
         address[] memory assets = new address[](3);
         assets[0] = address(wbnb);
@@ -96,6 +106,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
         vault.addAsset(MC.WBNB, true);
         vault.addAsset(MC.SLISBNB, true);
         vault.addAsset(MC.BNBX, true);
+        vault.addAsset(address(btc), true);
 
         // by default, we don't set any rules
         // set deposit rules
