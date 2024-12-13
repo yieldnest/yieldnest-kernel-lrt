@@ -310,6 +310,10 @@ contract KernelStrategy is Vault {
         uint256 assets,
         uint256 shares
     ) internal virtual onlyAllocator {
+        if (!_getAssetStorage().assets[asset_].active) {
+            revert AssetNotActive();
+        }
+
         VaultStorage storage vaultStorage = _getVaultStorage();
         vaultStorage.totalAssets -= _convertAssetToBase(asset_, assets);
         if (caller != owner) {
