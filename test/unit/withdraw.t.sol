@@ -184,6 +184,23 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
         vault.withdrawAsset(address(MC.WBNB), withdrawalAmount, alice, alice);
     }
 
+    function test_KernelStrategy_ynBNBk_withdraw_revert_inactiveAsset() public {
+        uint256 withdrawalAmount = 10 ether;
+
+        // deposit amount
+        vm.startPrank(alice);
+        vault.deposit(withdrawalAmount, alice);
+        vm.stopPrank();
+
+        // set asset to inactive
+        vm.prank(ADMIN);
+        vault.updateAsset(0, IVault.AssetUpdateFields({active: false}));
+
+        vm.prank(alice);
+        vm.expectRevert(IVault.AssetNotActive.selector);
+        vault.withdrawAsset(address(MC.WBNB), withdrawalAmount, alice, alice);
+    }
+
     function test_KernelStrategy_ynBNBk_withdraw_revert_wnbnb_sync_disabled_exceededMaxWithdraw(
         uint256 withdrawalAmount
     ) public {
