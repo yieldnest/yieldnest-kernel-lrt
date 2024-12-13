@@ -92,6 +92,9 @@ contract KernelStrategy is Vault {
 
         FeeStorage storage fees = _getFeeStorage();
         fees.baseWithdrawalFee = baseWithdrawalFee;
+
+        StrategyStorage storage strategyStorage = _getStrategyStorage();
+        strategyStorage.hasAllocators = true;
     }
 
     /**

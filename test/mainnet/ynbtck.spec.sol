@@ -116,6 +116,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
 
         vault_.setSyncDeposit(true);
         vault_.setSyncWithdraw(true);
+        vault_.setHasAllocator(false);
 
         vault_.addAsset(MC.BTCB, true);
         vault_.addAsset(MC.SOLVBTC, true);
