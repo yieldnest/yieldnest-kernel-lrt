@@ -268,13 +268,25 @@ contract KernelStrategy is Vault {
 
         StrategyStorage storage strategyStorage = _getStrategyStorage();
         if (strategyStorage.syncDeposit) {
-            SafeERC20.safeIncreaseAllowance(IERC20(asset_), address(strategyStorage.stakerGateway), assets);
-
-            string memory referralId = ""; // Placeholder referral ID
-            IStakerGateway(strategyStorage.stakerGateway).stake(asset_, assets, referralId);
+            _stake(asset_, assets, IStakerGateway(strategyStorage.stakerGateway));
         }
 
         emit DepositAsset(caller, receiver, asset_, assets, shares);
+    }
+
+    /**
+     * @notice Internal function to stake assets into the Kernel protocol
+     * @dev This function handles the staking of assets through the staker gateway.
+     * @param asset_ The address of the asset to stake
+     * @param assets The amount of assets to stake
+     * @param stakerGateway The staker gateway contract to use for staking
+     */
+    function _stake(address asset_, uint256 assets, IStakerGateway stakerGateway) internal virtual {
+        // For other assets, stake directly
+        SafeERC20.safeIncreaseAllowance(IERC20(asset_), address(stakerGateway), assets);
+
+        string memory referralId = ""; // Placeholder referral ID
+        stakerGateway.stake(asset_, assets, referralId);
     }
 
     /**
@@ -324,8 +336,7 @@ contract KernelStrategy is Vault {
 
         StrategyStorage storage strategyStorage = _getStrategyStorage();
         if (vaultBalance < assets && strategyStorage.syncWithdraw) {
-            string memory referralId = ""; // Placeholder referral ID
-            IStakerGateway(strategyStorage.stakerGateway).unstake(asset_, assets - vaultBalance, referralId);
+            _unstake(asset_, assets - vaultBalance, IStakerGateway(strategyStorage.stakerGateway));
         }
 
         SafeERC20.safeTransfer(IERC20(asset_), receiver, assets);
@@ -333,6 +344,17 @@ contract KernelStrategy is Vault {
         _burn(owner, shares);
 
         emit WithdrawAsset(caller, receiver, owner, asset_, assets, shares);
+    }
+
+    /**
+     * @notice Internal function to unstake assets from Kernel.
+     * @param asset_ The address of the asset to unstake.
+     * @param amount The amount of assets to unstake.
+     * @param stakerGateway The address of the staker gateway.
+     */
+    function _unstake(address asset_, uint256 amount, IStakerGateway stakerGateway) internal virtual {
+        string memory referralId = ""; // Placeholder referral ID
+        stakerGateway.unstake(asset_, amount, referralId);
     }
 
     /**
