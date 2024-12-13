@@ -8,7 +8,7 @@ import {MockERC20} from "lib/yieldnest-vault/test/unit/mocks/MockERC20.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
-import {BaseKernelRateProvider} from "src/module/BaseKernelRateProvider.sol";
+import {IKernelProvider} from "src/module/BaseKernelRateProvider.sol";
 import {SetupKernelStrategy} from "test/unit/helpers/SetupKernelStrategy.sol";
 
 contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
@@ -340,7 +340,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
         // Try to deposit the random token
         randomToken.approve(address(vault), 1000);
         bytes memory encodedError =
-            abi.encodeWithSelector(BaseKernelRateProvider.UnsupportedAsset.selector, address(randomToken));
+            abi.encodeWithSelector(IKernelProvider.UnsupportedAsset.selector, address(randomToken));
         vm.expectRevert(encodedError);
         vault.depositAsset(address(randomToken), 1000, alice);
         vm.stopPrank();
