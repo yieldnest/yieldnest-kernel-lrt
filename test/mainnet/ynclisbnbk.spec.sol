@@ -144,7 +144,7 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         vault.processAccounting();
     }
 
-    function test_Buffer_Vault_deposit_without_allocator() public {
+    function test_ynclisBNBk_deposit_without_allocator() public {
         uint256 amount = 0.5 ether;
 
         address depositor = address(1241251261);
@@ -160,7 +160,7 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         vault.depositAsset(MC.WBNB, amount, depositor);
     }
 
-    function test_Buffer_Vault_withdraw_without_allocator() public {
+    function test_ynclisBNBk_withdraw_without_allocator() public {
         uint256 amount = 0.5 ether;
 
         address withdrawer = address(1241251261);
@@ -239,6 +239,50 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         assertEq(IWBNB(MC.WBNB).balanceOf(account), beforeBalance + amount, "wbnb not sent");
     }
 
+    function test_ynclisBNBk_viewer_functions() public {
+        BaseVaultViewer.AssetInfo[] memory assets = viewer.getAssets();
+        BaseVaultViewer.AssetInfo[] memory underlyingAssets = viewer.getUnderlyingAssets();
+
+        address clisVault = stakerGateway.getVault(MC.CLISBNB);
+
+        assertEq(assets.length, 2, "Should have 2 assets");
+        assertEq(underlyingAssets.length, 1, "Should have 1 underlying assets");
+        assertEq(assets[0].asset, MC.WBNB, "Should have WBNB as the first asset");
+        assertEq(assets[1].asset, clisVault, "Should have CLISBNB Kernel Vault as the second asset");
+        assertEq(underlyingAssets[0].asset, assets[0].asset, "Underlying asset should be the same");
+
+        uint256 beforeAssetBalance = assets[0].totalBalanceInAsset;
+        uint256 beforeVaultBalance = assets[1].totalBalanceInAsset;
+        uint256 beforeUnderlyingBalance = underlyingAssets[0].totalBalanceInAsset;
+
+        assertEq(beforeVaultBalance, 0, "Should have 0 CLISBNB in vault");
+        assertEq(beforeAssetBalance, 0, "Should have 0 WBNB in asset");
+        assertEq(beforeUnderlyingBalance, 0, "Should have 0 CLISBNB in asset");
+
+        uint256 amount = 1 ether;
+        giveWBNB(bob, amount);
+        vm.startPrank(bob);
+        IERC20(MC.WBNB).approve(address(vault), amount);
+        vault.depositAsset(MC.WBNB, amount, bob);
+        vm.stopPrank();
+
+        assets = viewer.getAssets();
+        underlyingAssets = viewer.getUnderlyingAssets();
+
+        assertEq(assets.length, 2, "Should have 2 assets");
+        assertEq(underlyingAssets.length, 1, "Should have 1 underlying assets");
+        assertEq(assets[0].asset, MC.WBNB, "Should have WBNB as the first asset");
+        assertEq(assets[1].asset, clisVault, "Should have CLISBNB Kernel Vault as the second asset");
+        assertEq(underlyingAssets[0].asset, assets[0].asset, "Underlying asset should be the same");
+
+        uint256 afterAssetBalance = assets[0].totalBalanceInAsset;
+        uint256 afterVaultBalance = assets[1].totalBalanceInAsset;
+        uint256 afterUnderlyingBalance = underlyingAssets[0].totalBalanceInAsset;
+        assertEq(afterAssetBalance, 0, "Should have 0 WBNB in asset");
+        assertEq(afterVaultBalance, amount, "Should have CLISBNB in vault");
+        assertEq(afterUnderlyingBalance, amount, "Should have CLISBNB in asset");
+    }
+
     function test_ynclisBNBk_deposit_success_syncEnabled() public {
         uint256 amount = 1 ether;
 
@@ -276,7 +320,7 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         );
     }
 
-    function test_ynclisBNBk_wihtdraw_success_syncEnabled() public {
+    function test_ynclisBNBk_withdraw_success_syncEnabled() public {
         uint256 amount = 1 ether;
         IERC20 asset = IERC20(MC.WBNB);
         giveWBNB(bob, amount);

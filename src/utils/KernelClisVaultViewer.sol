@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {IERC20, Math} from "lib/yieldnest-vault/src/Common.sol";
 
+import {IKernelProvider} from "src/interface/IKernelProvider.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
@@ -28,6 +29,15 @@ contract KernelClisVaultViewer is KernelVaultViewer {
 
         if (availableAssets < maxAssets) {
             maxAssets = availableAssets;
+        }
+    }
+
+    function _getUnderlyingAsset(address asset) internal view override returns (address underlyingAsset) {
+        address clisbnb = IKernelConfig(IStakerGateway(vault().getStakerGateway()).getConfig()).getClisBnbAddress();
+        IKernelProvider provider = IKernelProvider(vault().provider());
+        underlyingAsset = provider.tryGetVaultAsset(asset);
+        if (underlyingAsset == clisbnb) {
+            underlyingAsset = vault().asset();
         }
     }
 }

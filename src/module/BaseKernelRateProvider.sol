@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
+import {IKernelProvider} from "src/interface/IKernelProvider.sol";
 
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
@@ -12,9 +12,7 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
  * @notice Provides the rate of an asset for the Yieldnest Kernel
  * @dev This contract is meant to be inherited by other rate providers
  */
-abstract contract BaseKernelRateProvider is IProvider {
-    error UnsupportedAsset(address asset);
-
+abstract contract BaseKernelRateProvider is IKernelProvider {
     /**
      * @notice Returns the staker gateway address
      * @return The staker gateway address
@@ -26,7 +24,7 @@ abstract contract BaseKernelRateProvider is IProvider {
      * @param vault The vault to get the asset for
      * @return The vault asset
      */
-    function tryGetVaultAsset(address vault) internal view returns (address) {
+    function tryGetVaultAsset(address vault) public view returns (address) {
         try IKernelVault(vault).getAsset() returns (address asset) {
             if (IStakerGateway(getStakerGateway()).getVault(asset) != vault) {
                 return address(0);

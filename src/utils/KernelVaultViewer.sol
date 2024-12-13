@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {IERC20, Math} from "lib/yieldnest-vault/src/Common.sol";
+import {IERC20Metadata, Math} from "lib/yieldnest-vault/src/Common.sol";
 
-import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
+import {IKernelProvider} from "src/interface/IKernelProvider.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
@@ -41,11 +41,11 @@ contract KernelVaultViewer is BaseVaultViewer {
 
         (maxAssets,) = _convertToAssets(asset_, vault().balanceOf(owner), Math.Rounding.Floor);
 
-        uint256 availableAssets = IERC20(asset_).balanceOf(address(vault()));
+        uint256 availableAssets = IERC20Metadata(asset_).balanceOf(address(vault()));
 
         if (vault().getSyncWithdraw()) {
             address kernelVault = IStakerGateway(vault().getStakerGateway()).getVault(asset_);
-            uint256 availableAssetsInKernel = IERC20(kernelVault).balanceOf(address(vault()));
+            uint256 availableAssetsInKernel = IERC20Metadata(kernelVault).balanceOf(address(vault()));
             availableAssets += availableAssetsInKernel;
         }
 
@@ -80,7 +80,68 @@ contract KernelVaultViewer is BaseVaultViewer {
      * @return uint256 The equivalent amount of assets.
      */
     function _convertBaseToAsset(address asset_, uint256 assets) internal view virtual returns (uint256) {
-        uint256 rate = IProvider(vault().provider()).getRate(asset_);
+        uint256 rate = IKernelProvider(vault().provider()).getRate(asset_);
         return assets.mulDiv(10 ** (vault().getAsset(asset_).decimals), rate, Math.Rounding.Floor);
+    }
+
+    function findIndex(address[] memory assets, address asset) internal pure returns (int256) {
+        for (uint256 i = 0; i < assets.length; ++i) {
+            if (assets[i] == asset) {
+                return int256(i);
+            }
+        }
+        return -1;
+    }
+
+    function _getUnderlyingAsset(address asset) internal view virtual returns (address underlyingAsset) {
+        IKernelProvider provider = IKernelProvider(vault().provider());
+        underlyingAsset = provider.tryGetVaultAsset(asset);
+    }
+
+    /**
+     * @notice Retrieves information about all underlying assets in the system
+     * @dev This function checks if the asset is a kernel vault and handles the conversion to the underlying asset
+     * @return assetsInfo An array of AssetInfo structs containing detailed information about each asset
+     */
+    function getUnderlyingAssets() external view override returns (AssetInfo[] memory assetsInfo) {
+        address[] memory assets = vault().getAssets();
+        uint256[] memory balances = new uint256[](assets.length);
+        bool[] memory assetCounted = new bool[](assets.length);
+
+        uint256 count = 0;
+
+        for (uint256 i = 0; i < assets.length; ++i) {
+            address underlyingAsset = _getUnderlyingAsset(assets[i]);
+            if (underlyingAsset != address(0)) {
+                int256 index = findIndex(assets, underlyingAsset);
+                if (index >= 0) {
+                    balances[uint256(index)] += IERC20Metadata(assets[i]).balanceOf(address(vault()));
+                    if (!assetCounted[uint256(index)]) {
+                        count++;
+                        assetCounted[uint256(index)] = true;
+                    }
+                }
+            } else {
+                balances[i] = IERC20Metadata(assets[i]).balanceOf(address(vault()));
+                if (!assetCounted[i]) {
+                    count++;
+                    assetCounted[i] = true;
+                }
+            }
+        }
+
+        address[] memory finalUnderlyingAssets = new address[](count);
+        uint256[] memory finalBalances = new uint256[](count);
+
+        uint256 j = 0;
+        for (uint256 i = 0; i < assets.length; ++i) {
+            if (assetCounted[i]) {
+                finalUnderlyingAssets[j] = assets[i];
+                finalBalances[j] = balances[i];
+                j += 1;
+            }
+        }
+
+        return _getAssetsInfo(finalUnderlyingAssets, finalBalances);
     }
 }
