@@ -91,7 +91,7 @@ contract KernelClisStrategy is KernelStrategy {
         if (vaultBalance < assets && strategyStorage.syncWithdraw) {
             // TODO: fix referralId
             string memory referralId = "";
-            IStakerGateway(strategyStorage.stakerGateway).unstakeClisBNB(assets, referralId);
+            IStakerGateway(strategyStorage.stakerGateway).unstakeClisBNB(assets - vaultBalance, referralId);
 
             //wrap native token
             IWBNB(asset()).deposit{value: assets}();
