@@ -16,7 +16,7 @@ import {KernelStrategy} from "src/KernelStrategy.sol";
 import {TimelockController} from "lib/openzeppelin-contracts/contracts/governance/TimelockController.sol";
 import {Strings} from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 
-import {BaseVaultViewer} from "lib/yieldnest-vault/src/utils/BaseVaultViewer.sol";
+import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 
 abstract contract BaseScript is Script, VaultUtils {
     using stdJson for string;
@@ -30,8 +30,8 @@ abstract contract BaseScript is Script, VaultUtils {
     IProvider public rateProvider;
     KernelStrategy public vault;
     KernelStrategy public implementation;
-    BaseVaultViewer public viewer;
-    BaseVaultViewer public viewerImplementation;
+    KernelVaultViewer public viewer;
+    KernelVaultViewer public viewerImplementation;
 
     error UnsupportedChain();
     error InvalidSetup();
@@ -74,13 +74,13 @@ abstract contract BaseScript is Script, VaultUtils {
             revert InvalidSetup();
         }
 
-        viewerImplementation = new BaseVaultViewer();
+        viewerImplementation = new KernelVaultViewer();
 
         bytes memory initData = abi.encodeWithSelector(BaseVaultViewer.initialize.selector, address(vault));
 
         TUP proxy = new TUP(address(viewerImplementation), actors.ADMIN(), initData);
 
-        viewer = BaseVaultViewer(payable(address(proxy)));
+        viewer = KernelVaultViewer(payable(address(proxy)));
     }
 
     function _deployTimelockController() internal {
@@ -148,9 +148,9 @@ abstract contract BaseScript is Script, VaultUtils {
         deployer = address(vm.parseJsonAddress(jsonInput, ".deployer"));
         timelock = TimelockController(payable(address(vm.parseJsonAddress(jsonInput, ".timelock"))));
         rateProvider = IProvider(payable(address(vm.parseJsonAddress(jsonInput, ".rateProvider"))));
-        viewer = BaseVaultViewer(payable(address(vm.parseJsonAddress(jsonInput, ".viewer"))));
+        viewer = KernelVaultViewer(payable(address(vm.parseJsonAddress(jsonInput, ".viewer"))));
         viewerImplementation =
-            BaseVaultViewer(payable(address(vm.parseJsonAddress(jsonInput, ".viewerImplementation"))));
+            KernelVaultViewer(payable(address(vm.parseJsonAddress(jsonInput, ".viewerImplementation"))));
         vault = KernelStrategy(payable(address(vm.parseJsonAddress(jsonInput, string.concat(".", symbol(), "-proxy")))));
         implementation = KernelStrategy(
             payable(address(vm.parseJsonAddress(jsonInput, string.concat(".", symbol(), "-implementation"))))

@@ -1,25 +1,12 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {
-    AccessControlUpgradeable,
-    Address,
-    ERC20PermitUpgradeable,
-    ERC20Upgradeable,
-    IERC20,
-    IERC20Metadata,
-    Math,
-    ReentrancyGuardUpgradeable,
-    SafeERC20
-} from "lib/yieldnest-vault/src/Common.sol";
+import {IERC20, Math} from "lib/yieldnest-vault/src/Common.sol";
 
+import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
-import {IProvider} from "src/interface/IProvider.sol";
-import {IStrategy} from "src/interface/IStrategy.sol";
-import {IVault} from "src/interface/IVault.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
-import {Guard} from "src/module/Guard.sol";
 
 import {BaseVaultViewer} from "lib/yieldnest-vault/src/utils/BaseVaultViewer.sol";
 
