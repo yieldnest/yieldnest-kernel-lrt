@@ -22,12 +22,16 @@ import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
+
+import {KernelClisVaultViewer} from "src/utils/KernelClisVaultViewer.sol";
+import {BaseVaultViewer} from "src/utils/KernelVaultViewer.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
 contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     KernelClisStrategy public vault;
     BNBRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
+    KernelClisVaultViewer public viewer;
 
     address public bob = address(0xB0B);
     address public clisBnbVault;
@@ -41,6 +45,17 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         clisBnbVault = IKernelConfig(stakerGateway.getConfig()).getClisBnbAddress();
 
         vault = deployClisBNBk();
+        viewer = KernelClisVaultViewer(
+            payable(
+                address(
+                    new TransparentUpgradeableProxy(
+                        address(new KernelClisVaultViewer()),
+                        ADMIN,
+                        abi.encodeWithSelector(BaseVaultViewer.initialize.selector, address(vault))
+                    )
+                )
+            )
+        );
 
         vm.label(MC.STAKER_GATEWAY, "kernel staker gateway");
         vm.label(address(vault), "kernel strategy");
@@ -174,6 +189,8 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         uint256 beforeVaultBalance = asset.balanceOf(address(vault));
         uint256 beforeBobBalance = asset.balanceOf(bob);
         uint256 beforeBobShares = vault.balanceOf(bob);
+        uint256 beforeMaxWithdraw = viewer.maxWithdrawAsset(assetAddress, bob);
+        assertEq(beforeMaxWithdraw, 0, "Bob should have no max withdraw before deposit");
 
         uint256 previewShares = vault.previewDepositAsset(assetAddress, amount);
 
@@ -204,6 +221,11 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         );
         assertEq(asset.balanceOf(bob), beforeBobBalance - amount, "Bob should not have the assets");
         assertEq(vault.balanceOf(bob), beforeBobShares + shares, "Bob should have shares after deposit");
+        assertEq(
+            viewer.maxWithdrawAsset(address(asset), bob),
+            beforeMaxWithdraw + amount,
+            "Bob should have max withdraw after deposit"
+        );
 
         return shares;
     }

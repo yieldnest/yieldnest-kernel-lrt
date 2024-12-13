@@ -9,6 +9,7 @@ import {TransparentUpgradeableProxy} from
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 import {MainnetActors} from "script/Actors.sol";
+import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 
 import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
@@ -21,15 +22,28 @@ import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 contract YnWBNBkBufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
     KernelStrategy public vault;
     BNBRateProvider public kernelProvider;
+    IKernelVault public kernelVault;
+    KernelVaultViewer public viewer;
 
     address public bob = address(0xB0B);
-    IKernelVault public kernelVault;
 
     function setUp() public {
         kernelProvider = new BNBRateProvider();
         etchProvider(address(kernelProvider));
 
         vault = deployBuffer();
+        viewer = KernelVaultViewer(
+            payable(
+                address(
+                    new TransparentUpgradeableProxy(
+                        address(new KernelVaultViewer()),
+                        ADMIN,
+                        abi.encodeWithSelector(BaseVaultViewer.initialize.selector, address(vault))
+                    )
+                )
+            )
+        );
+
         etchBuffer(address(vault));
     }
 
@@ -173,6 +187,8 @@ contract YnWBNBkBufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
         uint256 beforeKernelVaultBalance = wbnb.balanceOf(address(kernelVault));
         uint256 beforeBobBalance = wbnb.balanceOf(bob);
         uint256 beforeBobShares = vault.balanceOf(bob);
+        uint256 beforeMaxWithdraw = viewer.maxWithdrawAsset(MC.WBNB, bob);
+        assertEq(beforeMaxWithdraw, 0, "Bob should have no max withdraw before deposit");
 
         vm.deal(bob, amount);
         vm.prank(bob);
@@ -209,6 +225,16 @@ contract YnWBNBkBufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
         );
         assertEq(wbnb.balanceOf(bob), beforeBobBalance, "Bob should have the same amount of WBNB after deposit");
         assertEq(vault.balanceOf(bob), beforeBobShares + shares, "Bob should have shares after deposit");
+        assertEq(
+            viewer.maxWithdrawAsset(MC.WBNB, bob),
+            beforeMaxWithdraw + amount,
+            "Bob should have max withdraw after deposit"
+        );
+        assertEq(
+            viewer.maxWithdrawAsset(address(kernelVault), address(bob)),
+            0,
+            "Bob should have no max withdraw for inactive asset after deposit"
+        );
 
         return shares;
     }

@@ -4,8 +4,10 @@ pragma solidity ^0.8.24;
 import {Test} from "lib/forge-std/src/Test.sol";
 
 import {Initializable} from "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import {ITransparentUpgradeableProxy} from
-    "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy,
+    TransparentUpgradeableProxy
+} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyUtils} from "script/ProxyUtils.sol";
 
 import {IERC20, ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
@@ -17,6 +19,7 @@ import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {MigratedKernelStrategy} from "src/MigratedKernelStrategy.sol";
+import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 
 import {VaultUtils} from "script/VaultUtils.sol";
 import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
@@ -29,6 +32,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     KernelStrategy public vault;
     BNBRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
+    KernelVaultViewer public viewer;
 
     address public bob = address(0xB0B);
 
@@ -37,6 +41,17 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         etchProvider(address(kernelProvider));
 
         vault = deployMigrateVault();
+        viewer = KernelVaultViewer(
+            payable(
+                address(
+                    new TransparentUpgradeableProxy(
+                        address(new KernelVaultViewer()),
+                        ADMIN,
+                        abi.encodeWithSelector(BaseVaultViewer.initialize.selector, address(vault))
+                    )
+                )
+            )
+        );
 
         stakerGateway = IStakerGateway(MC.STAKER_GATEWAY);
         vm.label(MC.STAKER_GATEWAY, "kernel staker gateway");
@@ -268,6 +283,8 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         uint256 beforeVaultBalance = asset.balanceOf(address(vault));
         uint256 beforeBobBalance = asset.balanceOf(bob);
         uint256 beforeBobShares = vault.balanceOf(bob);
+        uint256 beforeMaxWithdraw = viewer.maxWithdrawAsset(address(asset), bob);
+        assertEq(beforeMaxWithdraw, 0, "Bob should have no max withdraw before deposit");
 
         uint256 previewShares = vault.previewDepositAsset(assetAddress, amount);
 
@@ -298,6 +315,12 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         );
         assertEq(asset.balanceOf(bob), beforeBobBalance - amount, "Bob should not have the assets");
         assertEq(vault.balanceOf(bob), beforeBobShares + shares, "Bob should have shares after deposit");
+        assertEqThreshold(
+            viewer.maxWithdrawAsset(assetAddress, bob),
+            beforeMaxWithdraw + amount,
+            3,
+            "maxWithdrawAsset should be correct"
+        );
 
         return shares;
     }
@@ -326,6 +349,8 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         uint256 amount = 1 ether;
         uint256 beforeVaultBalance = stakerGateway.balanceOf(address(asset), address(vault));
         uint256 previewShares = vault.previewDepositAsset(address(asset), amount);
+        uint256 beforeMaxWithdraw = viewer.maxWithdrawAsset(address(asset), bob);
+        assertEq(beforeMaxWithdraw, 0, "Bob should have no max withdraw");
 
         getSlisBnb(amount);
 
@@ -342,6 +367,12 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
             beforeVaultBalance + amount,
             100,
             "Vault should have a balance in the stakerGateway"
+        );
+        assertEqThreshold(
+            viewer.maxWithdrawAsset(address(asset), bob),
+            beforeMaxWithdraw + amount,
+            3,
+            "Bob should have max withdraw after deposit"
         );
     }
 

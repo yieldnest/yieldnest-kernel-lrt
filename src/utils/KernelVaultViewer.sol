@@ -41,7 +41,7 @@ contract KernelVaultViewer is BaseVaultViewer {
 
         (maxAssets,) = _convertToAssets(asset_, vault().balanceOf(owner), Math.Rounding.Floor);
 
-        uint256 availableAssets = IERC20(asset_).balanceOf(address(this));
+        uint256 availableAssets = IERC20(asset_).balanceOf(address(vault()));
 
         if (vault().getSyncWithdraw()) {
             address kernelVault = IStakerGateway(vault().getStakerGateway()).getVault(asset_);

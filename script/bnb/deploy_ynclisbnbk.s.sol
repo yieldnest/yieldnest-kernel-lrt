@@ -9,9 +9,12 @@ import {TestnetBNBRateProvider} from "test/module/BNBRateProvider.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
-import {TransparentUpgradeableProxy} from
+import {TransparentUpgradeableProxy as TUP} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {BaseScript} from "script/BaseScript.sol";
+
+import {KernelClisVaultViewer} from "src/utils/KernelClisVaultViewer.sol";
+import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 
 // FOUNDRY_PROFILE=mainnet forge script DeployYnclisBNBkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
 contract DeployYnclisBNBkStrategy is BaseScript {
@@ -29,6 +32,16 @@ contract DeployYnclisBNBkStrategy is BaseScript {
         }
     }
 
+    function deployViewer() internal {
+        viewerImplementation = new KernelClisVaultViewer();
+
+        bytes memory initData = abi.encodeWithSelector(BaseVaultViewer.initialize.selector, address(vault));
+
+        TUP proxy = new TUP(address(viewerImplementation), actors.ADMIN(), initData);
+
+        viewer = KernelVaultViewer(payable(address(proxy)));
+    }
+
     function run() public {
         vm.startBroadcast();
 
@@ -40,7 +53,7 @@ contract DeployYnclisBNBkStrategy is BaseScript {
 
         deploy();
 
-        _deployViewer();
+        deployViewer();
 
         _saveDeployment();
 
@@ -54,8 +67,7 @@ contract DeployYnclisBNBkStrategy is BaseScript {
             KernelStrategy.initialize.selector, msg.sender, "YieldNest Restaked clisBNB - Kernel", symbol(), 18, 0, true
         );
 
-        TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(implementation), address(actors.ADMIN()), initData);
+        TUP proxy = new TUP(address(implementation), address(actors.ADMIN()), initData);
 
         vault = KernelStrategy(payable(address(proxy)));
 
