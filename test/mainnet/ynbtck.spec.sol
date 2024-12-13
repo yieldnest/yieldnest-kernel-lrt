@@ -15,6 +15,7 @@ import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
+import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 
 import {VaultUtils} from "script/VaultUtils.sol";
 import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
@@ -27,6 +28,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     KernelStrategy public vault;
     BTCRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
+    KernelVaultViewer public viewer;
 
     address public bob = address(0xB0B);
 
@@ -39,6 +41,17 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         stakerGateway = IStakerGateway(MC.STAKER_GATEWAY);
 
         vault = deploy();
+        viewer = KernelVaultViewer(
+            payable(
+                address(
+                    new TransparentUpgradeableProxy(
+                        address(new KernelVaultViewer()),
+                        ADMIN,
+                        abi.encodeWithSelector(BaseVaultViewer.initialize.selector, address(vault))
+                    )
+                )
+            )
+        );
 
         vm.label(MC.STAKER_GATEWAY, "kernel staker gateway");
         vm.label(address(vault), "kernel strategy");
@@ -235,6 +248,8 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         uint256 beforeVaultBalance = asset.balanceOf(address(vault));
         uint256 beforeBobBalance = asset.balanceOf(bob);
         uint256 beforeBobShares = vault.balanceOf(bob);
+        uint256 beforeMaxWithdraw = viewer.maxWithdrawAsset(address(asset), bob);
+        assertEq(beforeMaxWithdraw, 0, "Bob should have no max withdraw before deposit");
 
         uint256 previewShares = vault.previewDepositAsset(assetAddress, amount);
 
@@ -268,6 +283,11 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         );
         assertEq(asset.balanceOf(bob), beforeBobBalance - amount, "Bob should not have the assets");
         assertEq(vault.balanceOf(bob), beforeBobShares + shares, "Bob should have shares after deposit");
+        assertEq(
+            viewer.maxWithdrawAsset(address(asset), bob),
+            beforeMaxWithdraw + amount,
+            "Bob should have max withdraw after deposit"
+        );
 
         return shares;
     }
