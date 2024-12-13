@@ -321,7 +321,7 @@ contract KernelStrategy is Vault {
         StrategyStorage storage strategyStorage = _getStrategyStorage();
         if (vaultBalance < assets && strategyStorage.syncWithdraw) {
             string memory referralId = ""; // Placeholder referral ID
-            IStakerGateway(strategyStorage.stakerGateway).unstake(asset_, assets, referralId);
+            IStakerGateway(strategyStorage.stakerGateway).unstake(asset_, assets - vaultBalance, referralId);
         }
 
         SafeERC20.safeTransfer(IERC20(asset_), receiver, assets);
