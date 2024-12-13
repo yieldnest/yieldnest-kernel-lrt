@@ -25,7 +25,7 @@ import {BaseVaultViewer} from "lib/yieldnest-vault/src/utils/BaseVaultViewer.sol
 
 contract KernelVaultViewer is BaseVaultViewer {
     using Math for uint256;
-    
+
     function vault() public view returns (KernelStrategy) {
         return KernelStrategy(payable(address(_getStorage().vault)));
     }
