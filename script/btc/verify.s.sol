@@ -58,19 +58,19 @@ contract VerifyYnBTCkStrategy is BaseVerifyScript {
         assertEq(assets[3], address(stakerGateway.getVault(contracts.BTCB())));
         asset = vault.getAsset(address(stakerGateway.getVault(contracts.BTCB())));
         assertEq(asset.decimals, 18, "asset[3].decimals is invalid");
-        assertEq(asset.active, true, "asset[3].active is invalid");
+        assertEq(asset.active, false, "asset[3].active is invalid");
         assertEq(asset.index, 3, "asset[3].index is invalid");
 
         assertEq(assets[4], address(stakerGateway.getVault(contracts.SOLVBTC())));
         asset = vault.getAsset(address(stakerGateway.getVault(contracts.SOLVBTC())));
         assertEq(asset.decimals, 18, "asset[4].decimals is invalid");
-        assertEq(asset.active, true, "asset[4].active is invalid");
+        assertEq(asset.active, false, "asset[4].active is invalid");
         assertEq(asset.index, 4, "asset[4].index is invalid");
 
         assertEq(assets[5], address(stakerGateway.getVault(contracts.SOLVBTC_BNN())));
         asset = vault.getAsset(address(stakerGateway.getVault(contracts.SOLVBTC_BNN())));
         assertEq(asset.decimals, 18, "asset[5].decimals is invalid");
-        assertEq(asset.active, true, "asset[5].active is invalid");
+        assertEq(asset.active, false, "asset[5].active is invalid");
         assertEq(asset.index, 5, "asset[5].index is invalid");
 
         _verifyApprovalRule(vault, contracts.BTCB(), contracts.STAKER_GATEWAY());
