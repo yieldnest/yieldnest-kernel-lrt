@@ -78,9 +78,9 @@ contract VerifyYnBTCkStrategy is BaseVerifyScript {
         _verifyApprovalRule(vault, contracts.SOLVBTC_BNN(), contracts.STAKER_GATEWAY());
 
         address[] memory assetsForStaking = new address[](3);
-        assets[0] = contracts.BTCB();
-        assets[1] = contracts.SOLVBTC();
-        assets[2] = contracts.SOLVBTC_BNN();
+        assetsForStaking[0] = contracts.BTCB();
+        assetsForStaking[1] = contracts.SOLVBTC();
+        assetsForStaking[2] = contracts.SOLVBTC_BNN();
         _verifyStakingRule(vault, contracts.STAKER_GATEWAY(), assetsForStaking);
 
         assertFalse(vault.paused());
