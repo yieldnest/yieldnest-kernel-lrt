@@ -91,6 +91,7 @@ contract DeployYnBTCkStrategy is BaseScript {
         assets[1] = contracts.SOLVBTC();
         assets[2] = contracts.SOLVBTC_BNN();
         setStakingRule(vault_, contracts.STAKER_GATEWAY(), assets);
+        setUnstakingRule(vault_, contracts.STAKER_GATEWAY(), assets);
 
         vault_.unpause();
 

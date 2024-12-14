@@ -76,7 +76,7 @@ contract VerifyYnBNBkStrategy is BaseVerifyScript {
 
         _verifyApprovalRule(vault, contracts.SLISBNB(), contracts.STAKER_GATEWAY());
         _verifyStakingRule(vault, contracts.STAKER_GATEWAY(), contracts.SLISBNB());
-
+        _verifyUnstakingRule(vault, contracts.STAKER_GATEWAY(), contracts.SLISBNB());
         assertFalse(vault.paused());
 
         _verifyDefaultRoles(vault);

@@ -82,6 +82,7 @@ contract VerifyYnBTCkStrategy is BaseVerifyScript {
         assetsForStaking[1] = contracts.SOLVBTC();
         assetsForStaking[2] = contracts.SOLVBTC_BNN();
         _verifyStakingRule(vault, contracts.STAKER_GATEWAY(), assetsForStaking);
+        _verifyUnstakingRule(vault, contracts.STAKER_GATEWAY(), assetsForStaking);
 
         assertFalse(vault.paused());
 

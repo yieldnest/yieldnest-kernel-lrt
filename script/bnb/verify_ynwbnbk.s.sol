@@ -52,6 +52,7 @@ contract VerifyYnWBNBkStrategy is BaseVerifyScript {
 
         _verifyApprovalRule(vault, contracts.WBNB(), contracts.STAKER_GATEWAY());
         _verifyStakingRule(vault, contracts.STAKER_GATEWAY(), contracts.WBNB());
+        _verifyUnstakingRule(vault, contracts.STAKER_GATEWAY(), contracts.WBNB());
 
         assertFalse(vault.paused());
 
