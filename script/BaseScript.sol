@@ -168,12 +168,11 @@ abstract contract BaseScript is Script, VaultUtils {
         vm.serializeAddress(symbol(), "admin", actors.ADMIN());
         vm.serializeAddress(symbol(), "timelock", address(timelock));
         vm.serializeAddress(symbol(), "rateProvider", address(rateProvider));
+        vm.serializeAddress(symbol(), "viewer-proxyAdmin", ProxyUtils.getProxyAdmin(address(viewer)));
         vm.serializeAddress(symbol(), "viewer-proxy", address(viewer));
         vm.serializeAddress(symbol(), "viewer-implementation", address(viewerImplementation));
-        vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
-
-        vm.serializeAddress(symbol(), "viewer-proxyAdmin", ProxyUtils.getProxyAdmin(address(viewer)));
         vm.serializeAddress(symbol(), string.concat(symbol(), "-proxyAdmin"), ProxyUtils.getProxyAdmin(address(vault)));
+        vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
 
         string memory jsonOutput =
             vm.serializeAddress(symbol(), string.concat(symbol(), "-implementation"), address(implementation));

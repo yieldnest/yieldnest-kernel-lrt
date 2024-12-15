@@ -60,6 +60,15 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         vm.label(MC.STAKER_GATEWAY, "kernel staker gateway");
         vm.label(address(vault), "kernel strategy");
         vm.label(address(kernelProvider), "kernel rate provider");
+
+        address kernelVault = IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.CLISBNB);
+        address config = IKernelVault(kernelVault).getConfig();
+        bytes32 role = IKernelConfig(config).ROLE_MANAGER();
+
+        vm.prank(MC.KERNEL_CONFIG_ADMIN);
+        IKernelConfig(config).grantRole(role, address(this));
+
+        IKernelVault(kernelVault).setDepositLimit(type(uint256).max);
     }
 
     function deployClisBNBk() public returns (KernelClisStrategy _vault) {
@@ -119,15 +128,6 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
     }
 
     function stakeIntoKernel(uint256 amount) public {
-        address kernelVault = IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SLISBNB);
-        address config = IKernelVault(kernelVault).getConfig();
-        bytes32 role = IKernelConfig(config).ROLE_MANAGER();
-
-        vm.prank(MC.KERNEL_CONFIG_ADMIN);
-        IKernelConfig(config).grantRole(role, address(this));
-
-        IKernelVault(kernelVault).setDepositLimit(type(uint256).max);
-
         address[] memory targets = new address[](1);
 
         targets[0] = MC.STAKER_GATEWAY;
@@ -283,8 +283,8 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         assertEq(afterUnderlyingBalance, amount, "Should have CLISBNB in asset");
     }
 
-    function test_ynclisBNBk_deposit_success_syncEnabled() public {
-        uint256 amount = 1 ether;
+    function test_ynclisBNBk_deposit_success_syncEnabled(uint256 amount) public {
+        amount = bound(amount, 10, 100_000 ether);
 
         giveWBNB(bob, amount);
 
@@ -320,8 +320,9 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         );
     }
 
-    function test_ynclisBNBk_withdraw_success_syncEnabled() public {
-        uint256 amount = 1 ether;
+    function test_ynclisBNBk_withdraw_success_syncEnabled(uint256 amount) public {
+        amount = bound(amount, 1 ether, 100_000 ether);
+
         IERC20 asset = IERC20(MC.WBNB);
         giveWBNB(bob, amount);
 

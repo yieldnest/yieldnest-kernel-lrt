@@ -15,6 +15,7 @@ import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 import {IStakerGateway, KernelStrategy} from "src/KernelStrategy.sol";
 
+import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
@@ -45,6 +46,14 @@ contract YnWBNBkBufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
         );
 
         etchBuffer(address(vault));
+
+        address config = kernelVault.getConfig();
+        bytes32 role = IKernelConfig(config).ROLE_MANAGER();
+
+        vm.prank(MC.KERNEL_CONFIG_ADMIN);
+        IKernelConfig(config).grantRole(role, address(this));
+
+        IKernelVault(kernelVault).setDepositLimit(type(uint256).max);
     }
 
     function deployBuffer() internal returns (KernelStrategy) {
@@ -171,8 +180,8 @@ contract YnWBNBkBufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
         assertEq(assets[1], address(kernelVault), "Second asset should be the WBNB kernel vault");
     }
 
-    function test_Buffer_Vault_ERC4626_deposit() public {
-        uint256 amount = 0.5 ether;
+    function test_Buffer_Vault_ERC4626_deposit(uint256 amount) public {
+        amount = bound(amount, 10, 100_000 ether);
         depositIntoBuffer(amount);
     }
 
@@ -239,7 +248,9 @@ contract YnWBNBkBufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
         return shares;
     }
 
-    function test_Buffer_Vault_ERC4626_withdraw() public {
+    function test_Buffer_Vault_ERC4626_withdraw(uint256 amount) public {
+        amount = bound(amount, 10, 100_000 ether);
+
         WETH9 wbnb = WETH9(payable(MC.WBNB));
 
         uint256 beforeVaultBalance = wbnb.balanceOf(address(vault));
@@ -247,7 +258,6 @@ contract YnWBNBkBufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
         uint256 beforeBobBalance = wbnb.balanceOf(bob);
         uint256 beforeBobShares = vault.balanceOf(bob);
 
-        uint256 amount = 0.5 ether;
         uint256 shares = depositIntoBuffer(amount);
 
         vm.prank(bob);
