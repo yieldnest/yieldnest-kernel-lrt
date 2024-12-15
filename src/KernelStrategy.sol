@@ -26,7 +26,7 @@ contract KernelStrategy is Vault {
 
     /// @notice referallId for kernel referall
     string public referralId;
-    
+
     /// @notice Emitted when an asset is deposited
     event DepositAsset(
         address indexed sender, address indexed receiver, address indexed asset, uint256 assets, uint256 shares
@@ -73,6 +73,7 @@ contract KernelStrategy is Vault {
      * @param baseWithdrawalFee The base withdrawal fee.
      * @param countNativeAsset Whether to count the native asset.
      */
+
     function initialize(
         address admin,
         string memory name,
@@ -419,7 +420,7 @@ contract KernelStrategy is Vault {
         emit SetHasAllocator(hasAllocators_);
     }
 
-    function setReferralId(string memory newReferralId)external onlyRole(DEFAULT_ADMIN_ROLE){
+    function setReferralId(string memory newReferralId) external onlyRole(DEFAULT_ADMIN_ROLE) {
         referralId = newReferralId;
 
         emit ReferralIdSet(referralId);
