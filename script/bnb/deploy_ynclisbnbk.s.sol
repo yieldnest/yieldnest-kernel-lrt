@@ -4,6 +4,8 @@ pragma solidity ^0.8.24;
 import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
+
+import {KernelClisStrategy} from "src/KernelClisStrategy.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 import {TestnetBNBRateProvider} from "test/module/BNBRateProvider.sol";
 
@@ -61,7 +63,7 @@ contract DeployYnclisBNBkStrategy is BaseScript {
     }
 
     function deploy() internal returns (KernelStrategy) {
-        implementation = new KernelStrategy();
+        implementation = new KernelClisStrategy();
 
         bytes memory initData = abi.encodeWithSelector(
             KernelStrategy.initialize.selector, msg.sender, "YieldNest Restaked clisBNB - Kernel", symbol(), 18, 0, true
@@ -95,9 +97,9 @@ contract DeployYnclisBNBkStrategy is BaseScript {
 
         vault_.unpause();
 
-        // approval not required since we send native tokens 
-        setClisStakingRule(vault, contracts.STAKER_GATEWAY());
-        setClisUnstakingRule(vault, contracts.STAKER_GATEWAY());
+        // approval not required since we send native tokens
+        setClisStakingRule(KernelClisStrategy(payable(address(vault_))), contracts.STAKER_GATEWAY());
+        setClisUnstakingRule(KernelClisStrategy(payable(address(vault_))), contracts.STAKER_GATEWAY());
 
         vault_.processAccounting();
 
