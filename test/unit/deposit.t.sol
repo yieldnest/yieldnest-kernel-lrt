@@ -340,7 +340,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
         // Try to deposit the random token
         randomToken.approve(address(vault), 1000);
         bytes memory encodedError =
-            abi.encodeWithSelector(IKernelProvider.ExternalCallFailed.selector, address(randomToken));
+            abi.encodeWithSelector(IKernelProvider.UnsupportedAsset.selector, address(randomToken));
         vm.expectRevert(encodedError);
         vault.depositAsset(address(randomToken), 1000, alice);
         vm.stopPrank();
