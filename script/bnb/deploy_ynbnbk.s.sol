@@ -186,6 +186,7 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
 
         setApprovalRule(vault, contracts.SLISBNB(), contracts.STAKER_GATEWAY());
         setStakingRule(vault, contracts.STAKER_GATEWAY(), contracts.SLISBNB());
+        setUnstakingRule(vault, contracts.STAKER_GATEWAY(), contracts.SLISBNB());
 
         vault.unpause();
 
@@ -371,6 +372,32 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
             address[] memory assets = new address[](1);
             assets[0] = contracts.SLISBNB();
             bytes4 funcSig = bytes4(keccak256("stake(address,uint256,string)"));
+
+            IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](3);
+
+            paramRules[0] = IVault.ParamRule({paramType: IVault.ParamType.ADDRESS, isArray: false, allowList: assets});
+            paramRules[1] =
+                IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
+
+            paramRules[2] =
+                IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
+
+            IVault.FunctionRule memory ruleStaking =
+                IVault.FunctionRule({isActive: true, paramRules: paramRules, validator: IValidator(address(0))});
+
+            addToBatch(
+                address(vault),
+                0,
+                abi.encodeWithSelector(
+                    IVault.setProcessorRule.selector, contracts.STAKER_GATEWAY(), funcSig, ruleStaking
+                )
+            );
+        }
+        // create unstaking rule
+        {
+            address[] memory assets = new address[](1);
+            assets[0] = contracts.SLISBNB();
+            bytes4 funcSig = bytes4(keccak256("unstake(address,uint256,string)"));
 
             IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](3);
 

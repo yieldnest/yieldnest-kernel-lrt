@@ -82,6 +82,7 @@ contract DeployYnWBNBkStrategy is BaseScript {
 
         setApprovalRule(vault_, contracts.WBNB(), contracts.STAKER_GATEWAY());
         setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.WBNB());
+        setUnstakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.WBNB());
 
         vault_.unpause();
 
