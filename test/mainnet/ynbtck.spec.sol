@@ -302,14 +302,15 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         assertGe(btcb.balanceOf(bob), amount, "Should have tokens");
     }
 
-    function test_Vault_ynBTCk_deposit_BTCB() public {
+    function test_Vault_ynBTCk_deposit_BTCB(uint256 amount) public {
+        amount = bound(amount, 10, 100_000 ether);
+
         IERC20 asset = IERC20(MC.BTCB);
 
         //set sync deposit enabled
         vm.prank(ADMIN);
         vault.setSyncDeposit(true);
 
-        uint256 amount = 1 ether;
         uint256 beforeVaultBalance = stakerGateway.balanceOf(address(asset), address(vault));
         uint256 previewShares = vault.previewDepositAsset(address(asset), amount);
 
@@ -331,8 +332,8 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         );
     }
 
-    function test_Vault_ynBTCk_withdraw_BTCB() public {
-        uint256 amount = 1 ether;
+    function test_Vault_ynBTCk_withdraw_BTCB(uint256 amount) public {
+        amount = bound(amount, 10, 100_000 ether);
 
         getBTCB(amount);
 
@@ -369,8 +370,8 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         );
     }
 
-    function test_Vault_ynBTCk_redeem_BTCB() public {
-        uint256 amount = 100 ether;
+    function test_Vault_ynBTCk_redeem_BTCB(uint256 amount) public {
+        amount = bound(amount, 10, 100_000 ether);
 
         getBTCB(amount);
 
