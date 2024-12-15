@@ -16,6 +16,7 @@ import {KernelStrategy} from "src/KernelStrategy.sol";
 import {TimelockController} from "lib/openzeppelin-contracts/contracts/governance/TimelockController.sol";
 import {Strings} from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 
+import {ProxyUtils} from "script/ProxyUtils.sol";
 import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 
 abstract contract BaseScript is Script, VaultUtils {
@@ -170,6 +171,10 @@ abstract contract BaseScript is Script, VaultUtils {
         vm.serializeAddress(symbol(), "viewer-proxy", address(viewer));
         vm.serializeAddress(symbol(), "viewer-implementation", address(viewerImplementation));
         vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
+
+        vm.serializeAddress(symbol(), "viewer-proxyAdmin", ProxyUtils.getProxyAdmin(address(viewer)));
+        vm.serializeAddress(symbol(), string.concat(symbol(), "-proxyAdmin"), ProxyUtils.getProxyAdmin(address(vault)));
+
         string memory jsonOutput =
             vm.serializeAddress(symbol(), string.concat(symbol(), "-implementation"), address(implementation));
 
