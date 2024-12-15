@@ -49,14 +49,14 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
         data[0] = abi.encodeWithSignature("approve(address,uint256)", address(mockGateway), amount);
         data[1] = abi.encodeWithSignature("stake(address,uint256,string)", asset, amount, "");
 
-        vm.prank(ADMIN);
+        vm.prank(PROCESSOR);
         vault.processor(targets, values, data);
 
         vault.processAccounting();
     }
 
     function test_KernelStrategy_ynBNBk_withdraw_revert_whilePaused() public {
-        vm.prank(ADMIN);
+        vm.prank(PAUSER);
         vault.pause();
         assertEq(vault.paused(), true);
 
@@ -105,7 +105,7 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
 
         assertEq(vault.maxWithdrawAsset(MC.WBNB, alice), 1 ether);
 
-        vm.prank(ADMIN);
+        vm.prank(PAUSER);
         vault.pause();
         assertEq(vault.paused(), true);
 
@@ -121,7 +121,7 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
 
         assertEq(vault.maxRedeem(alice), shares);
 
-        vm.prank(ADMIN);
+        vm.prank(PAUSER);
         vault.pause();
         assertEq(vault.paused(), true);
 
@@ -281,7 +281,7 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
         bytes[] memory data = new bytes[](1);
         data[0] = abi.encodeWithSignature("unstake(address,uint256,string)", address(asset), withdrawalAmount, "");
 
-        vm.prank(ADMIN);
+        vm.prank(PROCESSOR);
         vault.processor(targets, values, data);
 
         vault.processAccounting();
@@ -350,7 +350,7 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
             bytes[] memory data = new bytes[](1);
             data[0] = abi.encodeWithSignature("unstake(address,uint256,string)", address(asset), withdrawalAmount, "");
 
-            vm.prank(ADMIN);
+            vm.prank(PROCESSOR);
             vault.processor(targets, values, data);
         }
         vault.processAccounting();

@@ -74,24 +74,28 @@ contract AnvilActors is IActors {
 }
 
 contract MainnetActors is IActors {
-    address public constant ADMIN = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
+    // Multisigs
+    address private constant YnSecurityCouncil = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
+
+    // Roles
+    address public constant ADMIN = YnSecurityCouncil;
     address public constant UNAUTHORIZED = address(0);
-    address public constant PROCESSOR = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
-    address public constant EXECUTOR_1 = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
-    address public constant PROPOSER_1 = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
-    address public constant EXECUTOR_2 = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
-    address public constant PROPOSER_2 = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
+    address public constant PROCESSOR = 0x258d7614d9c608D191A8a103f95B7Df066a19bbF;
+    address public constant EXECUTOR_1 = YnSecurityCouncil;
+    address public constant PROPOSER_1 = YnSecurityCouncil;
+    address public constant EXECUTOR_2 = YnSecurityCouncil;
+    address public constant PROPOSER_2 = YnSecurityCouncil;
 
-    address public constant PROVIDER_MANAGER = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
-    address public constant BUFFER_MANAGER = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
-    address public constant ASSET_MANAGER = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
-    address public constant PROCESSOR_MANAGER = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
-    address public constant PAUSER = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
-    address public constant UNPAUSER = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
+    address public constant PROVIDER_MANAGER = YnSecurityCouncil;
+    address public constant BUFFER_MANAGER = YnSecurityCouncil;
+    address public constant ASSET_MANAGER = YnSecurityCouncil;
+    address public constant PROCESSOR_MANAGER = YnSecurityCouncil;
+    address public constant PAUSER = 0x7B4B43f00cf80AABda8F72d61b129F1e7F86fCaF;
+    address public constant UNPAUSER = YnSecurityCouncil;
 
-    address public constant KERNEL_DEPENDENCY_MANAGER = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
-    address public constant DEPOSIT_MANAGER = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
-    address public constant ALLOCATOR_MANAGER = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
+    address public constant KERNEL_DEPENDENCY_MANAGER = YnSecurityCouncil;
+    address public constant DEPOSIT_MANAGER = YnSecurityCouncil;
+    address public constant ALLOCATOR_MANAGER = YnSecurityCouncil;
 }
 
 contract ChapelActors is IActors {
