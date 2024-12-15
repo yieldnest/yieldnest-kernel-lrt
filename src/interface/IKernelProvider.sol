@@ -5,6 +5,8 @@ import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
 
 interface IKernelProvider is IProvider {
     error UnsupportedAsset(address asset);
+    error AssetMismatch(address vault, address asset);
+    error ExternalCallFailed(address vault);
 
     /**
      * @notice Returns the staker gateway address

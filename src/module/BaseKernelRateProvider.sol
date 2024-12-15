@@ -27,11 +27,11 @@ abstract contract BaseKernelRateProvider is IKernelProvider {
     function tryGetVaultAsset(address vault) public view returns (address) {
         try IKernelVault(vault).getAsset() returns (address asset) {
             if (IStakerGateway(getStakerGateway()).getVault(asset) != vault) {
-                return address(0);
+                revert AssetMismatch(vault, asset);
             }
             return asset;
         } catch {
-            return address(0);
+            revert ExternalCallFailed(vault);
         }
     }
 

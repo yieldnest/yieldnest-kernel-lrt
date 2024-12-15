@@ -93,9 +93,19 @@ contract KernelVaultViewer is BaseVaultViewer {
         return -1;
     }
 
-    function _getUnderlyingAsset(address asset) internal view virtual returns (address underlyingAsset) {
+    /**
+     * @notice Internal function to get the underlying asset if the asset itself is a kernel vault
+     * @param asset_ The address of the asset.
+     * @return address The underlying asset
+     * @dev This function must NOT revert
+     */
+    function _getUnderlyingAsset(address asset_) internal view virtual returns (address) {
         IKernelProvider provider = IKernelProvider(vault().provider());
-        underlyingAsset = provider.tryGetVaultAsset(asset);
+        try provider.tryGetVaultAsset(asset_) returns (address underlyingAsset) {
+            return underlyingAsset;
+        } catch {
+            return address(0);
+        }
     }
 
     /**
