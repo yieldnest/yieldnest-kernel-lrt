@@ -407,4 +407,78 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         );
         assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have no shares after withdraw");
     }
+
+    function test_Vault_ynBTCk_rewards_BTCB(uint256 amount, uint256 rewards) public {
+        amount = bound(amount, 1000, 100_000 ether);
+        rewards = bound(rewards, 10, amount / 10);
+
+        getBTCB(amount);
+
+        depositIntoVault(MC.BTCB, amount);
+
+        uint256 rewardsForBob = rewards * vault.balanceOf(bob) / vault.totalSupply();
+
+        {
+            uint256 beforeAssets = vault.totalAssets();
+            uint256 beforeShares = vault.totalSupply();
+            uint256 beforeMaxWithdraw = viewer.maxWithdrawAsset(address(MC.BTCB), bob);
+            uint256 beforeBobShares = vault.balanceOf(bob);
+
+            getBTCB(rewards);
+
+            vm.prank(bob);
+            btcb.transfer(address(vault), rewards);
+
+            vault.processAccounting();
+
+            uint256 afterAssets = vault.totalAssets();
+            uint256 afterMaxWithdraw = viewer.maxWithdrawAsset(address(MC.BTCB), bob);
+
+            assertEq(afterAssets, beforeAssets + rewards, "Total assets should increase by rewards");
+            assertEq(vault.totalSupply(), beforeShares, "Total shares should not change");
+            assertEqThreshold(
+                afterMaxWithdraw, beforeMaxWithdraw + rewardsForBob, 10, "Max withdraw should increase by rewards"
+            );
+            assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have same shares");
+        }
+
+        {
+            IERC20 asset = IERC20(MC.BTCB);
+
+            uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+            uint256 beforeBobBalance = asset.balanceOf(bob);
+            uint256 beforeBobShares = vault.balanceOf(bob);
+            uint256 beforeVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
+
+            uint256 maxWithdraw = vault.maxWithdrawAsset(MC.BTCB, bob);
+            assertEqThreshold(maxWithdraw, amount + rewardsForBob, 10, "Max withdraw should be equal to amount");
+
+            uint256 previewShares = vault.previewWithdrawAsset(MC.BTCB, maxWithdraw);
+
+            vm.prank(bob);
+            uint256 shares = vault.withdrawAsset(MC.BTCB, maxWithdraw, bob, bob);
+
+            assertEq(shares, previewShares, "Shares should be equal to preview shares");
+
+            uint256 afterVaultBalance = asset.balanceOf(address(vault));
+            uint256 afterBobBalance = asset.balanceOf(bob);
+            uint256 afterBobShares = vault.balanceOf(bob);
+            uint256 afterVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
+
+            assertEq(afterBobBalance, beforeBobBalance + maxWithdraw, "Bob balance should increase by maxWithdraw");
+            assertEq(afterBobShares, beforeBobShares - shares, "Bob shares should decrease by shares");
+
+            if (rewards < maxWithdraw) {
+                assertEq(afterVaultBalance, 0, "Vault balance should be 0");
+                assertEq(
+                    afterVaultStakerShares,
+                    beforeVaultStakerShares - (maxWithdraw - rewards),
+                    "Vault shares should decrease after withdrawal"
+                );
+            } else {
+                assertEq(afterVaultBalance, beforeVaultBalance - maxWithdraw, "Vault balance should decrease");
+                assertEq(afterVaultStakerShares, beforeVaultStakerShares, "Vault shares should not change");
+            }
+        }
+    }
 }

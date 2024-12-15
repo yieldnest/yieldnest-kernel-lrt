@@ -6,8 +6,6 @@ import {Script, stdJson} from "lib/forge-std/src/Script.sol";
 import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
 import {ChapelActors, IActors, MainnetActors} from "script/Actors.sol";
 import {BscContracts, ChapelContracts, IContracts} from "script/Contracts.sol";
-
-import {ProxyUtils} from "script/ProxyUtils.sol";
 import {VaultUtils} from "script/VaultUtils.sol";
 
 import {TransparentUpgradeableProxy as TUP} from
@@ -170,16 +168,11 @@ abstract contract BaseScript is Script, VaultUtils {
         vm.serializeAddress(symbol(), "admin", actors.ADMIN());
         vm.serializeAddress(symbol(), "timelock", address(timelock));
         vm.serializeAddress(symbol(), "rateProvider", address(rateProvider));
-        vm.serializeAddress(symbol(), "viewer-proxyAdmin", address(ProxyUtils.getProxyAdmin(address(viewer))));
+        vm.serializeAddress(symbol(), "viewer-proxyAdmin", ProxyUtils.getProxyAdmin(address(viewer)));
         vm.serializeAddress(symbol(), "viewer-proxy", address(viewer));
         vm.serializeAddress(symbol(), "viewer-implementation", address(viewerImplementation));
-        vm.serializeAddress(
-            symbol(), string.concat(symbol(), "-proxyAdmin"), address(ProxyUtils.getProxyAdmin(address(vault)))
-        );
-        vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
-
-        vm.serializeAddress(symbol(), "viewer-proxyAdmin", ProxyUtils.getProxyAdmin(address(viewer)));
         vm.serializeAddress(symbol(), string.concat(symbol(), "-proxyAdmin"), ProxyUtils.getProxyAdmin(address(vault)));
+        vm.serializeAddress(symbol(), string.concat(symbol(), "-proxy"), address(vault));
 
         string memory jsonOutput =
             vm.serializeAddress(symbol(), string.concat(symbol(), "-implementation"), address(implementation));

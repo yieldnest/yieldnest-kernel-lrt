@@ -318,7 +318,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         assertGe(totalAssets, totalSupply, "TotalAssets should be greater than totalSupply");
 
         // Test the convertToShares function
-        uint256 amount = 10;
+        uint256 amount = 1 ether;
         uint256 shares = vault.convertToShares(amount);
         assertLe(shares, amount, "Shares should be less or equal to amount deposited");
 
@@ -779,7 +779,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
             );
             assertEq(afterVaultBalance, beforeVaultBalance, "Vault balance should remain same");
             assertEq(afterBobBalance, beforeBobBalance + assets, "Bob balance should increase by assets");
-            assertEqThreshold(afterBobShares, beforeBobShares - shares, 5, "Bob shares should decrease by shares");
+            assertEq(afterBobShares, beforeBobShares - shares, "Bob shares should decrease by shares");
         }
     }
 
