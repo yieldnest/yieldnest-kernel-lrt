@@ -2,7 +2,6 @@
 pragma solidity ^0.8.24;
 
 import {KernelStrategy} from "./KernelStrategy.sol";
-import {IERC20, SafeERC20} from "lib/yieldnest-vault/src/Common.sol";
 
 import {IWBNB} from "src/interface/external/IWBNB.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
