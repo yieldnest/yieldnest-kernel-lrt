@@ -22,18 +22,15 @@ contract KernelClisStrategy is KernelStrategy {
         // unwrap WBNB
         IWBNB(asset_).withdraw(assets);
 
-        // Placeholder referralId
-        string memory referralId = "";
-        stakerGateway.stakeClisBNB{value: assets}(referralId);
+        stakerGateway.stakeClisBNB{value: assets}(_getStrategyStorage().referralId);
     }
 
     function _unstake(address asset_, uint256 assets, IStakerGateway stakerGateway) internal virtual override {
         if (asset_ != asset()) {
             revert InvalidAsset(asset_);
         }
-        // Placeholder referralId
-        string memory referralId = "";
-        stakerGateway.unstakeClisBNB(assets, referralId);
+
+        stakerGateway.unstakeClisBNB(assets, _getStrategyStorage().referralId);
 
         //wrap native token
         IWBNB(asset_).deposit{value: assets}();

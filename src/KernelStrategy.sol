@@ -24,9 +24,6 @@ contract KernelStrategy is Vault {
     /// @notice Role for allocator manager permissions
     bytes32 public constant ALLOCATOR_MANAGER_ROLE = keccak256("ALLOCATOR_MANAGER_ROLE");
 
-    /// @notice referallId for kernel referall
-    string public referralId;
-
     /// @notice Emitted when an asset is deposited
     event DepositAsset(
         address indexed sender, address indexed receiver, address indexed asset, uint256 assets, uint256 shares
@@ -48,6 +45,7 @@ contract KernelStrategy is Vault {
         bool syncDeposit;
         bool syncWithdraw;
         bool hasAllocators;
+        string referralId;
     }
 
     /// @notice Emitted when the staker gateway address is set
@@ -63,7 +61,7 @@ contract KernelStrategy is Vault {
     event SetHasAllocator(bool hasAllocator);
 
     /// @notice Emitted when ReferralId set
-    event ReferralIdSet(string referralId);
+    event SetReferralId(string referralId);
     /**
      * @notice Initializes the vault.
      * @param admin The address of the admin.
@@ -294,7 +292,7 @@ contract KernelStrategy is Vault {
         // For other assets, stake directly
         SafeERC20.safeIncreaseAllowance(IERC20(asset_), address(stakerGateway), assets);
 
-        stakerGateway.stake(asset_, assets, referralId);
+        stakerGateway.stake(asset_, assets, _getStrategyStorage().referralId);
     }
 
     /**
@@ -361,7 +359,7 @@ contract KernelStrategy is Vault {
      * @param stakerGateway The address of the staker gateway.
      */
     function _unstake(address asset_, uint256 amount, IStakerGateway stakerGateway) internal virtual {
-        stakerGateway.unstake(asset_, amount, referralId);
+        stakerGateway.unstake(asset_, amount, _getStrategyStorage().referralId);
     }
 
     /**
@@ -420,10 +418,11 @@ contract KernelStrategy is Vault {
         emit SetHasAllocator(hasAllocators_);
     }
 
-    function setReferralId(string memory newReferralId) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        referralId = newReferralId;
+    function setReferralId(string memory referralId_) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        StrategyStorage storage strategyStorage = _getStrategyStorage();
+        strategyStorage.referralId = referralId_;
 
-        emit ReferralIdSet(referralId);
+        emit SetReferralId(referralId_);
     }
 
     /**
