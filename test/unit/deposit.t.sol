@@ -224,7 +224,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
     }
 
     function test_KernelStrategy_depositAssetWhilePaused() public {
-        vm.prank(ADMIN);
+        vm.prank(PAUSER);
         vault.pause();
         assertEq(vault.paused(), true);
 
@@ -234,7 +234,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
     }
 
     function test_KernelStrategy_mintWhilePaused() public {
-        vm.prank(ADMIN);
+        vm.prank(PAUSER);
         vault.pause();
         assertEq(vault.paused(), true);
 
@@ -244,7 +244,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
     }
 
     function test_KernelStrategy_pauseAndDeposit() public {
-        vm.prank(ADMIN);
+        vm.prank(PAUSER);
         vault.pause();
         assertEq(vault.paused(), true);
 
@@ -301,7 +301,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
 
     function test_KernelStrategy_maxMint_whenPaused_shouldRevert() public {
         // Pause the vault
-        vm.prank(ADMIN);
+        vm.prank(PAUSER);
         vault.pause();
 
         // Expect revert when calling maxMint while paused
@@ -310,7 +310,7 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
 
     function test_KernelStrategy_maxRedeem_whenPaused_shouldRevert() public {
         // Pause the vault
-        vm.prank(ADMIN);
+        vm.prank(PAUSER);
         vault.pause();
 
         // Expect revert when calling maxRedeem while paused

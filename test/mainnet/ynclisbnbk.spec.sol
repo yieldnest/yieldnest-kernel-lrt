@@ -138,7 +138,7 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         bytes[] memory data = new bytes[](1);
         data[0] = abi.encodeWithSignature("stakeClisBNB(string)", "referral_id");
 
-        vm.prank(ADMIN);
+        vm.prank(PROCESSOR);
         vault.processor(targets, values, data);
 
         vault.processAccounting();

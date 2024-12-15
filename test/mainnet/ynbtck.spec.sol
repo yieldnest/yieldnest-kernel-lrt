@@ -158,7 +158,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         data[0] = abi.encodeWithSignature("approve(address,uint256)", MC.STAKER_GATEWAY, amount);
         data[1] = abi.encodeWithSignature("stake(address,uint256,string)", asset, amount, "");
 
-        vm.prank(ADMIN);
+        vm.prank(PROCESSOR);
         vault.processor(targets, values, data);
 
         vault.processAccounting();
