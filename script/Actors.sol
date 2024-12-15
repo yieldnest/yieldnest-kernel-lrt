@@ -115,25 +115,3 @@ contract ChapelActors is IActors {
     address public constant DEPOSIT_MANAGER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
     address public constant ALLOCATOR_MANAGER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
 }
-
-contract BscActors is IActors {
-    address public constant ADMIN = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
-    address public constant UNAUTHORIZED = address(0);
-
-    address public constant PROPOSER_1 = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
-    address public constant PROPOSER_2 = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
-
-    address public constant EXECUTOR_1 = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
-    address public constant EXECUTOR_2 = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
-
-    address public constant PROVIDER_MANAGER = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
-    address public constant BUFFER_MANAGER = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
-    address public constant ASSET_MANAGER = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
-    address public constant PROCESSOR_MANAGER = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
-    address public constant PAUSER = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
-    address public constant UNPAUSER = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
-
-    address public constant KERNEL_DEPENDENCY_MANAGER = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
-    address public constant DEPOSIT_MANAGER = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
-    address public constant ALLOCATOR_MANAGER = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
-}

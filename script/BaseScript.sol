@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {Script, stdJson} from "lib/forge-std/src/Script.sol";
 
 import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
-import {BscActors, ChapelActors, IActors} from "script/Actors.sol";
+import {ChapelActors, IActors, MainnetActors} from "script/Actors.sol";
 import {BscContracts, ChapelContracts, IContracts} from "script/Contracts.sol";
 import {VaultUtils} from "script/VaultUtils.sol";
 
@@ -52,7 +52,7 @@ abstract contract BaseScript is Script, VaultUtils {
 
         if (block.chainid == 56) {
             minDelay = 1 days;
-            BscActors _actors = new BscActors();
+            MainnetActors _actors = new MainnetActors();
             actors = IActors(_actors);
             contracts = IContracts(new BscContracts());
         }
