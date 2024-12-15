@@ -50,8 +50,15 @@ contract DeployYnWBNBkStrategy is BaseScript {
     function deploy() internal returns (KernelStrategy) {
         implementation = new KernelStrategy();
 
+        address admin = msg.sender;
+        string memory name = "YieldNest WBNB Buffer - Kernel";
+        string memory symbol_ = "ynWBNBk";
+        uint8 decimals = 18;
+        uint64 baseWithdrawalFee = 0;
+        bool countNativeAsset = true;
+
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector, msg.sender, "YieldNest WBNB Buffer - Kernel", "ynWBNBk", 18, 0, true
+            KernelStrategy.initialize.selector, admin, name, symbol_, decimals, baseWithdrawalFee, countNativeAsset
         );
 
         TransparentUpgradeableProxy proxy =

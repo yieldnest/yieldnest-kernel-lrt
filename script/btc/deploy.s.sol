@@ -10,6 +10,7 @@ import {TestnetBTCRateProvider} from "test/module/BTCRateProvider.sol";
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
+import {FeeMath} from "lib/yieldnest-vault/src/module/FeeMath.sol";
 import {BaseScript} from "script/BaseScript.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
@@ -50,8 +51,16 @@ contract DeployYnBTCkStrategy is BaseScript {
     function deploy() internal {
         implementation = new KernelStrategy();
 
+        address admin = msg.sender;
+        string memory name = "YieldNest Restaked BTC - Kernel";
+        string memory symbol_ = "ynBTCk";
+        uint8 decimals = 18;
+
+        uint64 baseWithdrawalFee = uint64(0.001 ether * FeeMath.BASIS_POINT_SCALE / 1 ether); // 0.1%
+        bool countNativeAsset = false;
+
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector, msg.sender, "YieldNest Restaked BTC - Kernel", "ynBTCk", 18, 0, false
+            KernelStrategy.initialize.selector, admin, name, symbol_, decimals, baseWithdrawalFee, countNativeAsset
         );
 
         TransparentUpgradeableProxy proxy =

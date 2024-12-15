@@ -65,8 +65,15 @@ contract DeployYnclisBNBkStrategy is BaseScript {
     function deploy() internal returns (KernelStrategy) {
         implementation = new KernelClisStrategy();
 
+        address admin = msg.sender;
+        string memory name = "YieldNest Restaked clisBNB - Kernel";
+        string memory symbol_ = symbol();
+        uint8 decimals = 18;
+        uint64 baseWithdrawalFee = 0;
+        bool countNativeAsset = true;
+
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector, msg.sender, "YieldNest Restaked clisBNB - Kernel", symbol(), 18, 0, true
+            KernelStrategy.initialize.selector, admin, name, symbol_, decimals, baseWithdrawalFee, countNativeAsset
         );
 
         TUP proxy = new TUP(address(implementation), address(actors.ADMIN()), initData);
