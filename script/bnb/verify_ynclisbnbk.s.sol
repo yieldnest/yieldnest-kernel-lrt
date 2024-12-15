@@ -50,9 +50,8 @@ contract VerifyYnclisBNBkStrategy is BaseVerifyScript {
         assertEq(asset.active, false, "asset[1].active is invalid");
         assertEq(asset.index, 3, "asset[1].index is invalid");
 
-        _verifyApprovalRule(vault, contracts.WBNB(), contracts.STAKER_GATEWAY());
-        _verifyStakingRule(vault, contracts.STAKER_GATEWAY(), contracts.WBNB());
-        _verifyUnstakingRule(vault, contracts.STAKER_GATEWAY(), contracts.WBNB());
+        _verifyClisStakingRule(vault, contracts.STAKER_GATEWAY());
+        _verifyClisUnstakingRule(vault, contracts.STAKER_GATEWAY());
 
         assertFalse(vault.paused());
 

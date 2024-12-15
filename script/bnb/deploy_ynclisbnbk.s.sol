@@ -95,6 +95,10 @@ contract DeployYnclisBNBkStrategy is BaseScript {
 
         vault_.unpause();
 
+        // approval not required since we send native tokens 
+        setClisStakingRule(vault, contracts.STAKER_GATEWAY());
+        setClisUnstakingRule(vault, contracts.STAKER_GATEWAY());
+
         vault_.processAccounting();
 
         _renounceTemporaryRoles(vault_);

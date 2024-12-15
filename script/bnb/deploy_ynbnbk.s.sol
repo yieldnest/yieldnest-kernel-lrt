@@ -186,6 +186,7 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
 
         setApprovalRule(vault, contracts.SLISBNB(), contracts.STAKER_GATEWAY());
         setStakingRule(vault, contracts.STAKER_GATEWAY(), contracts.SLISBNB());
+        setUnstakingRule(vault, contracts.STAKER_GATEWAY(), contracts.SLISBNB());
 
         vault.unpause();
 
