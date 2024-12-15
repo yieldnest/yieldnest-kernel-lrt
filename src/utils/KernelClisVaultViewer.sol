@@ -32,12 +32,22 @@ contract KernelClisVaultViewer is KernelVaultViewer {
         }
     }
 
-    function _getUnderlyingAsset(address asset) internal view override returns (address underlyingAsset) {
+    /**
+     * @notice Internal function to get the underlying asset if the asset itself is a kernel vault
+     * @param asset_ The address of the asset.
+     * @return address The underlying asset
+     * @dev This function must NOT revert
+     */
+    function _getUnderlyingAsset(address asset_) internal view override returns (address) {
         address clisbnb = IKernelConfig(IStakerGateway(vault().getStakerGateway()).getConfig()).getClisBnbAddress();
         IKernelProvider provider = IKernelProvider(vault().provider());
-        underlyingAsset = provider.tryGetVaultAsset(asset);
-        if (underlyingAsset == clisbnb) {
-            underlyingAsset = vault().asset();
+        try provider.tryGetVaultAsset(asset_) returns (address underlyingAsset) {
+            if (underlyingAsset == clisbnb) {
+                return vault().asset();
+            }
+            return underlyingAsset;
+        } catch {
+            return address(0);
         }
     }
 }
