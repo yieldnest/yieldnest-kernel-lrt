@@ -31,7 +31,7 @@ abstract contract BaseKernelRateProvider is IKernelProvider {
             }
             return asset;
         } catch {
-            revert ExternalCallFailed(vault);
+            return address(0);
         }
     }
 
