@@ -24,6 +24,9 @@ contract KernelStrategy is Vault {
     /// @notice Role for allocator manager permissions
     bytes32 public constant ALLOCATOR_MANAGER_ROLE = keccak256("ALLOCATOR_MANAGER_ROLE");
 
+    /// @notice referallId for kernel referall
+    string public referralId;
+    
     /// @notice Emitted when an asset is deposited
     event DepositAsset(
         address indexed sender, address indexed receiver, address indexed asset, uint256 assets, uint256 shares
@@ -59,6 +62,8 @@ contract KernelStrategy is Vault {
     /// @notice Emitted when the hasAllocator flag is set
     event SetHasAllocator(bool hasAllocator);
 
+    /// @notice Emitted when ReferralId set
+    event ReferralIdSet(string referralId);
     /**
      * @notice Initializes the vault.
      * @param admin The address of the admin.
@@ -288,7 +293,6 @@ contract KernelStrategy is Vault {
         // For other assets, stake directly
         SafeERC20.safeIncreaseAllowance(IERC20(asset_), address(stakerGateway), assets);
 
-        string memory referralId = ""; // Placeholder referral ID
         stakerGateway.stake(asset_, assets, referralId);
     }
 
@@ -356,7 +360,6 @@ contract KernelStrategy is Vault {
      * @param stakerGateway The address of the staker gateway.
      */
     function _unstake(address asset_, uint256 amount, IStakerGateway stakerGateway) internal virtual {
-        string memory referralId = ""; // Placeholder referral ID
         stakerGateway.unstake(asset_, amount, referralId);
     }
 
@@ -414,6 +417,12 @@ contract KernelStrategy is Vault {
         strategyStorage.hasAllocators = hasAllocators_;
 
         emit SetHasAllocator(hasAllocators_);
+    }
+
+    function setReferralId(string memory newReferralId)external onlyRole(DEFAULT_ADMIN_ROLE){
+        referralId = newReferralId;
+
+        emit ReferralIdSet(referralId);
     }
 
     /**
