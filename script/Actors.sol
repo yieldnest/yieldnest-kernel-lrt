@@ -75,6 +75,7 @@ contract AnvilActors is IActors {
 
 contract MainnetActors is IActors {
     // Multisigs
+    // solhint-disable-next-line const-name-snakecase
     address private constant YnSecurityCouncil = 0x721688652DEa9Cabec70BD99411EAEAB9485d436;
 
     // Roles
