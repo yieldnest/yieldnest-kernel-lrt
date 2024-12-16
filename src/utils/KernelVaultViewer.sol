@@ -110,10 +110,27 @@ contract KernelVaultViewer is BaseVaultViewer {
 
     /**
      * @notice Retrieves information about all underlying assets in the system
-     * @dev This function checks if the asset is a kernel vault and handles the conversion to the underlying asset
      * @return assetsInfo An array of AssetInfo structs containing detailed information about each asset
      */
     function getUnderlyingAssets() external view override returns (AssetInfo[] memory assetsInfo) {
+        return _getUnderlyingAssets(true);
+    }
+
+    /**
+     * @notice Retrieves information about all the underlying assets that are available to be withdrawn
+     * @return assetsInfo An array of AssetInfo structs containing detailed information about each asset
+     */
+    function getAvailableUnderlyingAssets() public view returns (AssetInfo[] memory assetsInfo) {
+        return _getUnderlyingAssets(false);
+    }
+
+    /**
+     * @notice Retrieves information about all the underlying assets
+     * @param total Whether to include assets that are not available to be withdrawn
+     * @return assetsInfo An array of AssetInfo structs containing detailed information about each asset
+     * @dev This function checks if the asset is a kernel vault and handles the conversion to the underlying asset
+     */
+    function _getUnderlyingAssets(bool total) public view returns (AssetInfo[] memory assetsInfo) {
         address[] memory assets = vault().getAssets();
         uint256[] memory balances = new uint256[](assets.length);
         bool[] memory assetCounted = new bool[](assets.length);
@@ -122,7 +139,7 @@ contract KernelVaultViewer is BaseVaultViewer {
 
         for (uint256 i = 0; i < assets.length; ++i) {
             address underlyingAsset = _getUnderlyingAsset(assets[i]);
-            if (underlyingAsset != address(0)) {
+            if (underlyingAsset != address(0) && (total || vault().getSyncWithdraw())) {
                 int256 index = findIndex(assets, underlyingAsset);
                 if (index >= 0) {
                     balances[uint256(index)] += IERC20Metadata(assets[i]).balanceOf(address(vault()));

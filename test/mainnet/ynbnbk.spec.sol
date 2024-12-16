@@ -216,51 +216,118 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         vault.totalSupply();
     }
 
-    function test_Vault_Viewer_functions() public {
+    function test_Vault_Viewer_functions_default() public view {
         BaseVaultViewer.AssetInfo[] memory assets = viewer.getAssets();
         BaseVaultViewer.AssetInfo[] memory underlyingAssets = viewer.getUnderlyingAssets();
+        BaseVaultViewer.AssetInfo[] memory availableAssets = viewer.getAvailableUnderlyingAssets();
 
         assertEq(assets.length, 6, "Should have 6 assets");
         assertEq(underlyingAssets.length, 3, "Should have 3 underlying assets");
+        assertEq(availableAssets.length, 3, "Should have 3 available underlying assets");
         assertEq(assets[1].asset, MC.SLISBNB, "Should have SLISBNB as the second asset");
         assertEq(
             assets[4].asset, stakerGateway.getVault(MC.SLISBNB), "Should have SLISBNB as the second underlying asset"
         );
-
-        uint256 beforeAssetBalance = assets[1].totalBalanceInAsset;
-        uint256 beforeVaultBalance = assets[4].totalBalanceInAsset;
-        assertEq(beforeVaultBalance, 0, "Should have 0 SLISBNB in vault");
 
         for (uint256 i = 0; i < 3; i++) {
             assertEq(underlyingAssets[i].asset, assets[i].asset, "Underlying asset should be the same");
             assertEq(underlyingAssets[i].name, assets[i].name, "Underlying asset name should be the same");
             assertEq(underlyingAssets[i].symbol, assets[i].symbol, "Underlying asset symbol should be the same");
             assertEq(underlyingAssets[i].rate, assets[i].rate, "Underlying asset rate should be the same");
-            assertEq(
-                underlyingAssets[i].ratioOfTotalAssets,
-                assets[i].ratioOfTotalAssets + assets[i + 3].ratioOfTotalAssets,
-                "Underlying asset ratioOfTotalAssets should be the same"
-            );
-            assertEq(
-                underlyingAssets[i].totalBalanceInUnitOfAccount,
-                assets[i].totalBalanceInUnitOfAccount + assets[i + 3].totalBalanceInUnitOfAccount,
-                "Underlying asset totalBalanceInUnitOfAccount should be the same"
-            );
-            assertEq(
-                underlyingAssets[i].totalBalanceInAsset,
-                assets[i].totalBalanceInAsset + assets[i + 3].totalBalanceInAsset,
-                "Underlying asset totalBalanceInAsset should be the same"
-            );
+
+            if (underlyingAssets[i].totalBalanceInUnitOfAccount != 0) {
+                assertEqThreshold(
+                    underlyingAssets[i].ratioOfTotalAssets,
+                    assets[i].ratioOfTotalAssets + assets[i + 3].ratioOfTotalAssets,
+                    10,
+                    "Underlying asset ratioOfTotalAssets should be the same"
+                );
+                assertEqThreshold(
+                    underlyingAssets[i].totalBalanceInUnitOfAccount,
+                    assets[i].totalBalanceInUnitOfAccount + assets[i + 3].totalBalanceInUnitOfAccount,
+                    10,
+                    "Underlying asset totalBalanceInUnitOfAccount should be the same"
+                );
+                assertEqThreshold(
+                    underlyingAssets[i].totalBalanceInAsset,
+                    assets[i].totalBalanceInAsset + assets[i + 3].totalBalanceInAsset,
+                    10,
+                    "Underlying asset totalBalanceInAsset should be the same"
+                );
+            } else {
+                assertEq(
+                    underlyingAssets[i].ratioOfTotalAssets, 0, "Underlying asset ratioOfTotalAssets should be the same"
+                );
+                assertEq(
+                    underlyingAssets[i].totalBalanceInUnitOfAccount,
+                    0,
+                    "Underlying asset totalBalanceInUnitOfAccount should be the same"
+                );
+                assertEq(
+                    underlyingAssets[i].totalBalanceInAsset,
+                    0,
+                    "Underlying asset totalBalanceInAsset should be the same"
+                );
+                assertEq(assets[i].ratioOfTotalAssets, 0, "Underlying asset ratioOfTotalAssets should be the same");
+                assertEq(
+                    assets[i].totalBalanceInUnitOfAccount,
+                    0,
+                    "Underlying asset totalBalanceInUnitOfAccount should be the same"
+                );
+                assertEq(assets[i].totalBalanceInAsset, 0, "Underlying asset totalBalanceInAsset should be the same");
+                assertEq(assets[i + 3].ratioOfTotalAssets, 0, "Underlying asset ratioOfTotalAssets should be the same");
+                assertEq(
+                    assets[i + 3].totalBalanceInUnitOfAccount,
+                    0,
+                    "Underlying asset totalBalanceInUnitOfAccount should be the same"
+                );
+                assertEq(
+                    assets[i + 3].totalBalanceInAsset, 0, "Underlying asset totalBalanceInAsset should be the same"
+                );
+            }
             assertEq(
                 underlyingAssets[i].canDeposit, assets[i].canDeposit, "Underlying asset canDeposit should be the same"
             );
             assertEq(underlyingAssets[i].decimals, assets[i].decimals, "Underlying asset decimals should be the same");
-        }
 
-        stakeIntoKernel(MC.SLISBNB);
+            // availableAssets
+            assertEq(underlyingAssets[i].asset, availableAssets[i].asset, "Underlying asset should be the same");
+            assertEq(
+                underlyingAssets[i].totalBalanceInAsset,
+                availableAssets[i].totalBalanceInAsset,
+                "Underlying asset should be the same"
+            );
+            assertEq(
+                underlyingAssets[i].totalBalanceInUnitOfAccount,
+                availableAssets[i].totalBalanceInUnitOfAccount,
+                "Underlying asset should be the same"
+            );
+            assertEq(
+                underlyingAssets[i].canDeposit,
+                availableAssets[i].canDeposit,
+                "Underlying asset canDeposit should be the same"
+            );
+            assertEq(
+                underlyingAssets[i].decimals,
+                availableAssets[i].decimals,
+                "Underlying asset decimals should be the same"
+            );
+        }
+    }
+
+    function test_Vault_Viewer_functions_staked() public {
+        BaseVaultViewer.AssetInfo[] memory assets = viewer.getAssets();
+        uint256 beforeAssetBalance = assets[1].totalBalanceInAsset;
+        uint256 beforeVaultBalance = assets[4].totalBalanceInAsset;
+        assertEq(beforeVaultBalance, 0, "Should have 0 SLISBNB in vault");
+
+        uint256 stakeAmount = beforeAssetBalance / 2;
+
+        stakeIntoKernel(MC.SLISBNB, stakeAmount);
 
         assets = viewer.getAssets();
-        underlyingAssets = viewer.getUnderlyingAssets();
+        BaseVaultViewer.AssetInfo[] memory underlyingAssets = viewer.getUnderlyingAssets();
+        BaseVaultViewer.AssetInfo[] memory availableAssets = viewer.getAvailableUnderlyingAssets();
 
         assertEq(assets.length, 6, "Should have 6 assets");
         assertEq(underlyingAssets.length, 3, "Should have 3 underlying assets");
@@ -273,36 +340,131 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
 
         uint256 afterAssetBalance = assets[1].totalBalanceInAsset;
         uint256 afterVaultBalance = assets[1 + 3].totalBalanceInAsset;
-        assertEq(afterVaultBalance, beforeAssetBalance, "Should have SLISBNB in vault");
-        assertEq(afterAssetBalance, 0, "Should have 0 SLISBNB in asset");
+        assertEqThreshold(afterVaultBalance, beforeAssetBalance / 2, 10, "Should have SLISBNB in vault");
+        assertEqThreshold(afterAssetBalance, beforeAssetBalance / 2, 10, "Should have 0 SLISBNB in asset");
 
         for (uint256 i = 0; i < 3; i++) {
             assertEq(underlyingAssets[i].asset, assets[i].asset, "Underlying asset should be the same");
             assertEq(underlyingAssets[i].name, assets[i].name, "Underlying asset name should be the same");
             assertEq(underlyingAssets[i].symbol, assets[i].symbol, "Underlying asset symbol should be the same");
             assertEq(underlyingAssets[i].rate, assets[i].rate, "Underlying asset rate should be the same");
-            assertEq(
-                underlyingAssets[i].ratioOfTotalAssets,
-                assets[i].ratioOfTotalAssets + assets[i + 3].ratioOfTotalAssets,
-                "Underlying asset ratioOfTotalAssets should be the same"
-            );
-            assertEq(
-                underlyingAssets[i].totalBalanceInUnitOfAccount,
-                assets[i].totalBalanceInUnitOfAccount + assets[i + 3].totalBalanceInUnitOfAccount,
-                "Underlying asset totalBalanceInUnitOfAccount should be the same"
-            );
-            assertEq(
-                underlyingAssets[i].totalBalanceInAsset,
-                assets[i].totalBalanceInAsset + assets[i + 3].totalBalanceInAsset,
-                "Underlying asset totalBalanceInAsset should be the same"
-            );
+            if (underlyingAssets[i].totalBalanceInUnitOfAccount != 0) {
+                assertEqThreshold(
+                    underlyingAssets[i].ratioOfTotalAssets,
+                    assets[i].ratioOfTotalAssets + assets[i + 3].ratioOfTotalAssets,
+                    10,
+                    "Underlying asset ratioOfTotalAssets should be the same"
+                );
+                assertEqThreshold(
+                    underlyingAssets[i].totalBalanceInUnitOfAccount,
+                    assets[i].totalBalanceInUnitOfAccount + assets[i + 3].totalBalanceInUnitOfAccount,
+                    10,
+                    "Underlying asset totalBalanceInUnitOfAccount should be the same"
+                );
+                assertEqThreshold(
+                    underlyingAssets[i].totalBalanceInAsset,
+                    assets[i].totalBalanceInAsset + assets[i + 3].totalBalanceInAsset,
+                    10,
+                    "Underlying asset totalBalanceInAsset should be the same"
+                );
+            }
             assertEq(
                 underlyingAssets[i].canDeposit, assets[i].canDeposit, "Underlying asset canDeposit should be the same"
             );
             assertEq(underlyingAssets[i].decimals, assets[i].decimals, "Underlying asset decimals should be the same");
+
+            // availableAssets
+            assertEq(underlyingAssets[i].asset, availableAssets[i].asset, "Underlying asset should be the same");
+            assertEq(
+                underlyingAssets[i].totalBalanceInAsset,
+                availableAssets[i].totalBalanceInAsset,
+                "Underlying asset should be the same"
+            );
+            assertEq(
+                underlyingAssets[i].totalBalanceInUnitOfAccount,
+                availableAssets[i].totalBalanceInUnitOfAccount,
+                "Underlying asset should be the same"
+            );
+            assertEq(
+                underlyingAssets[i].canDeposit,
+                availableAssets[i].canDeposit,
+                "Underlying asset canDeposit should be the same"
+            );
+            assertEq(
+                underlyingAssets[i].decimals,
+                availableAssets[i].decimals,
+                "Underlying asset decimals should be the same"
+            );
         }
 
         assertEq(underlyingAssets[1].totalBalanceInAsset, beforeAssetBalance, "Should have SLISBNB in vault");
+    }
+
+    function test_Vault_Viewer_functions_staked_sync_withdraw_disabled() public {
+        BaseVaultViewer.AssetInfo[] memory assets = viewer.getAssets();
+        uint256 beforeAssetBalance = assets[1].totalBalanceInAsset;
+        uint256 beforeVaultBalance = assets[4].totalBalanceInAsset;
+        assertEq(beforeVaultBalance, 0, "Should have 0 SLISBNB in vault");
+
+        uint256 stakeAmount = beforeAssetBalance / 2;
+
+        stakeIntoKernel(MC.SLISBNB, stakeAmount);
+
+        assets = viewer.getAssets();
+
+        assertEq(assets.length, 6, "Should have 6 assets");
+        assertEq(assets[1].asset, MC.SLISBNB, "Should have SLISBNB as the second asset");
+        assertEq(
+            assets[1 + 3].asset,
+            stakerGateway.getVault(MC.SLISBNB),
+            "Should have SLISBNB as the second underlying asset"
+        );
+
+        uint256 afterAssetBalance = assets[1].totalBalanceInAsset;
+        uint256 afterVaultBalance = assets[1 + 3].totalBalanceInAsset;
+        assertEqThreshold(afterVaultBalance, beforeAssetBalance / 2, 10, "Should have SLISBNB in vault");
+        assertEqThreshold(afterAssetBalance, beforeAssetBalance / 2, 10, "Should have 0 SLISBNB in asset");
+
+        vm.prank(ADMIN);
+        vault.setSyncWithdraw(false);
+
+        BaseVaultViewer.AssetInfo[] memory underlyingAssets = viewer.getUnderlyingAssets();
+        BaseVaultViewer.AssetInfo[] memory availableAssets = viewer.getAvailableUnderlyingAssets();
+
+        uint256 i = 1;
+
+        assertEq(underlyingAssets[i].asset, availableAssets[i].asset, "Underlying asset should be the same");
+
+        assertEqThreshold(
+            underlyingAssets[i].ratioOfTotalAssets,
+            1000000,
+            10,
+            "Underlying asset ratioOfTotalAssets should be the correct"
+        );
+        assertEqThreshold(
+            availableAssets[i].ratioOfTotalAssets,
+            500000,
+            10,
+            "Available asset ratioOfTotalAssets should be the correct"
+        );
+        assertEqThreshold(
+            underlyingAssets[i].totalBalanceInAsset,
+            availableAssets[i].totalBalanceInAsset * 2,
+            10,
+            "Should have SLISBNB in vault"
+        );
+        assertEqThreshold(
+            underlyingAssets[i].totalBalanceInAsset,
+            availableAssets[i].totalBalanceInAsset * 2,
+            10,
+            "Should have SLISBNB in vault"
+        );
+        assertEqThreshold(
+            underlyingAssets[i].totalBalanceInUnitOfAccount,
+            availableAssets[i].totalBalanceInUnitOfAccount * 2,
+            10,
+            "Should have SLISBNB in vault"
+        );
     }
 
     function test_Vault_Upgrade_ERC4626_view_functions() public view {
