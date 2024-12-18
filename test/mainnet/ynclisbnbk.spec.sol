@@ -7,6 +7,7 @@ import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {IERC20} from "lib/yieldnest-vault/src/Common.sol";
+import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 
@@ -74,13 +75,14 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
     function deployClisBNBk() public returns (KernelClisStrategy _vault) {
         KernelClisStrategy implementation = new KernelClisStrategy();
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector,
+            Vault.initialize.selector,
             MainnetActors.ADMIN,
             "YieldNest Restaked slisBNB - Kernel",
             "ynclisWBNBk",
             18,
             0,
-            true
+            true,
+            false
         );
 
         TransparentUpgradeableProxy proxy =

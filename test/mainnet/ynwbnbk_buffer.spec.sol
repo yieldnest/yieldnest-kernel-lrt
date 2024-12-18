@@ -8,6 +8,7 @@ import {TransparentUpgradeableProxy} from
 
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
+import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 import {MainnetActors} from "script/Actors.sol";
 import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 
@@ -62,13 +63,14 @@ contract YnWBNBkBufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
 
         // Deploy transparent proxy
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector,
+            Vault.initialize.selector,
             MainnetActors.ADMIN,
             "YieldNest BNB Buffer - Kernel",
             "ynWBNBk",
             18,
             0,
-            true
+            true,
+            false
         );
         TransparentUpgradeableProxy proxy =
             new TransparentUpgradeableProxy(address(implementation), address(MainnetActors.ADMIN), initData);

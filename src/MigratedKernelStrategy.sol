@@ -68,9 +68,6 @@ contract MigratedKernelStrategy is KernelStrategy {
         if (admin == address(0)) {
             revert ZeroAddress();
         }
-        if (stakerGateway == address(0)) {
-            revert ZeroAddress();
-        }
 
         __ERC20Permit_init(name);
         __ERC20_init(name, symbol);
@@ -82,6 +79,7 @@ contract MigratedKernelStrategy is KernelStrategy {
         vaultStorage.paused = true;
         vaultStorage.decimals = decimals;
         vaultStorage.countNativeAsset = countNativeAsset;
+        vaultStorage.alwaysComputeTotalAssets = true;
 
         FeeStorage storage fees = _getFeeStorage();
         fees.baseWithdrawalFee = baseWithdrawalFee;

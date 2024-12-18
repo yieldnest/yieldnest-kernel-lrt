@@ -24,11 +24,6 @@ contract KernelStrategy is Vault {
     /// @notice Role for allocator manager permissions
     bytes32 public constant ALLOCATOR_MANAGER_ROLE = keccak256("ALLOCATOR_MANAGER_ROLE");
 
-    /// @notice Emitted when an asset is deposited
-    event DepositAsset(
-        address indexed sender, address indexed receiver, address indexed asset, uint256 assets, uint256 shares
-    );
-
     /// @notice Emitted when an asset is withdrawn
     event WithdrawAsset(
         address indexed sender,
@@ -58,44 +53,6 @@ contract KernelStrategy is Vault {
 
     /// @notice Emitted when the hasAllocator flag is set
     event SetHasAllocator(bool hasAllocator);
-
-    /**
-     * @notice Initializes the vault.
-     * @param admin The address of the admin.
-     * @param name The name of the vault.
-     * @param symbol The symbol of the vault.
-     * @param decimals The decimals of the vault.
-     * @param baseWithdrawalFee The base withdrawal fee.
-     * @param countNativeAsset Whether to count the native asset.
-     */
-    function initialize(
-        address admin,
-        string memory name,
-        string memory symbol,
-        uint8 decimals,
-        uint64 baseWithdrawalFee,
-        bool countNativeAsset
-    ) external override initializer {
-        if (admin == address(0)) {
-            revert ZeroAddress();
-        }
-        __ERC20Permit_init(name);
-        __ERC20_init(name, symbol);
-        __AccessControl_init();
-        __ReentrancyGuard_init();
-        _grantRole(DEFAULT_ADMIN_ROLE, admin);
-
-        VaultStorage storage vaultStorage = _getVaultStorage();
-        vaultStorage.paused = true;
-        vaultStorage.decimals = decimals;
-        vaultStorage.countNativeAsset = countNativeAsset;
-
-        FeeStorage storage fees = _getFeeStorage();
-        fees.baseWithdrawalFee = baseWithdrawalFee;
-
-        StrategyStorage storage strategyStorage = _getStrategyStorage();
-        strategyStorage.hasAllocators = true;
-    }
 
     /**
      * @notice Returns the current sync deposit flag.
@@ -259,22 +216,12 @@ contract KernelStrategy is Vault {
         uint256 shares,
         uint256 baseAssets
     ) internal virtual override onlyAllocator {
-        if (!_getAssetStorage().assets[asset_].active) {
-            revert AssetNotActive();
-        }
-
-        VaultStorage storage vaultStorage = _getVaultStorage();
-        vaultStorage.totalAssets += baseAssets;
-
-        SafeERC20.safeTransferFrom(IERC20(asset_), caller, address(this), assets);
-        _mint(receiver, shares);
+        super._deposit(asset_, caller, receiver, assets, shares, baseAssets);
 
         StrategyStorage storage strategyStorage = _getStrategyStorage();
         if (strategyStorage.syncDeposit) {
             _stake(asset_, assets, IStakerGateway(strategyStorage.stakerGateway));
         }
-
-        emit DepositAsset(caller, receiver, asset_, assets, shares);
     }
 
     /**
@@ -329,8 +276,8 @@ contract KernelStrategy is Vault {
             revert AssetNotActive();
         }
 
-        VaultStorage storage vaultStorage = _getVaultStorage();
-        vaultStorage.totalAssets -= _convertAssetToBase(asset_, assets);
+        _subTotalAssets(_convertAssetToBase(asset_, assets));
+
         if (caller != owner) {
             _spendAllowance(owner, caller, shares);
         }
