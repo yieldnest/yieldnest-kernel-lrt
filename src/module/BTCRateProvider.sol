@@ -5,6 +5,7 @@ pragma solidity ^0.8.24;
 import {MainnetContracts as MC} from "script/Contracts.sol";
 
 import {BaseKernelRateProvider} from "./BaseKernelRateProvider.sol";
+import {ISolvBTCYieldToken} from "src/interface/external/solv/ISolvBTCYieldToken.sol";
 
 /**
  * @title BTCRateProvider
@@ -35,7 +36,7 @@ contract BTCRateProvider is BaseKernelRateProvider {
         }
 
         if (asset == MC.SOLVBTC_BNN) {
-            return 1e18;
+            return ISolvBTCYieldToken(MC.SOLVBTC_BNN).getValueByShares(1e18);
         }
 
         // check if a kernel vault is added as an asset
