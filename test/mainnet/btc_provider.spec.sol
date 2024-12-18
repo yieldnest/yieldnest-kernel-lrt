@@ -6,6 +6,8 @@ import {Test} from "lib/forge-std/src/Test.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
+
+import {ISolvBTCYieldToken} from "src/interface/external/solv/ISolvBTCYieldToken.sol";
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 
 contract BTCProviderTest is Test {
@@ -20,9 +22,16 @@ contract BTCProviderTest is Test {
         assertEq(rate, 1e18, "Rate for BTCB should be 1e18");
     }
 
-    function test_Provider_GetRateBTCx() public view {
+    function test_Provider_GetRateSolvBTC() public view {
         uint256 rate = provider.getRate(MC.SOLVBTC);
-        assertEq(rate, 1e18, "Rate for BTCx should be 1e18");
+        assertEq(rate, 1e18, "Rate for SolvBTC should be 1e18");
+    }
+
+    function test_Provider_GetRateSolvBTC_BNN() public view {
+        uint256 rate = provider.getRate(MC.SOLVBTC_BNN);
+        uint256 expected = ISolvBTCYieldToken(MC.SOLVBTC_BNN).getValueByShares(1e18);
+
+        assertEq(rate, expected, "Rate for SolvBTC BNN should be correct");
     }
 
     function test_Provider_GetRateKernelVault() public view {
