@@ -16,7 +16,7 @@ interface IContracts {
     function CLISBNB() external view returns (address);
     function BTCB() external view returns (address);
     function SOLVBTC() external view returns (address);
-    function SOLVBTC_BNN() external view returns (address);
+    function SOLVBTC_BBN() external view returns (address);
 }
 
 library MainnetContracts {
@@ -29,7 +29,7 @@ library MainnetContracts {
     // btc tokens
     address public constant BTCB = 0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c;
     address public constant SOLVBTC = 0x4aae823a6a0b376De6A78e74eCC5b079d38cBCf7;
-    address public constant SOLVBTC_BNN = 0x1346b618dC92810EC74163e4c27004c921D446a5;
+    address public constant SOLVBTC_BBN = 0x1346b618dC92810EC74163e4c27004c921D446a5;
 
     // stake managers
     address public constant BNBX_STAKE_MANAGER = 0x3b961e83400D51e6E1AF5c450d3C7d7b80588d28;
@@ -58,7 +58,7 @@ library TestnetContracts {
     // btc tokens
     address public constant BTCB = 0x6ce8dA28E2f864420840cF74474eFf5fD80E65B8;
     address public constant SOLVBTC = 0x1cF0e51005971c5B78b4A8feE419832CFCCD8cf9;
-    address public constant SOLVBTC_BNN = 0xB4618618b6Fcb61b72feD991AdcC344f43EE57Ad;
+    address public constant SOLVBTC_BBN = 0xB4618618b6Fcb61b72feD991AdcC344f43EE57Ad;
 
     // stake managers
     address public constant BNBX_STAKE_MANAGER = address(0);
@@ -118,8 +118,8 @@ contract ChapelContracts is IContracts {
         return TestnetContracts.SOLVBTC;
     }
 
-    function SOLVBTC_BNN() external pure override returns (address) {
-        return TestnetContracts.SOLVBTC_BNN;
+    function SOLVBTC_BBN() external pure override returns (address) {
+        return TestnetContracts.SOLVBTC_BBN;
     }
 }
 
@@ -165,7 +165,7 @@ contract BscContracts is IContracts {
         return MainnetContracts.SOLVBTC;
     }
 
-    function SOLVBTC_BNN() external pure override returns (address) {
-        return MainnetContracts.SOLVBTC_BNN;
+    function SOLVBTC_BBN() external pure override returns (address) {
+        return MainnetContracts.SOLVBTC_BBN;
     }
 }

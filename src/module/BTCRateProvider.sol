@@ -35,8 +35,8 @@ contract BTCRateProvider is BaseKernelRateProvider {
             return 1e18;
         }
 
-        if (asset == MC.SOLVBTC_BNN) {
-            return ISolvBTCYieldToken(MC.SOLVBTC_BNN).getValueByShares(1e18);
+        if (asset == MC.SOLVBTC_BBN) {
+            return ISolvBTCYieldToken(MC.SOLVBTC_BBN).getValueByShares(1e18);
         }
 
         // check if a kernel vault is added as an asset

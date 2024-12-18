@@ -20,7 +20,7 @@ contract TestnetBTCRateProvider is BaseKernelRateProvider {
             return 1e18;
         }
 
-        if (asset == TC.SOLVBTC_BNN) {
+        if (asset == TC.SOLVBTC_BBN) {
             return 1e18;
         }
 

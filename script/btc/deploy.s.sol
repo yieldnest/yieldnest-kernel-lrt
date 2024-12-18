@@ -84,21 +84,21 @@ contract DeployYnBTCkStrategy is BaseScript {
 
         vault_.addAsset(contracts.BTCB(), true);
         vault_.addAsset(contracts.SOLVBTC(), true);
-        vault_.addAsset(contracts.SOLVBTC_BNN(), true);
+        vault_.addAsset(contracts.SOLVBTC_BBN(), true);
 
         IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
         vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.BTCB()), 18, false);
         vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.SOLVBTC()), 18, false);
-        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.SOLVBTC_BNN()), 18, false);
+        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.SOLVBTC_BBN()), 18, false);
 
         setApprovalRule(vault_, contracts.BTCB(), contracts.STAKER_GATEWAY());
         setApprovalRule(vault_, contracts.SOLVBTC(), contracts.STAKER_GATEWAY());
-        setApprovalRule(vault_, contracts.SOLVBTC_BNN(), contracts.STAKER_GATEWAY());
+        setApprovalRule(vault_, contracts.SOLVBTC_BBN(), contracts.STAKER_GATEWAY());
 
         address[] memory assets = new address[](3);
         assets[0] = contracts.BTCB();
         assets[1] = contracts.SOLVBTC();
-        assets[2] = contracts.SOLVBTC_BNN();
+        assets[2] = contracts.SOLVBTC_BBN();
         setStakingRule(vault_, contracts.STAKER_GATEWAY(), assets);
         setUnstakingRule(vault_, contracts.STAKER_GATEWAY(), assets);
 
