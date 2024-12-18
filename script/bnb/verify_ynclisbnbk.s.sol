@@ -33,7 +33,7 @@ contract VerifyYnclisBNBkStrategy is BaseVerifyScript {
         assertTrue(vault.getHasAllocator(), "has allocator is invalid");
         assertTrue(vault.getSyncDeposit(), "sync deposit is invalid");
         assertTrue(vault.getSyncWithdraw(), "sync withdraw is invalid");
-
+        assertTrue(vault.alwaysComputeTotalAssets(), "always compute total assets is invalid");
         IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
 
         address[] memory assets = vault.getAssets();

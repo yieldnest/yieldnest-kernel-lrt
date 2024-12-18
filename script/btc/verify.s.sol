@@ -32,6 +32,7 @@ contract VerifyYnBTCkStrategy is BaseVerifyScript {
         assertTrue(vault.getSyncWithdraw(), "sync withdraw is invalid");
         assertEq(vault.baseWithdrawalFee(), 100000, "base withdrawal fee is invalid");
         assertEq(vault.countNativeAsset(), false, "count native asset is invalid");
+        assertTrue(vault.alwaysComputeTotalAssets(), "always compute total assets is invalid");
         IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
 
         address[] memory assets = vault.getAssets();
