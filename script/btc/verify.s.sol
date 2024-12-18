@@ -48,8 +48,8 @@ contract VerifyYnBTCkStrategy is BaseVerifyScript {
         assertEq(asset.active, true, "asset[1].active is invalid");
         assertEq(asset.index, 1, "asset[1].index is invalid");
 
-        assertEq(assets[2], contracts.SOLVBTC_BNN());
-        asset = vault.getAsset(contracts.SOLVBTC_BNN());
+        assertEq(assets[2], contracts.SOLVBTC_BBN());
+        asset = vault.getAsset(contracts.SOLVBTC_BBN());
         assertEq(asset.decimals, 18, "asset[2].decimals is invalid");
         assertEq(asset.active, true, "asset[2].active is invalid");
         assertEq(asset.index, 2, "asset[2].index is invalid");
@@ -66,20 +66,20 @@ contract VerifyYnBTCkStrategy is BaseVerifyScript {
         assertEq(asset.active, false, "asset[4].active is invalid");
         assertEq(asset.index, 4, "asset[4].index is invalid");
 
-        assertEq(assets[5], address(stakerGateway.getVault(contracts.SOLVBTC_BNN())));
-        asset = vault.getAsset(address(stakerGateway.getVault(contracts.SOLVBTC_BNN())));
+        assertEq(assets[5], address(stakerGateway.getVault(contracts.SOLVBTC_BBN())));
+        asset = vault.getAsset(address(stakerGateway.getVault(contracts.SOLVBTC_BBN())));
         assertEq(asset.decimals, 18, "asset[5].decimals is invalid");
         assertEq(asset.active, false, "asset[5].active is invalid");
         assertEq(asset.index, 5, "asset[5].index is invalid");
 
         _verifyApprovalRule(vault, contracts.BTCB(), contracts.STAKER_GATEWAY());
         _verifyApprovalRule(vault, contracts.SOLVBTC(), contracts.STAKER_GATEWAY());
-        _verifyApprovalRule(vault, contracts.SOLVBTC_BNN(), contracts.STAKER_GATEWAY());
+        _verifyApprovalRule(vault, contracts.SOLVBTC_BBN(), contracts.STAKER_GATEWAY());
 
         address[] memory assetsForStaking = new address[](3);
         assetsForStaking[0] = contracts.BTCB();
         assetsForStaking[1] = contracts.SOLVBTC();
-        assetsForStaking[2] = contracts.SOLVBTC_BNN();
+        assetsForStaking[2] = contracts.SOLVBTC_BBN();
         _verifyStakingRule(vault, contracts.STAKER_GATEWAY(), assetsForStaking);
         _verifyUnstakingRule(vault, contracts.STAKER_GATEWAY(), assetsForStaking);
 

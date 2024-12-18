@@ -27,11 +27,11 @@ contract BTCProviderTest is Test {
         assertEq(rate, 1e18, "Rate for SolvBTC should be 1e18");
     }
 
-    function test_Provider_GetRateSolvBTC_BNN() public view {
-        uint256 rate = provider.getRate(MC.SOLVBTC_BNN);
-        uint256 expected = ISolvBTCYieldToken(MC.SOLVBTC_BNN).getValueByShares(1e18);
+    function test_Provider_GetRateSolvBTC_BBN() public view {
+        uint256 rate = provider.getRate(MC.SOLVBTC_BBN);
+        uint256 expected = ISolvBTCYieldToken(MC.SOLVBTC_BBN).getValueByShares(1e18);
 
-        assertEq(rate, expected, "Rate for SolvBTC BNN should be correct");
+        assertEq(rate, expected, "Rate for SolvBTC BBN should be correct");
     }
 
     function test_Provider_GetRateKernelVault() public view {

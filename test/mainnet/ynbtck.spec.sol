@@ -120,11 +120,11 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
 
         vault_.addAsset(MC.BTCB, true);
         vault_.addAsset(MC.SOLVBTC, true);
-        vault_.addAsset(MC.SOLVBTC_BNN, true);
+        vault_.addAsset(MC.SOLVBTC_BBN, true);
 
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.BTCB), 18, false);
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SOLVBTC), 18, false);
-        vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SOLVBTC_BNN), 18, false);
+        vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SOLVBTC_BBN), 18, false);
 
         // set deposit rules
         setApprovalRule(vault_, MC.BTCB, MC.STAKER_GATEWAY);
@@ -133,8 +133,8 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         setApprovalRule(vault_, MC.SOLVBTC, MC.STAKER_GATEWAY);
         setStakingRule(vault_, MC.STAKER_GATEWAY, MC.SOLVBTC);
 
-        setApprovalRule(vault_, MC.SOLVBTC_BNN, MC.STAKER_GATEWAY);
-        setStakingRule(vault_, MC.STAKER_GATEWAY, MC.SOLVBTC_BNN);
+        setApprovalRule(vault_, MC.SOLVBTC_BBN, MC.STAKER_GATEWAY);
+        setStakingRule(vault_, MC.STAKER_GATEWAY, MC.SOLVBTC_BBN);
 
         vault_.unpause();
 
@@ -222,7 +222,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         assertEq(assets.length, 6, "There should be six assets in the vault");
         assertEq(assets[0], MC.BTCB, "First asset should be BTCB");
         assertEq(assets[1], MC.SOLVBTC, "Second asset should be SOLVBTC");
-        assertEq(assets[2], MC.SOLVBTC_BNN, "Third asset should be SOLVBTC_BNN");
+        assertEq(assets[2], MC.SOLVBTC_BBN, "Third asset should be SOLVBTC_BBN");
 
         shares = vault.previewWithdrawAsset(MC.BTCB, amount);
         convertedAssets = vault.previewRedeemAsset(MC.BTCB, shares);
