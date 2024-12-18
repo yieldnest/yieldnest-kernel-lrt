@@ -41,7 +41,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
         provider = new BNBRateProvider();
         KernelStrategy implementation = new KernelStrategy();
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector, ADMIN, "YieldNest Restaked BNB - Kernel", "ynWBNBk", 18, 0, true
+            KernelStrategy.initialize.selector, ADMIN, "YieldNest Restaked BNB - Kernel", "ynWBNBk", 18, 0, true, false
         );
 
         TransparentUpgradeableProxy proxy =

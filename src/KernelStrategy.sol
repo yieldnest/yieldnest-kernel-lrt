@@ -24,11 +24,6 @@ contract KernelStrategy is Vault {
     /// @notice Role for allocator manager permissions
     bytes32 public constant ALLOCATOR_MANAGER_ROLE = keccak256("ALLOCATOR_MANAGER_ROLE");
 
-    /// @notice Emitted when an asset is deposited
-    event DepositAsset(
-        address indexed sender, address indexed receiver, address indexed asset, uint256 assets, uint256 shares
-    );
-
     /// @notice Emitted when an asset is withdrawn
     event WithdrawAsset(
         address indexed sender,
@@ -74,7 +69,8 @@ contract KernelStrategy is Vault {
         string memory symbol,
         uint8 decimals,
         uint64 baseWithdrawalFee,
-        bool countNativeAsset
+        bool countNativeAsset,
+        bool alwaysComputeTotalAssets_
     ) external override initializer {
         if (admin == address(0)) {
             revert ZeroAddress();
@@ -89,6 +85,7 @@ contract KernelStrategy is Vault {
         vaultStorage.paused = true;
         vaultStorage.decimals = decimals;
         vaultStorage.countNativeAsset = countNativeAsset;
+        vaultStorage.alwaysComputeTotalAssets = alwaysComputeTotalAssets_;
 
         FeeStorage storage fees = _getFeeStorage();
         fees.baseWithdrawalFee = baseWithdrawalFee;
@@ -274,7 +271,7 @@ contract KernelStrategy is Vault {
             _stake(asset_, assets, IStakerGateway(strategyStorage.stakerGateway));
         }
 
-        emit DepositAsset(caller, receiver, asset_, assets, shares);
+        emit DepositAsset(caller, receiver, asset_, assets, baseAssets, shares);
     }
 
     /**

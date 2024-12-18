@@ -68,7 +68,8 @@ contract YnWBNBkBufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
             "ynWBNBk",
             18,
             0,
-            true
+            true,
+            false
         );
         TransparentUpgradeableProxy proxy =
             new TransparentUpgradeableProxy(address(implementation), address(MainnetActors.ADMIN), initData);

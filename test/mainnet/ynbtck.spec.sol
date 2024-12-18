@@ -83,7 +83,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     function deploy() public returns (KernelStrategy _vault) {
         KernelStrategy implementation = new KernelStrategy();
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector, ADMIN, "YieldNest Restaked BTC - Kernel", "ynBTCk", 18, 0, false
+            KernelStrategy.initialize.selector, ADMIN, "YieldNest Restaked BTC - Kernel", "ynBTCk", 18, 0, false, false
         );
 
         TransparentUpgradeableProxy proxy =

@@ -96,7 +96,8 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
                 "ynBNBk",
                 18,
                 0,
-                true
+                true,
+                false
             )
         );
 

@@ -80,7 +80,8 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
             "ynclisWBNBk",
             18,
             0,
-            true
+            true,
+            false
         );
 
         TransparentUpgradeableProxy proxy =
