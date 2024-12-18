@@ -6,6 +6,7 @@ import {Test} from "lib/forge-std/src/Test.sol";
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
+import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 import {MockSTETH} from "lib/yieldnest-vault/test/unit/mocks/MockST_ETH.sol";
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
@@ -41,7 +42,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
         provider = new BNBRateProvider();
         KernelStrategy implementation = new KernelStrategy();
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector, ADMIN, "YieldNest Restaked BNB - Kernel", "ynWBNBk", 18, 0, true, false
+            Vault.initialize.selector, ADMIN, "YieldNest Restaked BNB - Kernel", "ynWBNBk", 18, 0, true, false
         );
 
         TransparentUpgradeableProxy proxy =

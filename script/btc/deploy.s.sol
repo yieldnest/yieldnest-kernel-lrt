@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
+import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
@@ -58,9 +59,16 @@ contract DeployYnBTCkStrategy is BaseScript {
 
         uint64 baseWithdrawalFee = uint64(0.001 ether * FeeMath.BASIS_POINT_SCALE / 1 ether); // 0.1%
         bool countNativeAsset = false;
-
+        bool alwaysComputeTotalAssets = true;
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector, admin, name, symbol_, decimals, baseWithdrawalFee, countNativeAsset
+            Vault.initialize.selector,
+            admin,
+            name,
+            symbol_,
+            decimals,
+            baseWithdrawalFee,
+            countNativeAsset,
+            alwaysComputeTotalAssets
         );
 
         TransparentUpgradeableProxy proxy =

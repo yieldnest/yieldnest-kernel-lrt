@@ -8,12 +8,12 @@ import {TransparentUpgradeableProxy} from
 
 import {IERC20} from "lib/yieldnest-vault/src/Common.sol";
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
+import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 
 import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
-import {KernelStrategy} from "src/KernelStrategy.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 
@@ -83,7 +83,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
     function deploy() public returns (KernelStrategy _vault) {
         KernelStrategy implementation = new KernelStrategy();
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector, ADMIN, "YieldNest Restaked BTC - Kernel", "ynBTCk", 18, 0, false, false
+            Vault.initialize.selector, ADMIN, "YieldNest Restaked BTC - Kernel", "ynBTCk", 18, 0, false, false
         );
 
         TransparentUpgradeableProxy proxy =

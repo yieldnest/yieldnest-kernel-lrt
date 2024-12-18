@@ -11,6 +11,7 @@ import {
 import {ProxyUtils} from "script/ProxyUtils.sol";
 
 import {IERC20, ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
+import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 
 import {ISlisBnbStakeManager} from "lib/yieldnest-vault/src/interface/external/lista/ISlisBnbStakeManager.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
@@ -90,7 +91,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
             ITransparentUpgradeableProxy(MC.YNBNBK),
             address(implemention),
             abi.encodeWithSelector(
-                KernelStrategy.initialize.selector,
+                Vault.initialize.selector,
                 address(MainnetActors.ADMIN),
                 "YieldNest Restaked BNB - Kernel",
                 "ynBNBk",

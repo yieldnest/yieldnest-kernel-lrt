@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
+import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
@@ -71,9 +72,16 @@ contract DeployYnclisBNBkStrategy is BaseScript {
         uint8 decimals = 18;
         uint64 baseWithdrawalFee = 0;
         bool countNativeAsset = true;
-
+        bool alwaysComputeTotalAssets = true;
         bytes memory initData = abi.encodeWithSelector(
-            KernelStrategy.initialize.selector, admin, name, symbol_, decimals, baseWithdrawalFee, countNativeAsset
+            Vault.initialize.selector,
+            admin,
+            name,
+            symbol_,
+            decimals,
+            baseWithdrawalFee,
+            countNativeAsset,
+            alwaysComputeTotalAssets
         );
 
         TUP proxy = new TUP(address(implementation), address(actors.ADMIN()), initData);
