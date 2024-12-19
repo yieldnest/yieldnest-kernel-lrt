@@ -105,7 +105,7 @@ abstract contract BaseScript is Script, VaultUtils {
 
         // set admin roles
         vault_.grantRole(vault_.DEFAULT_ADMIN_ROLE(), actors.ADMIN());
-        vault_.grantRole(vault_.PROCESSOR_ROLE(), actors.PROCESSOR_ROLE());
+        vault_.grantRole(vault_.PROCESSOR_ROLE(), actors.PROCESSOR_MANAGER());
         vault_.grantRole(vault_.PAUSER_ROLE(), actors.PAUSER());
         vault_.grantRole(vault_.UNPAUSER_ROLE(), actors.UNPAUSER());
         vault_.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), actors.DEPOSIT_MANAGER());
