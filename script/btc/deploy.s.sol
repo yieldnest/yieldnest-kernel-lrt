@@ -72,7 +72,7 @@ contract DeployYnBTCkStrategy is BaseScript {
         );
 
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(implementation), address(actors.ADMIN()), initData);
+            new TransparentUpgradeableProxy(address(implementation), address(timelock), initData);
 
         vault = KernelStrategy(payable(address(proxy)));
 
