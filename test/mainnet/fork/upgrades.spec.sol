@@ -29,14 +29,23 @@ contract YnBTCkUpgradeTest is Test, MainnetActors {
         
         // Get BTCB from whale
         vm.startPrank(WHALE);
-        IERC20(MC.BTCB).transfer(address(this), 10000e18);
+        IERC20(MC.BTCB).transfer(address(this), 1e18);
         vm.stopPrank();
 
         // Initial deposit of 1000 BTCB to have liquidity in vault
         {
+
+            address randomDepositor = makeAddr("randomDepositor");
             uint256 initialDeposit = 100e18;
+            vm.startPrank(WHALE);
+            IERC20(MC.BTCB).transfer(randomDepositor, initialDeposit);
+            vm.stopPrank();
+            
+            // Do deposit as random depositor
+            vm.startPrank(randomDepositor);
             IERC20(MC.BTCB).approve(address(vault), initialDeposit);
-            vault.depositAsset(MC.BTCB, initialDeposit, address(this));
+            vault.depositAsset(MC.BTCB, initialDeposit, randomDepositor);
+            vm.stopPrank();
         }
 
         // Approve vault to spend BTCB
@@ -62,6 +71,7 @@ contract YnBTCkUpgradeTest is Test, MainnetActors {
 
         // Check withdrawal results  
         assertGe(IERC20(MC.BTCB).balanceOf(address(this)), (initialBTCBBalance * 999) / 1000, "Less than 99.9% BTCB returned");
+        assertLe(IERC20(MC.BTCB).balanceOf(address(this)), (initialBTCBBalance * 9991) / 10000, "More than 99.9% BTCB returned");
         assertEq(vault.balanceOf(address(this)), initialShares, "Shares not burned");
 
         // Print rate (totalAssets/totalSupply)
@@ -78,7 +88,7 @@ contract YnBTCkUpgradeTest is Test, MainnetActors {
         ProxyAdmin proxyAdmin = ProxyAdmin(ProxyUtils.getProxyAdmin(address(vault)));
         
         // Upgrade directly as owner
-        vm.prank(proxyAdmin.owner());
+        vm.prank(0x721688652DEa9Cabec70BD99411EAEAB9485d436);
         proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(vault)), address(newImplementation), "");
 
         // Verify upgrade
