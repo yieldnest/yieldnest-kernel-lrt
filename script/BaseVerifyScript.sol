@@ -20,10 +20,10 @@ abstract contract BaseVerifyScript is BaseScript, Test {
         assertEq(vault_.hasRole(vault_.BUFFER_MANAGER_ROLE(), address(timelock)), true);
         assertEq(vault_.hasRole(vault_.PROCESSOR_MANAGER_ROLE(), address(timelock)), true);
         assertEq(vault_.hasRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), address(timelock)), true);
+        assertEq(vault_.hasRole(vault_.DEFAULT_ADMIN_ROLE(), address(timelock)), true);
 
         // verify actors roles
-        assertEq(vault_.hasRole(vault_.DEFAULT_ADMIN_ROLE(), actors.ADMIN()), true);
-        assertEq(vault_.hasRole(vault_.PROCESSOR_ROLE(), actors.ADMIN()), true);
+        assertEq(vault_.hasRole(vault_.PROCESSOR_ROLE(), actors.PROCESSOR()), true);
         assertEq(vault_.hasRole(vault_.PAUSER_ROLE(), actors.PAUSER()), true);
         assertEq(vault_.hasRole(vault_.UNPAUSER_ROLE(), actors.UNPAUSER()), true);
         assertEq(vault_.hasRole(vault_.DEPOSIT_MANAGER_ROLE(), actors.DEPOSIT_MANAGER()), true);
