@@ -22,10 +22,10 @@ abstract contract BaseVerifyScript is BaseScript, Test {
         assertEq(vault_.hasRole(vault_.PROCESSOR_MANAGER_ROLE(), address(timelock)), true);
         assertEq(vault_.hasRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), address(timelock)), true);
         assertEq(ProxyUtils.getProxyAdmin(address(vault_)), address(timelock));
+        assertEq(vault_.hasRole(vault_.DEFAULT_ADMIN_ROLE(), ProxyUtils.getProxyAdmin(address(vault_))), true);
 
         // verify actors roles
         assertEq(vault_.hasRole(vault_.PROCESSOR_ROLE(), actors.PROCESSOR()), true);
-        assertEq(vault_.hasRole(vault_.DEFAULT_ADMIN_ROLE(), ProxyUtils.getProxyAdmin(address(vault_))), true);
         assertEq(vault_.hasRole(vault_.PAUSER_ROLE(), actors.PAUSER()), true);
         assertEq(vault_.hasRole(vault_.UNPAUSER_ROLE(), actors.UNPAUSER()), true);
         assertEq(vault_.hasRole(vault_.DEPOSIT_MANAGER_ROLE(), actors.DEPOSIT_MANAGER()), true);
