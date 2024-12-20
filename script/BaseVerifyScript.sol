@@ -12,6 +12,10 @@ import {Test} from "lib/forge-std/src/Test.sol";
 
 import {BaseVaultViewer} from "lib/yieldnest-vault/src/utils/BaseVaultViewer.sol";
 
+interface IOwnable {
+    function owner() external view returns (address);
+}
+
 // FOUNDRY_PROFILE=mainnet forge script VerifyYnBTCkStrategy
 abstract contract BaseVerifyScript is BaseScript, Test {
     function _verifyDefaultRoles(KernelStrategy vault_) internal view {
@@ -21,10 +25,10 @@ abstract contract BaseVerifyScript is BaseScript, Test {
         assertEq(vault_.hasRole(vault_.BUFFER_MANAGER_ROLE(), address(timelock)), true);
         assertEq(vault_.hasRole(vault_.PROCESSOR_MANAGER_ROLE(), address(timelock)), true);
         assertEq(vault_.hasRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), address(timelock)), true);
-        assertEq(ProxyUtils.getProxyAdmin(address(vault_)), address(timelock));
-        assertEq(vault_.hasRole(vault_.DEFAULT_ADMIN_ROLE(), ProxyUtils.getProxyAdmin(address(vault_))), true);
+        assertEq(IOwnable(ProxyUtils.getProxyAdmin(address(vault_))).owner(), address(timelock));
 
         // verify actors roles
+        assertEq(vault_.hasRole(vault_.DEFAULT_ADMIN_ROLE(), actors.ADMIN()), true);
         assertEq(vault_.hasRole(vault_.PROCESSOR_ROLE(), actors.PROCESSOR()), true);
         assertEq(vault_.hasRole(vault_.PAUSER_ROLE(), actors.PAUSER()), true);
         assertEq(vault_.hasRole(vault_.UNPAUSER_ROLE(), actors.UNPAUSER()), true);
