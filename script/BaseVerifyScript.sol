@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
 
+import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {IValidator} from "lib/yieldnest-vault/src/interface/IVault.sol";
 import {BaseScript} from "script/BaseScript.sol";
@@ -11,10 +12,6 @@ import {ProxyUtils} from "script/ProxyUtils.sol";
 import {Test} from "lib/forge-std/src/Test.sol";
 
 import {BaseVaultViewer} from "lib/yieldnest-vault/src/utils/BaseVaultViewer.sol";
-
-interface IOwnable {
-    function owner() external view returns (address);
-}
 
 // FOUNDRY_PROFILE=mainnet forge script VerifyYnBTCkStrategy
 abstract contract BaseVerifyScript is BaseScript, Test {
@@ -25,7 +22,7 @@ abstract contract BaseVerifyScript is BaseScript, Test {
         assertEq(vault_.hasRole(vault_.BUFFER_MANAGER_ROLE(), address(timelock)), true);
         assertEq(vault_.hasRole(vault_.PROCESSOR_MANAGER_ROLE(), address(timelock)), true);
         assertEq(vault_.hasRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), address(timelock)), true);
-        assertEq(IOwnable(ProxyUtils.getProxyAdmin(address(vault_))).owner(), address(timelock));
+        assertEq(Ownable(ProxyUtils.getProxyAdmin(address(vault_))).owner(), address(timelock));
 
         // verify actors roles
         assertEq(vault_.hasRole(vault_.DEFAULT_ADMIN_ROLE(), actors.ADMIN()), true);
