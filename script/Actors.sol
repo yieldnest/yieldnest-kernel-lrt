@@ -18,6 +18,8 @@ interface IActors {
     function ASSET_MANAGER() external view returns (address);
     /// @dev timelock
     function PROCESSOR_MANAGER() external view returns (address);
+    /// @dev processor
+    function PROCESSOR() external view returns (address);
     /// @dev multisig
     function PAUSER() external view returns (address);
     /// @dev multisig
@@ -44,6 +46,7 @@ contract LocalActors is IActors {
     address public constant BUFFER_MANAGER = address(5);
     address public constant ASSET_MANAGER = address(5);
     address public constant PROCESSOR_MANAGER = address(5);
+    address public constant PROCESSOR = address(5);
     address public constant PAUSER = address(5);
     address public constant UNPAUSER = address(5);
     address public constant KERNEL_DEPENDENCY_MANAGER = address(5);
@@ -65,6 +68,7 @@ contract AnvilActors is IActors {
     address public constant BUFFER_MANAGER = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
     address public constant ASSET_MANAGER = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
     address public constant PROCESSOR_MANAGER = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+    address public constant PROCESSOR = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
     address public constant PAUSER = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
     address public constant UNPAUSER = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
 
@@ -113,6 +117,7 @@ contract ChapelActors is IActors {
     address public constant BUFFER_MANAGER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
     address public constant ASSET_MANAGER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
     address public constant PROCESSOR_MANAGER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
+    address public constant PROCESSOR = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
     address public constant PAUSER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
     address public constant UNPAUSER = 0x72fdBD51085bDa5eEEd3b55D1a46E2e92f0837a5;
 
