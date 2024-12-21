@@ -3,9 +3,11 @@ pragma solidity ^0.8.24;
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
 
+import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {IValidator} from "lib/yieldnest-vault/src/interface/IVault.sol";
 import {BaseScript} from "script/BaseScript.sol";
+import {ProxyUtils} from "script/ProxyUtils.sol";
 
 import {Test} from "lib/forge-std/src/Test.sol";
 
@@ -20,10 +22,11 @@ abstract contract BaseVerifyScript is BaseScript, Test {
         assertEq(vault_.hasRole(vault_.BUFFER_MANAGER_ROLE(), address(timelock)), true);
         assertEq(vault_.hasRole(vault_.PROCESSOR_MANAGER_ROLE(), address(timelock)), true);
         assertEq(vault_.hasRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), address(timelock)), true);
+        assertEq(Ownable(ProxyUtils.getProxyAdmin(address(vault_))).owner(), address(timelock));
 
         // verify actors roles
         assertEq(vault_.hasRole(vault_.DEFAULT_ADMIN_ROLE(), actors.ADMIN()), true);
-        assertEq(vault_.hasRole(vault_.PROCESSOR_ROLE(), actors.ADMIN()), true);
+        assertEq(vault_.hasRole(vault_.PROCESSOR_ROLE(), actors.PROCESSOR()), true);
         assertEq(vault_.hasRole(vault_.PAUSER_ROLE(), actors.PAUSER()), true);
         assertEq(vault_.hasRole(vault_.UNPAUSER_ROLE(), actors.UNPAUSER()), true);
         assertEq(vault_.hasRole(vault_.DEPOSIT_MANAGER_ROLE(), actors.DEPOSIT_MANAGER()), true);
