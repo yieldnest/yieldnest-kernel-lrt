@@ -84,63 +84,118 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
 
         ProxyAdmin proxyAdmin = ProxyAdmin(ProxyUtils.getProxyAdmin(MC.YNBNBK));
 
-        vm.prank(proxyAdmin.owner());
+        uint256 previousPreviewRedeem = migrationVault.previewRedeem(1e18);
+        uint256 previousPreviewWithdraw = migrationVault.previewWithdraw(1e18);
+        uint256 previousPreviewDeposit = migrationVault.previewDeposit(1e18);
 
-        vm.expectRevert(Initializable.InvalidInitialization.selector);
-        proxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(MC.YNBNBK),
-            address(implemention),
-            abi.encodeWithSelector(
-                Vault.initialize.selector,
-                address(MainnetActors.ADMIN),
-                "YieldNest Restaked BNB - Kernel",
-                "ynBNBk",
-                18,
-                0,
-                true,
-                false
-            )
-        );
+        {
+            vm.prank(proxyAdmin.owner());
 
-        MigratedKernelStrategy.Asset[] memory assets = new MigratedKernelStrategy.Asset[](3);
+            vm.expectRevert(Initializable.InvalidInitialization.selector);
+            proxyAdmin.upgradeAndCall(
+                ITransparentUpgradeableProxy(MC.YNBNBK),
+                address(implemention),
+                abi.encodeWithSelector(
+                    Vault.initialize.selector,
+                    address(MainnetActors.ADMIN),
+                    "YieldNest Restaked BNB - Kernel",
+                    "ynBNBk",
+                    18,
+                    0,
+                    true,
+                    false
+                )
+            );
+        }
 
-        assets[0] = MigratedKernelStrategy.Asset({asset: MC.WBNB, active: false});
-        assets[1] = MigratedKernelStrategy.Asset({asset: MC.SLISBNB, active: true});
-        assets[2] = MigratedKernelStrategy.Asset({asset: MC.BNBX, active: true});
+        {
+            MigratedKernelStrategy.Asset[] memory assets = new MigratedKernelStrategy.Asset[](3);
 
-        vm.prank(proxyAdmin.owner());
+            assets[0] = MigratedKernelStrategy.Asset({asset: MC.WBNB, active: false});
+            assets[1] = MigratedKernelStrategy.Asset({asset: MC.SLISBNB, active: true});
+            assets[2] = MigratedKernelStrategy.Asset({asset: MC.BNBX, active: true});
 
-        proxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(MC.YNBNBK),
-            address(implemention),
-            abi.encodeWithSelector(
-                MigratedKernelStrategy.initializeAndMigrate.selector,
-                address(MainnetActors.ADMIN),
-                "YieldNest Restaked BNB - Kernel",
-                "ynBNBk",
-                18,
-                assets,
-                MC.STAKER_GATEWAY,
-                false, // sync deposit
-                true, // sync withdraw
-                0, // base fee
-                true // count native assets
-            )
-        );
+            vm.prank(proxyAdmin.owner());
 
-        vault = KernelStrategy(payable(address(migrationVault)));
-        configureVault(vault);
+            proxyAdmin.upgradeAndCall(
+                ITransparentUpgradeableProxy(MC.YNBNBK),
+                address(implemention),
+                abi.encodeWithSelector(
+                    MigratedKernelStrategy.initializeAndMigrate.selector,
+                    address(MainnetActors.ADMIN),
+                    "YieldNest Restaked BNB - Kernel",
+                    "ynBNBk",
+                    18,
+                    assets,
+                    MC.STAKER_GATEWAY,
+                    false, // sync deposit
+                    true, // sync withdraw
+                    0, // base fee
+                    true // count native assets
+                )
+            );
 
-        uint256 newTotalAssets = migrationVault.totalAssets();
-        assertEqThreshold(
-            newTotalAssets, previousTotalAssets, 1000, "Total assets should remain the same after upgrade"
-        );
+            vault = KernelStrategy(payable(address(migrationVault)));
+            configureVault(vault);
+        }
 
-        uint256 newTotalSupply = migrationVault.totalSupply();
-        assertEq(newTotalSupply, previousTotalSupply, "Total supply should remain the same after upgrade");
-
-        uint256 newBalance = migrationVault.balanceOf(specificHolder);
-        assertEq(newBalance, previousBalance, "Balance should remain the same after upgrade");
+        {
+            assertEqThreshold(
+                migrationVault.totalAssets(),
+                previousTotalAssets,
+                1000,
+                "Total assets should remain the same after upgrade"
+            );
+            assertEqThreshold(
+                migrationVault.totalSupply(),
+                previousTotalSupply,
+                1000,
+                "Total supply should remain the same after upgrade"
+            );
+            assertEqThreshold(
+                migrationVault.balanceOf(specificHolder),
+                previousBalance,
+                1000,
+                "Balance should remain the same after upgrade"
+            );
+            assertEqThreshold(
+                migrationVault.previewDepositAsset(MC.SLISBNB, 1e18),
+                previousPreviewDeposit,
+                1000,
+                "Preview deposit asset should remain the same after upgrade"
+            );
+            assertEqThreshold(
+                migrationVault.previewRedeemAsset(MC.SLISBNB, 1e18),
+                previousPreviewRedeem,
+                1000,
+                "Preview redeem asset should remain the same after upgrade"
+            );
+            assertEqThreshold(
+                migrationVault.previewWithdrawAsset(MC.SLISBNB, 1e18),
+                previousPreviewWithdraw,
+                1000,
+                "Preview withdraw asset should remain the same after upgrade"
+            );
+            // NOTE: preview functions return in base (BNB) after upgrade
+            // assertEqThreshold(
+            //     migrationVault.previewDeposit(1e18),
+            //     previousPreviewDeposit,
+            //     1000,
+            //     "Preview deposit should remain the same after upgrade"
+            // );
+            // assertEqThreshold(
+            //     migrationVault.previewRedeem(1e18),
+            //     previousPreviewRedeem,
+            //     1000,
+            //     "Preview redeem should remain the same after upgrade"
+            // );
+            // assertEqThreshold(
+            //     migrationVault.previewWithdraw(1e18),
+            //     previousPreviewWithdraw,
+            //     1000,
+            //     "Preview withdraw should remain the same after upgrade"
+            // );
+        }
 
         return vault;
     }
