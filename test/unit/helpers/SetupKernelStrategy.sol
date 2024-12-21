@@ -110,11 +110,6 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
         vault.addAsset(address(btc), true);
 
         // by default, we don't set any rules
-        // set deposit rules
-        // setDepositRule(MC.WBNB, address(vault));
-
-        // set approval rules
-        // setApprovalRule(address(vault), address(mockGateway));
 
         vault.unpause();
 

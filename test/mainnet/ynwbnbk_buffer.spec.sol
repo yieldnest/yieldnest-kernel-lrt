@@ -6,9 +6,9 @@ import {Test} from "lib/forge-std/src/Test.sol";
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
+import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
-import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 import {MainnetActors} from "script/Actors.sol";
 import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 
