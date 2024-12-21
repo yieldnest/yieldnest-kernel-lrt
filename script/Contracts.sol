@@ -1,30 +1,171 @@
+/* solhint-disable one-contract-per-file */
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-library MainnetContracts {
-    address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    address public constant YNETHX = 0x657d9ABA1DBb59e53f9F3eCAA878447dCfC96dCb;
-    address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
-    address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
-    address public constant METH = 0xd5F7838F5C461fefF7FE49ea5ebaF7728bB0ADfa;
-    address public constant OETH = 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3;
-    address public constant RETH = 0xae78736Cd615f374D3085123A210448E74Fc6393;
-    address public constant YNETH = 0x09db87A538BD693E9d08544577d5cCfAA6373A48;
-    address public constant YNLSDE = 0x35Ec69A77B79c255e5d47D5A3BdbEFEfE342630c;
+interface IContracts {
+    function WBNB() external view returns (address);
+    function SLISBNB() external view returns (address);
+    function BNBX() external view returns (address);
 
-    address public constant CL_STETH_FEED = 0x86392dC19c0b719886221c78AB11eb8Cf5c52812;
-    address public constant TIMELOCK = 0xb5b52c63067E490982874B0d0F559668Bbe0c36B;
-    address public constant FACTORY = 0x1756987c66eC529be59D3Ec1edFB005a2F9728E1;
-    address public constant PROXY_ADMIN = 0xA02A8DC24171aC161cCb74Ef02C28e3cA2204783;
+    function YNBNBK() external view returns (address);
+
+    function YNBNBX() external view returns (address);
+    function YNBTCX() external view returns (address);
+
+    function STAKER_GATEWAY() external view returns (address);
+    function CLISBNB() external view returns (address);
+    function BTCB() external view returns (address);
+    function SOLVBTC() external view returns (address);
+    function SOLVBTC_BBN() external view returns (address);
+}
+
+library MainnetContracts {
+    // tokens
+    address public constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    address public constant SLISBNB = 0xB0b84D294e0C75A6abe60171b70edEb2EFd14A1B;
+    address public constant BNBX = 0x1bdd3Cf7F79cfB8EdbB955f20ad99211551BA275;
+    address public constant CLISBNB = 0x4b30fcAA7945fE9fDEFD2895aae539ba102Ed6F6;
+
+    // btc tokens
+    address public constant BTCB = 0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c;
+    address public constant SOLVBTC = 0x4aae823a6a0b376De6A78e74eCC5b079d38cBCf7;
+    address public constant SOLVBTC_BBN = 0x1346b618dC92810EC74163e4c27004c921D446a5;
+
+    // stake managers
+    address public constant BNBX_STAKE_MANAGER = 0x3b961e83400D51e6E1AF5c450d3C7d7b80588d28;
+    address public constant SLIS_BNB_STAKE_MANAGER = 0x1adB950d8bB3dA4bE104211D5AB038628e477fE6;
+
+    // bnb vault
+    address public constant YNBNBK = 0x304B5845b9114182ECb4495Be4C91a273b74B509;
+
+    // kernel
+    address public constant STAKER_GATEWAY = 0xb32dF5B33dBCCA60437EC17b27842c12bFE83394;
+    address public constant KERNEL_CONFIG = 0x45d7Bb73253A908E6160aa5FD9DA083F7Bc6faf5;
+    address public constant KERNEL_CONFIG_ADMIN = 0x40f5f0f5E78289B33E450fBCA1cbD8700098cd23;
+    address public constant ASSET_REGISTRY = 0xd0B91Fc0a323bbb726faAF8867CdB1cA98c44ABB;
 
     address public constant PROVIDER = address(123456789); // TODO: Update with deployed Provider
     address public constant BUFFER = address(987654321); // TODO: Update with deployed buffer
+}
 
-    address public constant YNLSDE_WM = 0x8Face3283E20b19d98a7a132274B69C1304D60b4;
-    address public constant YNETH_WM = 0x0BC9BC81aD379810B36AD5cC95387112990AA67b;
+library TestnetContracts {
+    // tokens
+    address public constant WBNB = 0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd;
+    address public constant SLISBNB = 0xCc752dC4ae72386986d011c2B485be0DAd98C744;
+    address public constant BNBX = 0x6cd3f51A92d022030d6e75760200c051caA7152A;
+    address public constant CLISBNB = address(0);
 
-    address public constant CURVE_REGISTRY = 0x7D86446dDb609eD0F5f8684AcF30380a356b2B4c;
+    // btc tokens
+    address public constant BTCB = 0x6ce8dA28E2f864420840cF74474eFf5fD80E65B8;
+    address public constant SOLVBTC = 0x1cF0e51005971c5B78b4A8feE419832CFCCD8cf9;
+    address public constant SOLVBTC_BBN = 0xB4618618b6Fcb61b72feD991AdcC344f43EE57Ad;
 
-    address public constant CURVE_TWOCRYPTO_FACTORY = 0x98EE851a00abeE0d95D08cF4CA2BdCE32aeaAF7F;
+    // stake managers
+    address public constant BNBX_STAKE_MANAGER = address(0);
+    address public constant SLIS_BNB_STAKE_MANAGER = address(0);
+
+    // bnb vault
+    address public constant YNBNBK = 0x7e87787C22117374Fad2E3E2E8C6159f0875F92e;
+
+    address public constant STAKER_GATEWAY = 0x1A42ff0BA795F6d63A7F0060809F85A794E9f1Ae;
+    address public constant KERNEL_CONFIG = 0x4847C1E3683295f6ACa2e4f17Fe35d9Cd35b3FcB;
+    address public constant KERNEL_CONFIG_ADMIN = 0xea69CCFe55Be6e68Af1164B8da2E23cF5f62808c;
+    address public constant ASSET_REGISTRY = 0xb63809662374ce93FC05d18Bd60c17d3eF184203;
+
+    address public constant PROVIDER = address(123456789);
+    address public constant BUFFER = address(987654321);
+}
+
+contract ChapelContracts is IContracts {
+    function WBNB() external pure override returns (address) {
+        return TestnetContracts.WBNB;
+    }
+
+    function SLISBNB() external pure override returns (address) {
+        return TestnetContracts.SLISBNB;
+    }
+
+    function BNBX() external pure override returns (address) {
+        return TestnetContracts.BNBX;
+    }
+
+    function YNBNBK() external pure override returns (address) {
+        return TestnetContracts.YNBNBK;
+    }
+
+    // TODO: Update with deployed YNBNBX
+    function YNBNBX() external pure override returns (address) {
+        return address(0);
+    }
+
+    function YNBTCX() external pure override returns (address) {
+        return address(0);
+    }
+
+    function STAKER_GATEWAY() external pure override returns (address) {
+        return TestnetContracts.STAKER_GATEWAY;
+    }
+
+    function CLISBNB() external pure override returns (address) {
+        return TestnetContracts.CLISBNB;
+    }
+
+    function BTCB() external pure override returns (address) {
+        return TestnetContracts.BTCB;
+    }
+
+    function SOLVBTC() external pure override returns (address) {
+        return TestnetContracts.SOLVBTC;
+    }
+
+    function SOLVBTC_BBN() external pure override returns (address) {
+        return TestnetContracts.SOLVBTC_BBN;
+    }
+}
+
+contract BscContracts is IContracts {
+    function WBNB() external pure override returns (address) {
+        return MainnetContracts.WBNB;
+    }
+
+    function SLISBNB() external pure override returns (address) {
+        return MainnetContracts.SLISBNB;
+    }
+
+    function BNBX() external pure override returns (address) {
+        return MainnetContracts.BNBX;
+    }
+
+    function YNBTCX() external pure override returns (address) {
+        return address(0);
+    }
+
+    function YNBNBK() external pure override returns (address) {
+        return MainnetContracts.YNBNBK;
+    }
+
+    // TODO: Update with deployed YNBNBX
+    function YNBNBX() external pure override returns (address) {
+        return address(0);
+    }
+
+    function STAKER_GATEWAY() external pure override returns (address) {
+        return MainnetContracts.STAKER_GATEWAY;
+    }
+
+    function CLISBNB() external pure override returns (address) {
+        return MainnetContracts.CLISBNB;
+    }
+
+    function BTCB() external pure override returns (address) {
+        return MainnetContracts.BTCB;
+    }
+
+    function SOLVBTC() external pure override returns (address) {
+        return MainnetContracts.SOLVBTC;
+    }
+
+    function SOLVBTC_BBN() external pure override returns (address) {
+        return MainnetContracts.SOLVBTC_BBN;
+    }
 }
