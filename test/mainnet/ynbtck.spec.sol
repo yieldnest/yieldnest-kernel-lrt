@@ -7,8 +7,9 @@ import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {IERC20} from "lib/yieldnest-vault/src/Common.sol";
-import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
+
 import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
+import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
 
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 

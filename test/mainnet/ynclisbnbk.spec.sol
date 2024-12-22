@@ -13,7 +13,7 @@ import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 
 import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
-import {KernelClisStrategy, KernelStrategy} from "src/KernelClisStrategy.sol";
+import {KernelClisStrategy} from "src/KernelClisStrategy.sol";
 
 import {IAccessControl} from
     "lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
