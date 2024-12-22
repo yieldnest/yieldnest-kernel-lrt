@@ -11,24 +11,25 @@ import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 
-import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
+import {BscActors} from "script/KernelActors.sol";
 import {KernelClisStrategy} from "src/KernelClisStrategy.sol";
 
 import {IAccessControl} from
     "lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
-import {VaultUtils} from "script/VaultUtils.sol";
+import {VaultUtils} from "lib/yieldnest-vault/script/VaultUtils.sol";
 import {IWBNB} from "src/interface/external/IWBNB.sol";
 import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 
+import {VaultKernelUtils} from "script/VaultKernelUtils.sol";
 import {KernelClisVaultViewer} from "src/utils/KernelClisVaultViewer.sol";
 import {BaseVaultViewer} from "src/utils/KernelVaultViewer.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
-contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
+contract YnClisBNBkTest is Test, AssertUtils, BscActors, EtchUtils, VaultUtils, VaultKernelUtils {
     KernelClisStrategy public vault;
     BNBRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
@@ -76,7 +77,7 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         KernelClisStrategy implementation = new KernelClisStrategy();
         bytes memory initData = abi.encodeWithSelector(
             Vault.initialize.selector,
-            MainnetActors.ADMIN,
+            BscActors.ADMIN,
             "YieldNest Restaked slisBNB - Kernel",
             "ynclisWBNBk",
             18,
@@ -86,7 +87,7 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         );
 
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(implementation), address(MainnetActors.ADMIN), initData);
+            new TransparentUpgradeableProxy(address(implementation), address(BscActors.ADMIN), initData);
 
         _vault = KernelClisStrategy(payable(address(proxy)));
 

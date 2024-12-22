@@ -10,8 +10,9 @@ import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 import {MockSTETH} from "lib/yieldnest-vault/test/unit/mocks/MockST_ETH.sol";
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
-import {MainnetActors} from "script/Actors.sol";
+
 import {MainnetContracts as MC} from "script/Contracts.sol";
+import {BscActors} from "script/KernelActors.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 
@@ -19,11 +20,12 @@ import {MockERC20LowDecimals} from "../mocks/MockERC20LowDecimals.sol";
 import {MockStakerGateway} from "../mocks/MockStakerGateway.sol";
 import {MockRateProvider} from "test/unit/mocks/MockRateProvider.sol";
 
-import {VaultUtils} from "script/VaultUtils.sol";
+import {VaultUtils} from "lib/yieldnest-vault/script/VaultUtils.sol";
+import {VaultKernelUtils} from "script/VaultKernelUtils.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {EtchUtils} from "test/unit/helpers/EtchUtils.sol";
 
-contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
+contract SetupKernelStrategy is Test, AssertUtils, BscActors, EtchUtils, VaultKernelUtils, VaultUtils {
     KernelStrategy public vault;
     BNBRateProvider public provider;
 
@@ -46,7 +48,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
         );
 
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(implementation), address(MainnetActors.ADMIN), initData);
+            new TransparentUpgradeableProxy(address(implementation), address(BscActors.ADMIN), initData);
 
         vault = KernelStrategy(payable(address(proxy)));
 

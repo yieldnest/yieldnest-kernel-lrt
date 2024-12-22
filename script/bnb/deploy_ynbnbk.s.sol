@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
+import {IProvider, Vault} from "lib/yieldnest-vault/script/BaseScript.sol";
 
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {IValidator} from "lib/yieldnest-vault/src/interface/IVault.sol";
-import {ProxyUtils} from "script/ProxyUtils.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {MigratedKernelStrategy} from "src/MigratedKernelStrategy.sol";
@@ -21,7 +20,7 @@ import {
     ProxyAdmin
 } from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {BaseScript} from "script/BaseScript.sol";
+import {BaseKernelScript} from "script/BaseKernelScript.sol";
 import {BatchScript, Operation, Transaction} from "script/BatchScript.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
@@ -29,7 +28,7 @@ import {console} from "lib/forge-std/src/console.sol";
 
 // FOUNDRY_PROFILE=mainnet forge script DeployYnBNBkStrategy --sig "run(bool)" <true/false> --sender
 // 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
-contract DeployYnBNBkStrategy is BaseScript, BatchScript {
+contract DeployYnBNBkStrategy is BaseKernelScript, BatchScript {
     address public vaultAddress;
     ProxyAdmin public proxyAdmin;
 
@@ -44,11 +43,11 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
 
     function deployRateProvider() internal {
         if (block.chainid == 97) {
-            rateProvider = IProvider(new TestnetBNBRateProvider());
+            rateProvider = IProvider(address(new TestnetBNBRateProvider()));
         }
 
         if (block.chainid == 56) {
-            rateProvider = IProvider(new BNBRateProvider());
+            rateProvider = IProvider(address(new BNBRateProvider()));
         }
     }
 
@@ -69,7 +68,7 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
         }
 
         vaultAddress = contracts.YNBNBK();
-        proxyAdmin = ProxyAdmin(ProxyUtils.getProxyAdmin(vaultAddress));
+        proxyAdmin = ProxyAdmin(getProxyAdmin(vaultAddress));
         timelock = TimelockController(payable(proxyAdmin.owner()));
 
         if (address(timelock).code.length == 0) {
@@ -90,7 +89,7 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
     }
 
     function deployMigrateVault(bool isSafeTx) internal {
-        implementation = KernelStrategy(payable(address(new MigratedKernelStrategy())));
+        implementation = Vault(payable(address(new MigratedKernelStrategy())));
 
         MigratedKernelStrategy.Asset[] memory assets = new MigratedKernelStrategy.Asset[](3);
 
@@ -98,36 +97,50 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
         assets[1] = MigratedKernelStrategy.Asset({asset: contracts.SLISBNB(), active: true});
         assets[2] = MigratedKernelStrategy.Asset({asset: contracts.BNBX(), active: true});
 
-        bytes memory initData = abi.encodeWithSelector(
-            MigratedKernelStrategy.initializeAndMigrate.selector,
-            actors.ADMIN(),
-            "YieldNest Restaked BNB - Kernel",
-            symbol(),
-            18,
-            assets,
-            contracts.STAKER_GATEWAY(),
-            false,
-            true,
-            0,
-            true
-        );
-
         if (isSafeTx) {
+            bytes memory initData = abi.encodeWithSelector(
+                MigratedKernelStrategy.initializeAndMigrate.selector,
+                actors_.ADMIN(),
+                "YieldNest Restaked BNB - Kernel",
+                symbol(),
+                18,
+                assets,
+                contracts.STAKER_GATEWAY(),
+                false,
+                true,
+                0,
+                true
+            );
+
             deployMigrateVaultAsSafe(initData);
         } else {
+            bytes memory initData = abi.encodeWithSelector(
+                MigratedKernelStrategy.initializeAndMigrate.selector,
+                msg.sender,
+                "YieldNest Restaked BNB - Kernel",
+                symbol(),
+                18,
+                assets,
+                contracts.STAKER_GATEWAY(),
+                false,
+                true,
+                0,
+                true
+            );
+
             deployMigrateVaultAsEOA(initData);
         }
     }
 
-    function deployMigrateVaultAsSafe(bytes memory initData) internal isBatch(actors.ADMIN()) {
-        vault = KernelStrategy(payable(address(vaultAddress)));
+    function deployMigrateVaultAsSafe(bytes memory initData) internal isBatch(actors_.ADMIN()) {
+        vault = Vault(payable(address(vaultAddress)));
         // create upgrade call transaction
         bytes memory upgradeData = abi.encodeWithSelector(
             proxyAdmin.upgradeAndCall.selector,
             abi.encode(ITransparentUpgradeableProxy(vaultAddress), implementation, initData)
         );
 
-        bool hasProcessorRole = timelock.hasRole(timelock.PROPOSER_ROLE(), actors.ADMIN());
+        bool hasProcessorRole = timelock.hasRole(timelock.PROPOSER_ROLE(), actors_.ADMIN());
         if (!hasProcessorRole) {
             revert InvalidSender();
         }
@@ -167,32 +180,33 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
     function deployMigrateVaultAsEOA(bytes memory initData) internal {
         proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(vaultAddress), address(implementation), initData);
 
-        vault = KernelStrategy(payable(address(vaultAddress)));
+        vault = Vault(payable(address(vaultAddress)));
+
         configureVaultAsEOA();
     }
 
     function configureVaultAsEOA() internal {
-        _configureDefaultRoles(vault);
-        _configureTemporaryRoles(vault);
+        _configureDefaultRoles();
+        _configureTemporaryRoles();
 
         // set provider
-        vault.setProvider(address(rateProvider));
+        vault_.setProvider(address(rateProvider));
 
         IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
 
-        vault.addAssetWithDecimals(stakerGateway.getVault(contracts.WBNB()), 18, false);
-        vault.addAssetWithDecimals(stakerGateway.getVault(contracts.SLISBNB()), 18, false);
-        vault.addAssetWithDecimals(stakerGateway.getVault(contracts.BNBX()), 18, false);
+        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.WBNB()), 18, false);
+        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.SLISBNB()), 18, false);
+        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.BNBX()), 18, false);
 
-        setApprovalRule(vault, contracts.SLISBNB(), contracts.STAKER_GATEWAY());
-        setStakingRule(vault, contracts.STAKER_GATEWAY(), contracts.SLISBNB());
-        setUnstakingRule(vault, contracts.STAKER_GATEWAY(), contracts.SLISBNB());
+        setApprovalRule(vault_, contracts.SLISBNB(), contracts.STAKER_GATEWAY());
+        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.SLISBNB());
+        setUnstakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.SLISBNB());
 
-        vault.unpause();
+        vault_.unpause();
 
-        vault.processAccounting();
+        vault_.processAccounting();
 
-        _renounceTemporaryRoles(vault);
+        _renounceTemporaryRoles();
     }
 
     function configureVaultAsSafe() internal {
@@ -201,35 +215,37 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
             address(vault),
             0,
             abi.encodeWithSelector(
-                AccessControlUpgradeable.grantRole.selector, keccak256("DEFAULT_ADMIN_ROLE"), actors.ADMIN()
+                AccessControlUpgradeable.grantRole.selector, keccak256("DEFAULT_ADMIN_ROLE"), actors_.ADMIN()
             )
         );
         addToBatch(
             address(vault),
             0,
             abi.encodeWithSelector(
-                AccessControlUpgradeable.grantRole.selector, keccak256("PROCESSOR_ROLE"), actors.ADMIN()
+                AccessControlUpgradeable.grantRole.selector, keccak256("PROCESSOR_ROLE"), actors_.ADMIN()
             )
         );
         addToBatch(
             address(vault),
             0,
             abi.encodeWithSelector(
-                AccessControlUpgradeable.grantRole.selector, keccak256("PAUSER_ROLE"), actors.PAUSER()
+                AccessControlUpgradeable.grantRole.selector, keccak256("PAUSER_ROLE"), actors_.PAUSER()
             )
         );
         addToBatch(
             address(vault),
             0,
             abi.encodeWithSelector(
-                AccessControlUpgradeable.grantRole.selector, keccak256("UNPAUSER_ROLE"), actors.UNPAUSER()
+                AccessControlUpgradeable.grantRole.selector, keccak256("UNPAUSER_ROLE"), actors_.UNPAUSER()
             )
         );
         addToBatch(
             address(vault),
             0,
             abi.encodeWithSelector(
-                AccessControlUpgradeable.grantRole.selector, keccak256("DEPOSIT_MANAGER_ROLE"), actors.DEPOSIT_MANAGER()
+                AccessControlUpgradeable.grantRole.selector,
+                keccak256("DEPOSIT_MANAGER_ROLE"),
+                actors_.DEPOSIT_MANAGER()
             )
         );
         addToBatch(
@@ -238,11 +254,18 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
             abi.encodeWithSelector(
                 AccessControlUpgradeable.grantRole.selector,
                 keccak256("ALLOCATOR_MANAGER_ROLE"),
-                actors.ALLOCATOR_MANAGER()
+                actors_.ALLOCATOR_MANAGER()
             )
         );
 
         // set timelock roles
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(
+                AccessControlUpgradeable.grantRole.selector, keccak256("FEE_MANAGER_ROLE"), address(timelock)
+            )
+        );
         addToBatch(
             address(vault),
             0,
@@ -286,7 +309,7 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
             address(vault),
             0,
             abi.encodeWithSelector(
-                AccessControlUpgradeable.grantRole.selector, keccak256("PROVIDER_MANAGER_ROLE"), actors.ADMIN()
+                AccessControlUpgradeable.grantRole.selector, keccak256("PROVIDER_MANAGER_ROLE"), actors_.ADMIN()
             )
         );
         addToBatch(address(vault), 0, abi.encodeWithSelector(IVault.setProvider.selector, address(rateProvider)));
@@ -294,7 +317,7 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
             address(vault),
             0,
             abi.encodeWithSelector(
-                AccessControlUpgradeable.renounceRole.selector, keccak256("PROVIDER_MANAGER_ROLE"), actors.ADMIN()
+                AccessControlUpgradeable.renounceRole.selector, keccak256("PROVIDER_MANAGER_ROLE"), actors_.ADMIN()
             )
         );
 
@@ -305,7 +328,7 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
             address(vault),
             0,
             abi.encodeWithSelector(
-                AccessControlUpgradeable.grantRole.selector, keccak256("ASSET_MANAGER_ROLE"), actors.ADMIN()
+                AccessControlUpgradeable.grantRole.selector, keccak256("ASSET_MANAGER_ROLE"), actors_.ADMIN()
             )
         );
         addToBatch(
@@ -333,7 +356,7 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
             address(vault),
             0,
             abi.encodeWithSelector(
-                AccessControlUpgradeable.renounceRole.selector, keccak256("ASSET_MANAGER_ROLE"), actors.ADMIN()
+                AccessControlUpgradeable.renounceRole.selector, keccak256("ASSET_MANAGER_ROLE"), actors_.ADMIN()
             )
         );
 
@@ -341,7 +364,7 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
             address(vault),
             0,
             abi.encodeWithSelector(
-                AccessControlUpgradeable.grantRole.selector, keccak256("PROCESSOR_MANAGER_ROLE"), actors.ADMIN()
+                AccessControlUpgradeable.grantRole.selector, keccak256("PROCESSOR_MANAGER_ROLE"), actors_.ADMIN()
             )
         );
         // create approval rule
@@ -423,7 +446,7 @@ contract DeployYnBNBkStrategy is BaseScript, BatchScript {
             address(vault),
             0,
             abi.encodeWithSelector(
-                AccessControlUpgradeable.renounceRole.selector, keccak256("PROCESSOR_MANAGER_ROLE"), actors.ADMIN()
+                AccessControlUpgradeable.renounceRole.selector, keccak256("PROCESSOR_MANAGER_ROLE"), actors_.ADMIN()
             )
         );
 

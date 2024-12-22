@@ -8,7 +8,7 @@ import {
     ITransparentUpgradeableProxy,
     TransparentUpgradeableProxy
 } from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyUtils} from "script/ProxyUtils.sol";
+import {ProxyUtils} from "lib/yieldnest-vault/script/ProxyUtils.sol";
 
 import {IERC20, ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
 import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
@@ -16,20 +16,22 @@ import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 import {ISlisBnbStakeManager} from "lib/yieldnest-vault/src/interface/external/lista/ISlisBnbStakeManager.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 
-import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
+import {BscActors} from "script/KernelActors.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {MigratedKernelStrategy} from "src/MigratedKernelStrategy.sol";
 import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 
-import {VaultUtils} from "script/VaultUtils.sol";
+import {VaultUtils} from "lib/yieldnest-vault/script/VaultUtils.sol";
+
+import {VaultKernelUtils} from "script/VaultKernelUtils.sol";
 import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
-contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
+contract YnBNBkTest is Test, AssertUtils, BscActors, EtchUtils, VaultUtils, VaultKernelUtils, ProxyUtils {
     KernelStrategy public vault;
     BNBRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
@@ -82,7 +84,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
 
         MigratedKernelStrategy implemention = new MigratedKernelStrategy();
 
-        ProxyAdmin proxyAdmin = ProxyAdmin(ProxyUtils.getProxyAdmin(MC.YNBNBK));
+        ProxyAdmin proxyAdmin = ProxyAdmin(getProxyAdmin(MC.YNBNBK));
 
         uint256 previousPreviewRedeem = migrationVault.previewRedeem(1e18);
         uint256 previousPreviewWithdraw = migrationVault.previewWithdraw(1e18);
@@ -97,7 +99,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
                 address(implemention),
                 abi.encodeWithSelector(
                     Vault.initialize.selector,
-                    address(MainnetActors.ADMIN),
+                    address(BscActors.ADMIN),
                     "YieldNest Restaked BNB - Kernel",
                     "ynBNBk",
                     18,
@@ -122,7 +124,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
                 address(implemention),
                 abi.encodeWithSelector(
                     MigratedKernelStrategy.initializeAndMigrate.selector,
-                    address(MainnetActors.ADMIN),
+                    address(BscActors.ADMIN),
                     "YieldNest Restaked BNB - Kernel",
                     "ynBNBk",
                     18,

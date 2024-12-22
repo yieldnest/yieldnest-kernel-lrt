@@ -6,34 +6,33 @@ import {KernelStrategy} from "src/KernelStrategy.sol";
 import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {IValidator} from "lib/yieldnest-vault/src/interface/IVault.sol";
-import {BaseScript} from "script/BaseScript.sol";
-import {ProxyUtils} from "script/ProxyUtils.sol";
+import {BaseKernelScript} from "script/BaseKernelScript.sol";
 
 import {Test} from "lib/forge-std/src/Test.sol";
 
 import {BaseVaultViewer} from "lib/yieldnest-vault/src/utils/BaseVaultViewer.sol";
 
 // FOUNDRY_PROFILE=mainnet forge script VerifyYnBTCkStrategy
-abstract contract BaseVerifyScript is BaseScript, Test {
-    function _verifyDefaultRoles(KernelStrategy vault_) internal view {
+abstract contract BaseVerifyScript is BaseKernelScript, Test {
+    function _verifyDefaultRoles() internal view {
         // verify timelock roles
         assertEq(vault_.hasRole(vault_.PROVIDER_MANAGER_ROLE(), address(timelock)), true);
         assertEq(vault_.hasRole(vault_.ASSET_MANAGER_ROLE(), address(timelock)), true);
         assertEq(vault_.hasRole(vault_.BUFFER_MANAGER_ROLE(), address(timelock)), true);
         assertEq(vault_.hasRole(vault_.PROCESSOR_MANAGER_ROLE(), address(timelock)), true);
         assertEq(vault_.hasRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), address(timelock)), true);
-        assertEq(Ownable(ProxyUtils.getProxyAdmin(address(vault_))).owner(), address(timelock));
+        assertEq(Ownable(getProxyAdmin(address(vault_))).owner(), address(timelock));
 
-        // verify actors roles
-        assertEq(vault_.hasRole(vault_.DEFAULT_ADMIN_ROLE(), actors.ADMIN()), true);
-        assertEq(vault_.hasRole(vault_.PROCESSOR_ROLE(), actors.PROCESSOR()), true);
-        assertEq(vault_.hasRole(vault_.PAUSER_ROLE(), actors.PAUSER()), true);
-        assertEq(vault_.hasRole(vault_.UNPAUSER_ROLE(), actors.UNPAUSER()), true);
-        assertEq(vault_.hasRole(vault_.DEPOSIT_MANAGER_ROLE(), actors.DEPOSIT_MANAGER()), true);
-        assertEq(vault_.hasRole(vault_.ALLOCATOR_MANAGER_ROLE(), actors.ALLOCATOR_MANAGER()), true);
+        // verify actors_ roles
+        assertEq(vault_.hasRole(vault_.DEFAULT_ADMIN_ROLE(), actors_.ADMIN()), true);
+        assertEq(vault_.hasRole(vault_.PROCESSOR_ROLE(), actors_.PROCESSOR()), true);
+        assertEq(vault_.hasRole(vault_.PAUSER_ROLE(), actors_.PAUSER()), true);
+        assertEq(vault_.hasRole(vault_.UNPAUSER_ROLE(), actors_.UNPAUSER()), true);
+        assertEq(vault_.hasRole(vault_.DEPOSIT_MANAGER_ROLE(), actors_.DEPOSIT_MANAGER()), true);
+        assertEq(vault_.hasRole(vault_.ALLOCATOR_MANAGER_ROLE(), actors_.ALLOCATOR_MANAGER()), true);
     }
 
-    function _verifyTemporaryRoles(KernelStrategy vault_) internal view {
+    function _verifyTemporaryRoles() internal view {
         assertEq(vault_.hasRole(vault_.PROVIDER_MANAGER_ROLE(), deployer), false);
         assertEq(vault_.hasRole(vault_.ASSET_MANAGER_ROLE(), deployer), false);
         assertEq(vault_.hasRole(vault_.BUFFER_MANAGER_ROLE(), deployer), false);

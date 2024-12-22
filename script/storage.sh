@@ -5,6 +5,9 @@ echo "ERC20:"
 echo "strategy:"
 cast keccak "yieldnest.storage.strategy"
 
+echo "viewer:"
+cast keccak "yieldnest.storage.viewer"
+
 echo "vault:"
 cast keccak "yieldnest.storage.vault"
 

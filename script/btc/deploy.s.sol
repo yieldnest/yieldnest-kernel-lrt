@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
-import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
+import {IProvider, Vault} from "lib/yieldnest-vault/script/BaseScript.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
@@ -12,22 +11,22 @@ import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {FeeMath} from "lib/yieldnest-vault/src/module/FeeMath.sol";
-import {BaseScript} from "script/BaseScript.sol";
+import {BaseKernelScript} from "script/BaseKernelScript.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 // FOUNDRY_PROFILE=mainnet forge script DeployYnBTCkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
-contract DeployYnBTCkStrategy is BaseScript {
+contract DeployYnBTCkStrategy is BaseKernelScript {
     function symbol() public pure override returns (string memory) {
         return "ynBTCk";
     }
 
     function deployRateProvider() internal {
         if (block.chainid == 97) {
-            rateProvider = IProvider(new TestnetBTCRateProvider());
+            rateProvider = IProvider(address(new TestnetBTCRateProvider()));
         }
 
         if (block.chainid == 56) {
-            rateProvider = IProvider(new BTCRateProvider());
+            rateProvider = IProvider(address(new BTCRateProvider()));
         }
     }
 
@@ -50,7 +49,7 @@ contract DeployYnBTCkStrategy is BaseScript {
     }
 
     function deploy() internal {
-        implementation = new KernelStrategy();
+        implementation = Vault(payable(address(new KernelStrategy())));
 
         address admin = msg.sender;
         string memory name = "YieldNest Restaked BTC - Kernel";
@@ -74,14 +73,14 @@ contract DeployYnBTCkStrategy is BaseScript {
         TransparentUpgradeableProxy proxy =
             new TransparentUpgradeableProxy(address(implementation), address(timelock), initData);
 
-        vault = KernelStrategy(payable(address(proxy)));
+        vault = Vault(payable(address(proxy)));
 
-        configureVault(vault);
+        configureVault();
     }
 
-    function configureVault(KernelStrategy vault_) internal {
-        _configureDefaultRoles(vault_);
-        _configureTemporaryRoles(vault_);
+    function configureVault() internal {
+        _configureDefaultRoles();
+        _configureTemporaryRoles();
 
         // set provider
         vault_.setStakerGateway(contracts.STAKER_GATEWAY());
@@ -113,6 +112,6 @@ contract DeployYnBTCkStrategy is BaseScript {
 
         vault_.processAccounting();
 
-        _renounceTemporaryRoles(vault_);
+        _renounceTemporaryRoles();
     }
 }

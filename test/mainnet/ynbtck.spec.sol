@@ -13,19 +13,21 @@ import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
 
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 
-import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
+import {BscActors} from "script/KernelActors.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 
-import {VaultUtils} from "script/VaultUtils.sol";
+import {VaultUtils} from "lib/yieldnest-vault/script/VaultUtils.sol";
+
+import {VaultKernelUtils} from "script/VaultKernelUtils.sol";
 import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
-contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
+contract YnBTCkTest is Test, AssertUtils, BscActors, EtchUtils, VaultUtils, VaultKernelUtils {
     KernelStrategy public vault;
     BTCRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
@@ -88,7 +90,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
         );
 
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(implementation), address(MainnetActors.ADMIN), initData);
+            new TransparentUpgradeableProxy(address(implementation), address(BscActors.ADMIN), initData);
 
         _vault = KernelStrategy(payable(address(proxy)));
 
