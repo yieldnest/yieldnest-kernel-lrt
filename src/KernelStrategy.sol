@@ -313,6 +313,7 @@ contract KernelStrategy is Vault {
      */
     function _getStrategyStorage() internal pure virtual returns (StrategyStorage storage $) {
         assembly {
+            // keccak256("yieldnest.storage.strategy")
             $.slot := 0x0ef3e973c65e9ac117f6f10039e07687b1619898ed66fe088b0fab5f5dc83d88
         }
     }

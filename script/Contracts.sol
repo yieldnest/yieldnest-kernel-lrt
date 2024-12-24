@@ -35,6 +35,7 @@ library MainnetContracts {
     address public constant BNBX_STAKE_MANAGER = 0x3b961e83400D51e6E1AF5c450d3C7d7b80588d28;
     address public constant SLIS_BNB_STAKE_MANAGER = 0x1adB950d8bB3dA4bE104211D5AB038628e477fE6;
 
+    address public constant YNBNBX = address(0);
     // bnb vault
     address public constant YNBNBK = 0x304B5845b9114182ECb4495Be4C91a273b74B509;
 
@@ -64,6 +65,7 @@ library TestnetContracts {
     address public constant BNBX_STAKE_MANAGER = address(0);
     address public constant SLIS_BNB_STAKE_MANAGER = address(0);
 
+    address public constant YNBNBX = 0xa627C5343F697a0206421455103bCca9989887b5;
     // bnb vault
     address public constant YNBNBK = 0x7e87787C22117374Fad2E3E2E8C6159f0875F92e;
 
@@ -95,7 +97,7 @@ contract ChapelContracts is IContracts {
 
     // TODO: Update with deployed YNBNBX
     function YNBNBX() external pure override returns (address) {
-        return address(0);
+        return TestnetContracts.YNBNBX;
     }
 
     function YNBTCX() external pure override returns (address) {
@@ -146,7 +148,7 @@ contract BscContracts is IContracts {
 
     // TODO: Update with deployed YNBNBX
     function YNBNBX() external pure override returns (address) {
-        return address(0);
+        return MainnetContracts.YNBNBX;
     }
 
     function STAKER_GATEWAY() external pure override returns (address) {

@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
-import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
-
-import {KernelStrategy} from "src/KernelStrategy.sol";
+import {IProvider, Vault} from "lib/yieldnest-vault/script/BaseScript.sol";
 
 import {KernelClisStrategy} from "src/KernelClisStrategy.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
@@ -14,24 +11,24 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 import {TransparentUpgradeableProxy as TUP} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {BaseScript} from "script/BaseScript.sol";
+import {BaseKernelScript} from "script/BaseKernelScript.sol";
 
 import {KernelClisVaultViewer} from "src/utils/KernelClisVaultViewer.sol";
 import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 
 // FOUNDRY_PROFILE=mainnet forge script DeployYnclisBNBkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
-contract DeployYnclisBNBkStrategy is BaseScript {
+contract DeployYnclisBNBkStrategy is BaseKernelScript {
     function symbol() public pure override returns (string memory) {
         return "ynclisBNBk";
     }
 
     function deployRateProvider() internal {
         if (block.chainid == 97) {
-            rateProvider = IProvider(new TestnetBNBRateProvider());
+            rateProvider = IProvider(address(new TestnetBNBRateProvider()));
         }
 
         if (block.chainid == 56) {
-            rateProvider = IProvider(new BNBRateProvider());
+            rateProvider = IProvider(address(new BNBRateProvider()));
         }
     }
 
@@ -40,7 +37,7 @@ contract DeployYnclisBNBkStrategy is BaseScript {
 
         bytes memory initData = abi.encodeWithSelector(BaseVaultViewer.initialize.selector, address(vault));
 
-        TUP proxy = new TUP(address(viewerImplementation), actors.ADMIN(), initData);
+        TUP proxy = new TUP(address(viewerImplementation), actors_.ADMIN(), initData);
 
         viewer = KernelVaultViewer(payable(address(proxy)));
     }
@@ -63,8 +60,8 @@ contract DeployYnclisBNBkStrategy is BaseScript {
         vm.stopBroadcast();
     }
 
-    function deploy() internal returns (KernelStrategy) {
-        implementation = new KernelClisStrategy();
+    function deploy() internal {
+        implementation = Vault(payable(address(new KernelClisStrategy())));
 
         address admin = msg.sender;
         string memory name = "YieldNest Restaked clisBNB - Kernel";
@@ -84,18 +81,16 @@ contract DeployYnclisBNBkStrategy is BaseScript {
             alwaysComputeTotalAssets
         );
 
-        TUP proxy = new TUP(address(implementation), address(actors.ADMIN()), initData);
+        TUP proxy = new TUP(address(implementation), address(actors_.ADMIN()), initData);
 
-        vault = KernelStrategy(payable(address(proxy)));
+        vault = Vault(payable(address(proxy)));
 
-        configureVault(vault);
-
-        return vault;
+        configureVault();
     }
 
-    function configureVault(KernelStrategy vault_) internal {
-        _configureDefaultRoles(vault_);
-        _configureTemporaryRoles(vault_);
+    function configureVault() internal {
+        _configureDefaultRoles();
+        _configureTemporaryRoles();
 
         // set allocator to ynbnbx
         vault_.grantRole(vault_.ALLOCATOR_ROLE(), contracts.YNBNBX());
@@ -113,11 +108,11 @@ contract DeployYnclisBNBkStrategy is BaseScript {
         vault_.unpause();
 
         // approval not required since we send native tokens
-        setClisStakingRule(KernelClisStrategy(payable(address(vault_))), contracts.STAKER_GATEWAY());
-        setClisUnstakingRule(KernelClisStrategy(payable(address(vault_))), contracts.STAKER_GATEWAY());
+        setClisStakingRule(vault_, contracts.STAKER_GATEWAY());
+        setClisUnstakingRule(vault_, contracts.STAKER_GATEWAY());
 
         vault_.processAccounting();
 
-        _renounceTemporaryRoles(vault_);
+        _renounceTemporaryRoles();
     }
 }

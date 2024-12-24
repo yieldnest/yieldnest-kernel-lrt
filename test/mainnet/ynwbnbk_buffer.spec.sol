@@ -9,11 +9,10 @@ import {TransparentUpgradeableProxy} from
 import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
-import {MainnetActors} from "script/Actors.sol";
 import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 
-import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
+import {MainnetKernelActors} from "script/KernelActors.sol";
 import {IStakerGateway, KernelStrategy} from "src/KernelStrategy.sol";
 
 import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
@@ -21,7 +20,7 @@ import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
-contract YnWBNBkBufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
+contract YnWBNBkBufferTest is Test, AssertUtils, MainnetKernelActors, EtchUtils {
     KernelStrategy public vault;
     BNBRateProvider public kernelProvider;
     IKernelVault public kernelVault;
@@ -63,17 +62,10 @@ contract YnWBNBkBufferTest is Test, AssertUtils, MainnetActors, EtchUtils {
 
         // Deploy transparent proxy
         bytes memory initData = abi.encodeWithSelector(
-            Vault.initialize.selector,
-            MainnetActors.ADMIN,
-            "YieldNest BNB Buffer - Kernel",
-            "ynWBNBk",
-            18,
-            0,
-            true,
-            false
+            Vault.initialize.selector, ADMIN, "YieldNest BNB Buffer - Kernel", "ynWBNBk", 18, 0, true, false
         );
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(implementation), address(MainnetActors.ADMIN), initData);
+            new TransparentUpgradeableProxy(address(implementation), address(ADMIN), initData);
 
         // Cast proxy to KernelStrategy type
         vault = KernelStrategy(payable(address(proxy)));
