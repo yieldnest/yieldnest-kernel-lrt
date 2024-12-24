@@ -3,11 +3,11 @@ pragma solidity ^0.8.24;
 
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 
-import {BaseVerifyScript} from "script/BaseVerifyScript.sol";
+import {KernelVerifyScript} from "script/KernelVerifyScript.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 // FOUNDRY_PROFILE=mainnet forge script VerifyYnclisBNBkStrategy
-contract VerifyYnclisBNBkStrategy is BaseVerifyScript {
+contract VerifyYnclisBNBkStrategy is KernelVerifyScript {
     function symbol() public pure override returns (string memory) {
         return "ynclisBNBk";
     }
