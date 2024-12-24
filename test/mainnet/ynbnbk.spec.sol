@@ -17,7 +17,7 @@ import {ISlisBnbStakeManager} from "lib/yieldnest-vault/src/interface/external/l
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 
 import {MainnetContracts as MC} from "script/Contracts.sol";
-import {BscActors} from "script/KernelActors.sol";
+import {MainnetKernelActors} from "script/KernelActors.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {MigratedKernelStrategy} from "src/MigratedKernelStrategy.sol";
 import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
@@ -31,7 +31,7 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
-contract YnBNBkTest is Test, AssertUtils, BscActors, EtchUtils, VaultUtils, VaultKernelUtils, ProxyUtils {
+contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultUtils, VaultKernelUtils, ProxyUtils {
     KernelStrategy public vault;
     BNBRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
@@ -99,7 +99,7 @@ contract YnBNBkTest is Test, AssertUtils, BscActors, EtchUtils, VaultUtils, Vaul
                 address(implemention),
                 abi.encodeWithSelector(
                     Vault.initialize.selector,
-                    address(BscActors.ADMIN),
+                    address(ADMIN),
                     "YieldNest Restaked BNB - Kernel",
                     "ynBNBk",
                     18,
@@ -124,7 +124,7 @@ contract YnBNBkTest is Test, AssertUtils, BscActors, EtchUtils, VaultUtils, Vaul
                 address(implemention),
                 abi.encodeWithSelector(
                     MigratedKernelStrategy.initializeAndMigrate.selector,
-                    address(BscActors.ADMIN),
+                    address(ADMIN),
                     "YieldNest Restaked BNB - Kernel",
                     "ynBNBk",
                     18,

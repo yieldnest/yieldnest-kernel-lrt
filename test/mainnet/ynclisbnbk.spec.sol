@@ -12,7 +12,7 @@ import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 
 import {MainnetContracts as MC} from "script/Contracts.sol";
-import {BscActors} from "script/KernelActors.sol";
+import {MainnetKernelActors} from "script/KernelActors.sol";
 import {KernelClisStrategy} from "src/KernelClisStrategy.sol";
 
 import {IAccessControl} from
@@ -29,7 +29,7 @@ import {KernelClisVaultViewer} from "src/utils/KernelClisVaultViewer.sol";
 import {BaseVaultViewer} from "src/utils/KernelVaultViewer.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
-contract YnClisBNBkTest is Test, AssertUtils, BscActors, EtchUtils, VaultUtils, VaultKernelUtils {
+contract YnClisBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultUtils, VaultKernelUtils {
     KernelClisStrategy public vault;
     BNBRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
@@ -76,18 +76,11 @@ contract YnClisBNBkTest is Test, AssertUtils, BscActors, EtchUtils, VaultUtils, 
     function deployClisBNBk() public returns (KernelClisStrategy _vault) {
         KernelClisStrategy implementation = new KernelClisStrategy();
         bytes memory initData = abi.encodeWithSelector(
-            Vault.initialize.selector,
-            BscActors.ADMIN,
-            "YieldNest Restaked slisBNB - Kernel",
-            "ynclisWBNBk",
-            18,
-            0,
-            true,
-            false
+            Vault.initialize.selector, ADMIN, "YieldNest Restaked slisBNB - Kernel", "ynclisWBNBk", 18, 0, true, false
         );
 
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(implementation), address(BscActors.ADMIN), initData);
+            new TransparentUpgradeableProxy(address(implementation), address(ADMIN), initData);
 
         _vault = KernelClisStrategy(payable(address(proxy)));
 

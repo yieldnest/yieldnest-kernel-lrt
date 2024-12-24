@@ -8,7 +8,7 @@ import {BaseVerifyScript, IVault} from "lib/yieldnest-vault/script/BaseVerifyScr
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {IValidator} from "lib/yieldnest-vault/src/interface/IVault.sol";
 import {BscContracts, ChapelContracts, IContracts} from "script/Contracts.sol";
-import {BscActors, ChapelActors, IKernelActors} from "script/KernelActors.sol";
+import {IKernelActors, MainnetKernelActors, TestnetKernelActors} from "script/KernelActors.sol";
 
 // FOUNDRY_PROFILE=mainnet forge script KernelVerifyScript
 abstract contract KernelVerifyScript is BaseVerifyScript {
@@ -20,7 +20,7 @@ abstract contract KernelVerifyScript is BaseVerifyScript {
 
         if (block.chainid == 97) {
             minDelay = 10 seconds;
-            ChapelActors _actors = new ChapelActors();
+            TestnetKernelActors _actors = new TestnetKernelActors();
             actors = IActors(address(_actors));
             actors_ = IKernelActors(address(actors));
             contracts = IContracts(new ChapelContracts());
@@ -28,7 +28,7 @@ abstract contract KernelVerifyScript is BaseVerifyScript {
 
         if (block.chainid == 56) {
             minDelay = 1 days;
-            BscActors _actors = new BscActors();
+            MainnetKernelActors _actors = new MainnetKernelActors();
             actors = IActors(address(_actors));
             actors_ = IKernelActors(address(actors));
             contracts = IContracts(new BscContracts());

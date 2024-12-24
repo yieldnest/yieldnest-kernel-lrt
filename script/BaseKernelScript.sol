@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {BscContracts, ChapelContracts, IContracts} from "script/Contracts.sol";
-import {BscActors, ChapelActors, IKernelActors} from "script/KernelActors.sol";
+import {IKernelActors, MainnetKernelActors, TestnetKernelActors} from "script/KernelActors.sol";
 import {VaultKernelUtils} from "script/VaultKernelUtils.sol";
 
 import {BaseScript, IActors} from "lib/yieldnest-vault/script/BaseScript.sol";
@@ -18,7 +18,7 @@ abstract contract BaseKernelScript is BaseScript, VaultKernelUtils {
 
         if (block.chainid == 97) {
             minDelay = 10 seconds;
-            ChapelActors _actors = new ChapelActors();
+            TestnetKernelActors _actors = new TestnetKernelActors();
             actors = IActors(address(_actors));
             actors_ = IKernelActors(address(actors));
             contracts = IContracts(new ChapelContracts());
@@ -26,7 +26,7 @@ abstract contract BaseKernelScript is BaseScript, VaultKernelUtils {
 
         if (block.chainid == 56) {
             minDelay = 1 days;
-            BscActors _actors = new BscActors();
+            MainnetKernelActors _actors = new MainnetKernelActors();
             actors = IActors(address(_actors));
             actors_ = IKernelActors(address(actors));
             contracts = IContracts(new BscContracts());

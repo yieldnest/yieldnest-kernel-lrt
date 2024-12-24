@@ -12,7 +12,7 @@ import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 
 import {MainnetContracts as MC} from "script/Contracts.sol";
-import {BscActors} from "script/KernelActors.sol";
+import {MainnetKernelActors} from "script/KernelActors.sol";
 import {IStakerGateway, KernelStrategy} from "src/KernelStrategy.sol";
 
 import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
@@ -20,7 +20,7 @@ import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
-contract YnWBNBkBufferTest is Test, AssertUtils, BscActors, EtchUtils {
+contract YnWBNBkBufferTest is Test, AssertUtils, MainnetKernelActors, EtchUtils {
     KernelStrategy public vault;
     BNBRateProvider public kernelProvider;
     IKernelVault public kernelVault;
@@ -62,10 +62,10 @@ contract YnWBNBkBufferTest is Test, AssertUtils, BscActors, EtchUtils {
 
         // Deploy transparent proxy
         bytes memory initData = abi.encodeWithSelector(
-            Vault.initialize.selector, BscActors.ADMIN, "YieldNest BNB Buffer - Kernel", "ynWBNBk", 18, 0, true, false
+            Vault.initialize.selector, ADMIN, "YieldNest BNB Buffer - Kernel", "ynWBNBk", 18, 0, true, false
         );
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(implementation), address(BscActors.ADMIN), initData);
+            new TransparentUpgradeableProxy(address(implementation), address(ADMIN), initData);
 
         // Cast proxy to KernelStrategy type
         vault = KernelStrategy(payable(address(proxy)));

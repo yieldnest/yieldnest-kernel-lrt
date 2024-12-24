@@ -12,7 +12,7 @@ import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 
 import {MainnetContracts as MC} from "script/Contracts.sol";
-import {BscActors} from "script/KernelActors.sol";
+import {MainnetKernelActors} from "script/KernelActors.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 
@@ -25,7 +25,7 @@ import {VaultKernelUtils} from "script/VaultKernelUtils.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {EtchUtils} from "test/unit/helpers/EtchUtils.sol";
 
-contract SetupKernelStrategy is Test, AssertUtils, BscActors, EtchUtils, VaultKernelUtils, VaultUtils {
+contract SetupKernelStrategy is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultKernelUtils, VaultUtils {
     KernelStrategy public vault;
     BNBRateProvider public provider;
 
@@ -48,7 +48,7 @@ contract SetupKernelStrategy is Test, AssertUtils, BscActors, EtchUtils, VaultKe
         );
 
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(implementation), address(BscActors.ADMIN), initData);
+            new TransparentUpgradeableProxy(address(implementation), address(ADMIN), initData);
 
         vault = KernelStrategy(payable(address(proxy)));
 
