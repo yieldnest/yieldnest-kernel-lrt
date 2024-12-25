@@ -78,7 +78,7 @@ contract MigratedKernelStrategy is KernelStrategy {
 
         StrategyStorage storage strategyStorage = _getStrategyStorage();
         strategyStorage.stakerGateway = stakerGateway;
-        strategyStorage.syncDeposit = false;
+        strategyStorage.syncDeposit = true;
         strategyStorage.syncWithdraw = true;
 
         _migrate(assets, vaultStorage.decimals);
