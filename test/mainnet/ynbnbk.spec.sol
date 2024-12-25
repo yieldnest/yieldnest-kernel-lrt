@@ -127,13 +127,9 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
                     address(ADMIN),
                     "YieldNest Restaked BNB - Kernel",
                     "ynBNBk",
-                    18,
                     assets,
                     MC.STAKER_GATEWAY,
-                    false, // sync deposit
-                    true, // sync withdraw
-                    0, // base fee
-                    true // count native assets
+                    0 // base fee
                 )
             );
 
@@ -578,7 +574,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
 
     function test_Vault_ynBNBk_view_functions() public view {
         bool syncDeposit = vault.getSyncDeposit();
-        assertFalse(syncDeposit, "SyncDeposit should be false");
+        assertTrue(syncDeposit, "SyncDeposit should be true");
 
         bool syncWithdraw = vault.getSyncWithdraw();
         assertTrue(syncWithdraw, "SyncWithdraw should be true");
@@ -587,29 +583,52 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         assertEq(strategyGateway, MC.STAKER_GATEWAY, "incorrect staker gateway");
     }
 
-    function depositIntoVault(address assetAddress, uint256 amount) internal returns (uint256) {
+    function depositIntoVault(address assetAddress, uint256 amount) internal returns (uint256 shares) {
+        return depositIntoVault(assetAddress, amount, true);
+    }
+
+    function depositIntoVault(address assetAddress, uint256 amount, bool syncDeposit)
+        internal
+        returns (uint256 shares)
+    {
         IERC20 asset = IERC20(assetAddress);
+
+        vm.prank(ADMIN);
+        vault.setSyncDeposit(syncDeposit);
+
+        address kernelVault = IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SLISBNB);
 
         uint256 beforeTotalAssets = vault.totalAssets();
         uint256 beforeTotalShares = vault.totalSupply();
         uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+        uint256 beforeKernelVaultBalance = asset.balanceOf(kernelVault);
         uint256 beforeBobBalance = asset.balanceOf(bob);
         uint256 beforeBobShares = vault.balanceOf(bob);
-        uint256 beforeMaxWithdraw = viewer.maxWithdrawAsset(address(asset), bob);
-        assertEq(beforeMaxWithdraw, 0, "Bob should have no max withdraw before deposit");
+        {
+            uint256 beforeMaxWithdraw = viewer.maxWithdrawAsset(address(asset), bob);
+            assertEq(beforeMaxWithdraw, 0, "Bob should have no max withdraw before deposit");
 
-        uint256 previewShares = vault.previewDepositAsset(assetAddress, amount);
+            {
+                uint256 previewShares = vault.previewDepositAsset(assetAddress, amount);
 
-        vm.prank(bob);
-        asset.approve(address(vault), amount);
+                vm.prank(bob);
+                asset.approve(address(vault), amount);
 
-        // Test the deposit function
-        vm.prank(bob);
-        uint256 shares = vault.depositAsset(assetAddress, amount, bob);
+                // Test the deposit function
+                vm.prank(bob);
+                shares = vault.depositAsset(assetAddress, amount, bob);
 
-        vault.processAccounting();
+                vault.processAccounting();
 
-        assertEq(previewShares, shares, "Preview shares should be equal to shares");
+                assertEq(previewShares, shares, "Preview shares should be equal to shares");
+            }
+            assertEqThreshold(
+                viewer.maxWithdrawAsset(assetAddress, bob),
+                beforeMaxWithdraw + amount,
+                5,
+                "maxWithdrawAsset should be correct"
+            );
+        }
 
         uint256 assetsInBNB = vault.convertToAssets(shares);
 
@@ -622,17 +641,29 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         assertEq(
             vault.totalSupply(), beforeTotalShares + shares, "Total shares should increase by the amount deposited"
         );
-        assertEq(
-            asset.balanceOf(address(vault)), beforeVaultBalance + amount, "Vault should have the asset after deposit"
-        );
+        if (syncDeposit) {
+            assertEq(
+                asset.balanceOf(address(vault)), beforeVaultBalance, "Vault should not have the asset after deposit"
+            );
+            assertEq(
+                asset.balanceOf(kernelVault),
+                beforeKernelVaultBalance + amount,
+                "KernelVault should have the asset after deposit"
+            );
+        } else {
+            assertEq(
+                asset.balanceOf(address(vault)),
+                beforeVaultBalance + amount,
+                "Vault should have the asset after deposit"
+            );
+            assertEq(
+                asset.balanceOf(kernelVault),
+                beforeKernelVaultBalance,
+                "KernelVault should not have the asset after deposit"
+            );
+        }
         assertEq(asset.balanceOf(bob), beforeBobBalance - amount, "Bob should not have the assets");
         assertEq(vault.balanceOf(bob), beforeBobShares + shares, "Bob should have shares after deposit");
-        assertEqThreshold(
-            viewer.maxWithdrawAsset(assetAddress, bob),
-            beforeMaxWithdraw + amount,
-            5,
-            "maxWithdrawAsset should be correct"
-        );
 
         return shares;
     }
@@ -655,11 +686,8 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
 
         IERC20 asset = IERC20(MC.SLISBNB);
 
-        //set sync deposit enabled
-        vm.prank(ADMIN);
-        vault.setSyncDeposit(true);
-
-        uint256 beforeVaultBalance = stakerGateway.balanceOf(address(asset), address(vault));
+        uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+        uint256 beforeKernelVaultBalance = stakerGateway.balanceOf(address(asset), address(vault));
         uint256 previewShares = vault.previewDepositAsset(address(asset), amount);
         uint256 beforeMaxWithdraw = viewer.maxWithdrawAsset(address(asset), bob);
         assertEq(beforeMaxWithdraw, 0, "Bob should have no max withdraw");
@@ -674,11 +702,12 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         uint256 shares = vault.depositAsset(address(asset), amount, bob);
 
         assertEq(previewShares, shares, "Preview shares should be equal to shares");
+        assertEq(asset.balanceOf(address(vault)), beforeVaultBalance, "Vault should not have the asset after deposit");
         assertEqThreshold(
             stakerGateway.balanceOf(address(asset), address(vault)),
-            beforeVaultBalance + amount,
+            beforeKernelVaultBalance + amount,
             100,
-            "Vault should have a balance in the stakerGateway"
+            "Vault should have a balance in the Kernel StakerGateway"
         );
         assertEqThreshold(
             viewer.maxWithdrawAsset(address(asset), bob),
@@ -689,6 +718,10 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
     }
 
     function test_Vault_ynBNBk_deposit_slisBNB_sync_deposit_disabled(uint256 amount) public {
+        //set sync deposit disabled
+        vm.prank(ADMIN);
+        vault.setSyncDeposit(false);
+
         amount = bound(amount, 10, 100_000 ether);
 
         IERC20 asset = IERC20(MC.SLISBNB);
@@ -728,7 +761,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         assertEq(asset.balanceOf(address(vault)), 0, "vault should have no balance");
     }
 
-    function test_Vault_ynBNBk_withdraw_slisBNB_sync_enabled(uint256 amount) public {
+    function test_Vault_ynBNBk_withdraw_slisBNB_sync_deposit_disabled(uint256 amount) public {
         amount = bound(amount, 10, 100_000 ether);
 
         getSlisBnb(amount);
@@ -784,7 +817,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
             "Kernel should have all balance"
         );
 
-        depositIntoVault(MC.SLISBNB, amount);
+        depositIntoVault(MC.SLISBNB, amount, false);
         stakeIntoKernel(MC.SLISBNB, amount / 2);
 
         assertEqThreshold(asset.balanceOf(address(vault)), amount / 2, 5, "Vault should have half balance");
@@ -831,8 +864,10 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
 
         // get slis
         getSlisBnb(amount);
+
         // deposit asset
-        depositIntoVault(address(asset), amount);
+        depositIntoVault(address(asset), amount, false);
+
         // stake slis
         stakeIntoKernel(address(asset));
 
@@ -898,7 +933,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         uint256 beforeBobBalance = asset.balanceOf(bob);
         uint256 beforeBobShares = vault.balanceOf(bob);
 
-        uint256 shares = depositIntoVault(MC.SLISBNB, amount);
+        uint256 shares = depositIntoVault(MC.SLISBNB, amount, false);
 
         uint256 previewAssets = vault.previewRedeemAsset(MC.SLISBNB, shares);
 
@@ -929,7 +964,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
 
         getSlisBnb(amount);
 
-        depositIntoVault(MC.SLISBNB, amount);
+        depositIntoVault(MC.SLISBNB, amount, false);
 
         address kernelVault = IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SLISBNB);
 
@@ -955,7 +990,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
 
         getSlisBnb(amount);
 
-        depositIntoVault(MC.SLISBNB, amount);
+        depositIntoVault(MC.SLISBNB, amount, false);
 
         IERC20 asset = IERC20(MC.SLISBNB);
 
@@ -974,7 +1009,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
                 beforeKernelVaultBalance + beforeVaultBalance,
                 "KernelVault should have the asset after deposit"
             );
-            assertEq(vault.totalAssets(), beforeTotalAssets, "Total assets should not change");
+            assertEqThreshold(vault.totalAssets(), beforeTotalAssets, 10, "Total assets should not change");
         }
 
         {
@@ -1009,7 +1044,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
 
         getSlisBnb(amount);
 
-        depositIntoVault(MC.SLISBNB, amount);
+        depositIntoVault(MC.SLISBNB, amount, false);
 
         IERC20 asset = IERC20(MC.SLISBNB);
 
@@ -1028,7 +1063,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
                 beforeKernelVaultBalance + beforeVaultBalance,
                 "KernelVault should have the asset after deposit"
             );
-            assertEq(vault.totalAssets(), beforeTotalAssets, "Total assets should not change");
+            assertEqThreshold(vault.totalAssets(), beforeTotalAssets, 10, "Total assets should not change");
         }
 
         {

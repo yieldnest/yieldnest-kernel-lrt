@@ -26,13 +26,13 @@ contract VerifyYnBNBkStrategy is KernelVerifyScript {
         assertEq(vault_.symbol(), "ynBNBk", "symbol is invalid");
         assertEq(vault_.decimals(), 18, "decimals is invalid");
         assertEq(vault_.baseWithdrawalFee(), 0, "base withdrawal fee is invalid");
-        assertEq(vault_.countNativeAsset(), true, "count native asset is invalid");
 
         assertEq(vault_.provider(), address(rateProvider), "provider is invalid");
         assertEq(vault_.getStakerGateway(), contracts.STAKER_GATEWAY(), "staker gateway is invalid");
         assertFalse(vault_.getHasAllocator(), "has allocator is invalid");
-        assertFalse(vault_.getSyncDeposit(), "sync deposit is invalid");
+        assertTrue(vault_.getSyncDeposit(), "sync deposit is invalid");
         assertTrue(vault_.getSyncWithdraw(), "sync withdraw is invalid");
+        assertTrue(vault_.countNativeAsset(), "count native asset is invalid");
         assertTrue(vault_.alwaysComputeTotalAssets(), "always compute total assets is invalid");
         IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
 

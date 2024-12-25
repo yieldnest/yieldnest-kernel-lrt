@@ -45,60 +45,34 @@ contract MigratedKernelStrategy is KernelStrategy {
      * @param admin The address of the admin.
      * @param name The name of the vault.
      * @param symbol The symbol of the vault.
-     * @param decimals The decimals of the vault.
-     * @param assets The list of assets to be added to the vault.
+     * @param assets The array of Asset structs containing addresses and active states.
      * @param stakerGateway The address of the staker gateway.
-     * @param syncDeposit Whether to enable synchronous deposits.
-     * @param syncWithdraw Whether to enable synchronous withdrawals.
      * @param baseWithdrawalFee The base fee for withdrawals.
-     * @param countNativeAsset Whether to include the native asset in calculations.
      */
     function initializeAndMigrate(
         address admin,
         string memory name,
         string memory symbol,
-        uint8 decimals,
         Asset[] calldata assets,
         address stakerGateway,
-        bool syncDeposit,
-        bool syncWithdraw,
-        uint64 baseWithdrawalFee,
-        bool countNativeAsset
+        uint64 baseWithdrawalFee
     ) external reinitializer(2) {
-        if (admin == address(0)) {
-            revert ZeroAddress();
-        }
-
-        __ERC20Permit_init(name);
-        __ERC20_init(name, symbol);
-        __AccessControl_init();
-        __ReentrancyGuard_init();
-        _grantRole(DEFAULT_ADMIN_ROLE, admin);
-
-        VaultStorage storage vaultStorage = _getVaultStorage();
-        vaultStorage.paused = true;
-        vaultStorage.decimals = decimals;
-        vaultStorage.countNativeAsset = countNativeAsset;
-        vaultStorage.alwaysComputeTotalAssets = true;
-
-        FeeStorage storage fees = _getFeeStorage();
-        fees.baseWithdrawalFee = baseWithdrawalFee;
+        _initialize(admin, name, symbol, 18, baseWithdrawalFee, true, true);
 
         StrategyStorage storage strategyStorage = _getStrategyStorage();
         strategyStorage.stakerGateway = stakerGateway;
-        strategyStorage.syncDeposit = syncDeposit;
-        strategyStorage.syncWithdraw = syncWithdraw;
+        strategyStorage.syncDeposit = true;
+        strategyStorage.syncWithdraw = true;
 
-        _migrate(assets, decimals);
+        _migrate(assets);
     }
 
     /**
      * @notice Migrates assets to the vault and resets ERC4626 storage.
      * @dev This function clears the previous storage and adds new assets.
      * @param assets The array of assets to be added to the vault.
-     * @param decimals The number of decimals for the assets.
      */
-    function _migrate(Asset[] memory assets, uint8 decimals) private {
+    function _migrate(Asset[] memory assets) private {
         ERC4626Storage storage erc4626Storage = _getERC4626Storage();
 
         // Clear existing storage
@@ -110,7 +84,7 @@ contract MigratedKernelStrategy is KernelStrategy {
         for (uint256 i; i < assets.length; i++) {
             tempAsset = assets[i];
 
-            _addAsset(tempAsset.asset, decimals, tempAsset.active);
+            _addAsset(tempAsset.asset, 18, tempAsset.active);
         }
     }
 }
