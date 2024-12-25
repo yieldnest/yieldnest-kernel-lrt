@@ -68,7 +68,7 @@ contract DeployYnWBNBkStrategy is BaseKernelScript {
         );
 
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(implementation), address(actors_.ADMIN()), initData);
+            new TransparentUpgradeableProxy(address(implementation), address(timelock), initData);
 
         vault = Vault(payable(address(proxy)));
 
@@ -94,6 +94,10 @@ contract DeployYnWBNBkStrategy is BaseKernelScript {
         setApprovalRule(vault_, contracts.WBNB(), contracts.STAKER_GATEWAY());
         setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.WBNB());
         setUnstakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.WBNB());
+
+        // wbnb
+        setWethDepositRule(vault, contracts.WBNB());
+        setWethWithdrawRule(vault, contracts.WBNB());
 
         vault_.unpause();
 

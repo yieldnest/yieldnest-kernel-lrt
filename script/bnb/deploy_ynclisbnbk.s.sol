@@ -9,7 +9,7 @@ import {TestnetBNBRateProvider} from "test/module/BNBRateProvider.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
-import {TransparentUpgradeableProxy as TUP} from
+import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {BaseKernelScript} from "script/BaseKernelScript.sol";
 
@@ -37,7 +37,8 @@ contract DeployYnclisBNBkStrategy is BaseKernelScript {
 
         bytes memory initData = abi.encodeWithSelector(BaseVaultViewer.initialize.selector, address(vault));
 
-        TUP proxy = new TUP(address(viewerImplementation), actors_.ADMIN(), initData);
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(address(viewerImplementation), actors_.ADMIN(), initData);
 
         viewer = KernelVaultViewer(payable(address(proxy)));
     }
@@ -81,7 +82,8 @@ contract DeployYnclisBNBkStrategy is BaseKernelScript {
             alwaysComputeTotalAssets
         );
 
-        TUP proxy = new TUP(address(implementation), address(actors_.ADMIN()), initData);
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(address(implementation), address(timelock), initData);
 
         vault = Vault(payable(address(proxy)));
 
@@ -110,6 +112,10 @@ contract DeployYnclisBNBkStrategy is BaseKernelScript {
         // approval not required since we send native tokens
         setClisStakingRule(vault_, contracts.STAKER_GATEWAY());
         setClisUnstakingRule(vault_, contracts.STAKER_GATEWAY());
+
+        // wbnb
+        setWethDepositRule(vault, contracts.WBNB());
+        setWethWithdrawRule(vault, contracts.WBNB());
 
         vault_.processAccounting();
 

@@ -48,11 +48,15 @@ contract VerifyYnWBNBkStrategy is KernelVerifyScript {
         asset = vault_.getAsset(address(stakerGateway.getVault(contracts.WBNB())));
         assertEq(asset.decimals, 18, "asset[1].decimals is invalid");
         assertEq(asset.active, false, "asset[1].active is invalid");
-        assertEq(asset.index, 3, "asset[1].index is invalid");
+        assertEq(asset.index, 1, "asset[1].index is invalid");
 
         _verifyApprovalRule(vault_, contracts.WBNB(), contracts.STAKER_GATEWAY());
         _verifyStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.WBNB());
         _verifyUnstakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.WBNB());
+
+        _verifyWethWithdrawRule(vault, contracts.WBNB());
+        _verifyWethDepositRule(vault, contracts.WBNB());
+
 
         assertFalse(vault_.paused());
 
