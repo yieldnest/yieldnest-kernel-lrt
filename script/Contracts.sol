@@ -65,7 +65,7 @@ library TestnetContracts {
     address public constant BNBX_STAKE_MANAGER = address(0);
     address public constant SLIS_BNB_STAKE_MANAGER = address(0);
 
-    address public constant YNBNBX = 0xa627C5343F697a0206421455103bCca9989887b5;
+    address public constant YNBNBX = 0x6164f96Fa28147508d3545c38B61eD0BD7c5DF03;
     // bnb vault
     address public constant YNBNBK = 0x7e87787C22117374Fad2E3E2E8C6159f0875F92e;
 
