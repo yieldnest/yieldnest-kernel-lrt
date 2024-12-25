@@ -70,7 +70,7 @@ contract MigratedKernelStrategy is KernelStrategy {
         VaultStorage storage vaultStorage = _getVaultStorage();
         vaultStorage.paused = true;
         vaultStorage.decimals = 18;
-        vaultStorage.countNativeAsset = false;
+        vaultStorage.countNativeAsset = true;
         vaultStorage.alwaysComputeTotalAssets = true;
 
         FeeStorage storage fees = _getFeeStorage();
