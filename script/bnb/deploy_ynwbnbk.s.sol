@@ -57,21 +57,12 @@ contract DeployYnWBNBkStrategy is BaseKernelScript {
         uint64 baseWithdrawalFee = 0;
         bool countNativeAsset = true;
         bool alwaysComputeTotalAssets = true;
-        bytes memory initData = abi.encodeWithSelector(
-            Vault.initialize.selector,
-            admin,
-            name,
-            symbol_,
-            decimals,
-            baseWithdrawalFee,
-            countNativeAsset,
-            alwaysComputeTotalAssets
-        );
-
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(implementation), address(timelock), initData);
+            new TransparentUpgradeableProxy(address(implementation), address(timelock), "");
 
         vault = Vault(payable(address(proxy)));
+
+        vault.initialize(admin, name, symbol_, decimals, baseWithdrawalFee, countNativeAsset, alwaysComputeTotalAssets);
 
         configureVault();
     }
