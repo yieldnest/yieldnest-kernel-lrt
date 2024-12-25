@@ -45,25 +45,17 @@ contract MigratedKernelStrategy is KernelStrategy {
      * @param admin The address of the admin.
      * @param name The name of the vault.
      * @param symbol The symbol of the vault.
-     * @param decimals The decimals of the vault.
-     * @param assets The list of assets to be added to the vault.
+     * @param assets The array of Asset structs containing addresses and active states.
      * @param stakerGateway The address of the staker gateway.
-     * @param syncDeposit Whether to enable synchronous deposits.
-     * @param syncWithdraw Whether to enable synchronous withdrawals.
      * @param baseWithdrawalFee The base fee for withdrawals.
-     * @param countNativeAsset Whether to include the native asset in calculations.
      */
     function initializeAndMigrate(
         address admin,
         string memory name,
         string memory symbol,
-        uint8 decimals,
         Asset[] calldata assets,
         address stakerGateway,
-        bool syncDeposit,
-        bool syncWithdraw,
-        uint64 baseWithdrawalFee,
-        bool countNativeAsset
+        uint64 baseWithdrawalFee
     ) external reinitializer(2) {
         if (admin == address(0)) {
             revert ZeroAddress();
@@ -77,8 +69,8 @@ contract MigratedKernelStrategy is KernelStrategy {
 
         VaultStorage storage vaultStorage = _getVaultStorage();
         vaultStorage.paused = true;
-        vaultStorage.decimals = decimals;
-        vaultStorage.countNativeAsset = countNativeAsset;
+        vaultStorage.decimals = 18;
+        vaultStorage.countNativeAsset = false;
         vaultStorage.alwaysComputeTotalAssets = true;
 
         FeeStorage storage fees = _getFeeStorage();
@@ -86,10 +78,10 @@ contract MigratedKernelStrategy is KernelStrategy {
 
         StrategyStorage storage strategyStorage = _getStrategyStorage();
         strategyStorage.stakerGateway = stakerGateway;
-        strategyStorage.syncDeposit = syncDeposit;
-        strategyStorage.syncWithdraw = syncWithdraw;
+        strategyStorage.syncDeposit = false;
+        strategyStorage.syncWithdraw = true;
 
-        _migrate(assets, decimals);
+        _migrate(assets, vaultStorage.decimals);
     }
 
     /**

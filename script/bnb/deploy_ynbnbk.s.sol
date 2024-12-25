@@ -103,13 +103,9 @@ contract DeployYnBNBkStrategy is BaseKernelScript, BatchScript {
                 actors_.ADMIN(),
                 "YieldNest Restaked BNB - Kernel",
                 symbol(),
-                18,
                 assets,
                 contracts.STAKER_GATEWAY(),
-                false,
-                true,
-                0,
-                true
+                0
             );
 
             deployMigrateVaultAsSafe(initData);
@@ -119,13 +115,9 @@ contract DeployYnBNBkStrategy is BaseKernelScript, BatchScript {
                 msg.sender,
                 "YieldNest Restaked BNB - Kernel",
                 symbol(),
-                18,
                 assets,
                 contracts.STAKER_GATEWAY(),
-                false,
-                true,
-                0,
-                true
+                0
             );
 
             deployMigrateVaultAsEOA(initData);

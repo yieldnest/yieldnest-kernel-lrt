@@ -127,13 +127,9 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
                     address(ADMIN),
                     "YieldNest Restaked BNB - Kernel",
                     "ynBNBk",
-                    18,
                     assets,
                     MC.STAKER_GATEWAY,
-                    false, // sync deposit
-                    true, // sync withdraw
-                    0, // base fee
-                    true // count native assets
+                    0 // base fee
                 )
             );
 
