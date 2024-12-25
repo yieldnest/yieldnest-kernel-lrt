@@ -37,7 +37,7 @@ contract VerifyYnWBNBkStrategy is KernelVerifyScript {
         IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
 
         address[] memory assets = vault_.getAssets();
-        assertEq(assets.length, 6, "assets length is invalid");
+        assertEq(assets.length, 2, "assets length is invalid");
         assertEq(assets[0], contracts.WBNB(), "assets[0] is invalid");
         IVault.AssetParams memory asset = vault_.getAsset(contracts.WBNB());
         assertEq(asset.decimals, 18, "asset[0].decimals is invalid");
