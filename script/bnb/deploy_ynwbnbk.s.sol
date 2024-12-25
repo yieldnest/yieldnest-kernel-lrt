@@ -8,6 +8,7 @@ import {TestnetBNBRateProvider} from "test/module/BNBRateProvider.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
+import {console} from "lib/forge-std/src/console.sol";
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {BaseKernelScript} from "script/BaseKernelScript.sol";
@@ -79,8 +80,14 @@ contract DeployYnWBNBkStrategy is BaseKernelScript {
         _configureDefaultRoles();
         _configureTemporaryRoles();
 
+        console.log("YNBNBX address:", contracts.YNBNBX());
+
         // set allocator to ynbnbx
-        vault_.grantRole(vault_.ALLOCATOR_ROLE(), contracts.YNBNBX());
+        if (contracts.YNBNBX() != address(0)) {
+            vault_.grantRole(vault_.ALLOCATOR_ROLE(), contracts.YNBNBX());
+        } else {
+            console.log("YNBNBX is still undefined (zero address)");
+        }
 
         vault_.setProvider(address(rateProvider));
         vault_.setHasAllocator(true);
@@ -103,6 +110,15 @@ contract DeployYnWBNBkStrategy is BaseKernelScript {
 
         vault_.processAccounting();
 
-        _renounceTemporaryRoles();
+        if (contracts.YNBNBX() == address(0)) {
+            vault.renounceRole(keccak256("PROCESSOR_MANAGER_ROLE"), msg.sender);
+            vault.renounceRole(keccak256("BUFFER_MANAGER_ROLE"), msg.sender);
+            vault.renounceRole(keccak256("PROVIDER_MANAGER_ROLE"), msg.sender);
+            vault.renounceRole(keccak256("ASSET_MANAGER_ROLE"), msg.sender);
+            vault.renounceRole(keccak256("UNPAUSER_ROLE"), msg.sender);
+            console.log("YNBNBX is still undefined (zero address). Run configure allocator script after deployment.");
+        } else {
+            _renounceTemporaryRoles();
+        }
     }
 }

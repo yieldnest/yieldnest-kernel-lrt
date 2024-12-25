@@ -57,7 +57,6 @@ contract VerifyYnWBNBkStrategy is KernelVerifyScript {
         _verifyWethWithdrawRule(vault, contracts.WBNB());
         _verifyWethDepositRule(vault, contracts.WBNB());
 
-
         assertFalse(vault_.paused());
 
         _verifyDefaultRoles();
