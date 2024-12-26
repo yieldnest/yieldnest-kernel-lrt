@@ -36,12 +36,11 @@ contract DeployYnclisBNBkStrategy is BaseKernelScript {
     function deployViewer() internal {
         viewerImplementation = new KernelClisVaultViewer();
 
-        bytes memory initData = abi.encodeWithSelector(BaseVaultViewer.initialize.selector, address(vault));
-
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(viewerImplementation), actors_.ADMIN(), initData);
+            new TransparentUpgradeableProxy(address(viewerImplementation), actors_.ADMIN(), "");
 
         viewer = KernelVaultViewer(payable(address(proxy)));
+        KernelClisVaultViewer(address(viewer)).initialize(address(vault));
     }
 
     function run() public {
@@ -72,21 +71,14 @@ contract DeployYnclisBNBkStrategy is BaseKernelScript {
         uint64 baseWithdrawalFee = 0;
         bool countNativeAsset = true;
         bool alwaysComputeTotalAssets = true;
-        bytes memory initData = abi.encodeWithSelector(
-            Vault.initialize.selector,
-            admin,
-            name,
-            symbol_,
-            decimals,
-            baseWithdrawalFee,
-            countNativeAsset,
-            alwaysComputeTotalAssets
-        );
 
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(implementation), address(timelock), initData);
+            new TransparentUpgradeableProxy(address(implementation), address(timelock), "");
 
         vault = Vault(payable(address(proxy)));
+
+        // Initialize vault after deployment
+        vault.initialize(admin, name, symbol_, decimals, baseWithdrawalFee, countNativeAsset, alwaysComputeTotalAssets);
 
         configureVault();
     }
