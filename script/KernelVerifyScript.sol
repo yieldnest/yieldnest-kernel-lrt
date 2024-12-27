@@ -73,17 +73,21 @@ abstract contract KernelVerifyScript is BaseVerifyScript {
 
         bool kernelDependencyManagerRole = vault_.hasRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), deployer);
         console.log(
-            kernelDependencyManagerRole ? "\u2705" : "\u274C", "deployer has KERNEL_DEPENDENCY_MANAGER_ROLE:", deployer
+            kernelDependencyManagerRole ? "\u2705" : "\u274C",
+            "deployer has renounced KERNEL_DEPENDENCY_MANAGER_ROLE:",
+            deployer
         );
-        assertEq(kernelDependencyManagerRole, true);
+        assertEq(kernelDependencyManagerRole, false);
 
         bool depositManagerRole = vault_.hasRole(vault_.DEPOSIT_MANAGER_ROLE(), deployer);
-        console.log(depositManagerRole ? "\u2705" : "\u274C", "deployer has DEPOSIT_MANAGER_ROLE:", deployer);
-        assertEq(depositManagerRole, true);
+        console.log(depositManagerRole ? "\u2705" : "\u274C", "deployer has renounced DEPOSIT_MANAGER_ROLE:", deployer);
+        assertEq(depositManagerRole, false);
 
         bool allocatorManagerRole = vault_.hasRole(vault_.ALLOCATOR_MANAGER_ROLE(), deployer);
-        console.log(allocatorManagerRole ? "\u2705" : "\u274C", "deployer has ALLOCATOR_MANAGER_ROLE:", deployer);
-        assertEq(allocatorManagerRole, true);
+        console.log(
+            allocatorManagerRole ? "\u2705" : "\u274C", "deployer has renounced ALLOCATOR_MANAGER_ROLE:", deployer
+        );
+        assertEq(allocatorManagerRole, false);
     }
 
     function _verifyStakingRule(IVault v, address contractAddress, address asset) internal view {
