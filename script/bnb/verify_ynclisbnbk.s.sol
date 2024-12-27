@@ -9,7 +9,7 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 // FOUNDRY_PROFILE=mainnet forge script VerifyYnclisBNBkStrategy
 contract VerifyYnclisBNBkStrategy is KernelVerifyScript {
     function symbol() public pure override returns (string memory) {
-        return "ynclisBNBk";
+        return "ynClisBNBk";
     }
 
     function run() public {
@@ -23,7 +23,7 @@ contract VerifyYnclisBNBkStrategy is KernelVerifyScript {
         assertNotEq(address(vault_), address(0), "vault is not set");
 
         assertEq(vault_.name(), "YieldNest Restaked clisBNB - Kernel", "name is invalid");
-        assertEq(vault_.symbol(), "ynclisBNBk", "symbol is invalid");
+        assertEq(vault_.symbol(), "ynClisBNBk", "symbol is invalid");
         assertEq(vault_.decimals(), 18, "decimals is invalid");
         assertEq(vault_.baseWithdrawalFee(), 0, "base withdrawal fee is invalid");
         assertEq(vault_.countNativeAsset(), true, "count native asset is invalid");

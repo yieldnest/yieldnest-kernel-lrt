@@ -20,7 +20,7 @@ import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.so
 // FOUNDRY_PROFILE=mainnet forge script DeployYnclisBNBkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
 contract DeployYnclisBNBkStrategy is BaseKernelScript {
     function symbol() public pure override returns (string memory) {
-        return "ynclisBNBk";
+        return "ynClisBNBk";
     }
 
     function deployRateProvider() internal {
