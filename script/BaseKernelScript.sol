@@ -48,26 +48,26 @@ abstract contract BaseKernelScript is BaseScript, VaultKernelUtils {
         vault_ = KernelStrategy(payable(address(vault)));
 
         // set admin roles
-        vault.grantRole(keccak256("DEPOSIT_MANAGER_ROLE"), actors_.DEPOSIT_MANAGER());
-        vault.grantRole(keccak256("ALLOCATOR_MANAGER_ROLE"), actors_.ALLOCATOR_MANAGER());
+        vault.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), actors_.DEPOSIT_MANAGER());
+        vault.grantRole(vault_.ALLOCATOR_MANAGER_ROLE(), actors_.ALLOCATOR_MANAGER());
 
         // set timelock roles
-        vault.grantRole(keccak256("KERNEL_DEPENDENCY_MANAGER_ROLE"), address(timelock));
+        vault.grantRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), address(timelock));
     }
 
     function _configureTemporaryRoles() internal virtual override {
         super._configureTemporaryRoles();
 
-        vault.grantRole(keccak256("KERNEL_DEPENDENCY_MANAGER_ROLE"), msg.sender);
-        vault.grantRole(keccak256("DEPOSIT_MANAGER_ROLE"), msg.sender);
-        vault.grantRole(keccak256("ALLOCATOR_MANAGER_ROLE"), msg.sender);
+        vault.grantRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), msg.sender);
+        vault.grantRole(vault_.DEPOSIT_MANAGER_ROLE(), msg.sender);
+        vault.grantRole(vault_.ALLOCATOR_MANAGER_ROLE(), msg.sender);
     }
 
     function _renounceTemporaryRoles() internal virtual override {
         super._renounceTemporaryRoles();
 
-        vault.renounceRole(keccak256("KERNEL_DEPENDENCY_MANAGER_ROLE"), msg.sender);
-        vault.renounceRole(keccak256("DEPOSIT_MANAGER_ROLE"), msg.sender);
-        vault.renounceRole(keccak256("ALLOCATOR_MANAGER_ROLE"), msg.sender);
+        vault.renounceRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), msg.sender);
+        vault.renounceRole(vault_.DEPOSIT_MANAGER_ROLE(), msg.sender);
+        vault.renounceRole(vault_.ALLOCATOR_MANAGER_ROLE(), msg.sender);
     }
 }
