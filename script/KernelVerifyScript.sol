@@ -43,19 +43,38 @@ abstract contract KernelVerifyScript is BaseVerifyScript {
         super._verifyDefaultRoles();
 
         // verify timelock roles
-        assertEq(vault.hasRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), address(timelock)), true);
+        bool timelockRole = vault.hasRole(vault.KERNEL_DEPENDENCY_MANAGER_ROLE(), address(timelock));
+        console.log(timelockRole ? "\u2705" : "\u274C", "timelock has KERNEL_DEPENDENCY_MANAGER_ROLE:", address(timelock));
+        assertEq(timelockRole, true);
 
         // verify actors_ roles
-        assertEq(vault.hasRole(vault_.DEPOSIT_MANAGER_ROLE(), actors_.DEPOSIT_MANAGER()), true);
-        assertEq(vault.hasRole(vault_.ALLOCATOR_MANAGER_ROLE(), actors_.ALLOCATOR_MANAGER()), true);
+        bool depositManagerRole = vault.hasRole(vault.DEPOSIT_MANAGER_ROLE(), actors_.DEPOSIT_MANAGER());
+        console.log(depositManagerRole ? "\u2705" : "\u274C", "DEPOSIT_MANAGER has DEPOSIT_MANAGER_ROLE:", actors_.DEPOSIT_MANAGER());
+        assertEq(depositManagerRole, true);
+
+        bool allocationManagerRole = vault.hasRole(vault.ALLOCATOR_MANAGER_ROLE(), actors_.ALLOCATOR_MANAGER());
+        console.log(allocationManagerRole ? "\u2705" : "\u274C", "ALLOCATOR_MANAGER has ALLOCATOR_MANAGER_ROLE:", actors.ALLOCATOR_MANAGER());
+        assertEq(allocationManagerRole, true);
     }
 
     function _verifyTemporaryRoles() internal view override {
         super._verifyTemporaryRoles();
 
-        assertEq(vault.hasRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), deployer), false);
-        assertEq(vault.hasRole(vault_.DEPOSIT_MANAGER_ROLE(), deployer), false);
-        assertEq(vault.hasRole(vault_.ALLOCATOR_MANAGER_ROLE(), deployer), false);
+        bool kernelDependencyManagerRole = vault.hasRole(vault.KERNEL_DEPENDENCY_MANAGER_ROLE(), deployer);
+        console.log(
+            kernelDependencyManagerRole ? "\u2705" : "\u274C",
+            "deployer has KERNEL_DEPENDENCY_MANAGER_ROLE:",
+            deployer
+        );
+        assertEq(kernelDependencyManagerRole, true);
+
+        bool depositManagerRole = vault.hasRole(vault.DEPOSIT_MANAGER_ROLE(), deployer);
+        console.log(depositManagerRole ? "\u2705" : "\u274C", "deployer has DEPOSIT_MANAGER_ROLE:", deployer);
+        assertEq(depositManagerRole, true);
+
+        bool allocatorManagerRole = vault.hasRole(vault.ALLOCATOR_MANAGER_ROLE(), deployer);
+        console.log(allocatorManagerRole ? "\u2705" : "\u274C", "deployer has ALLOCATOR_MANAGER_ROLE:", deployer);
+        assertEq(allocatorManagerRole, true);
     }
 
     function _verifyStakingRule(IVault v, address contractAddress, address asset) internal view {
