@@ -107,6 +107,10 @@ contract DeployYnWBNBkStrategy is BaseKernelScript {
             vault.renounceRole(vault.PROVIDER_MANAGER_ROLE(), msg.sender);
             vault.renounceRole(vault.ASSET_MANAGER_ROLE(), msg.sender);
             vault.renounceRole(vault.UNPAUSER_ROLE(), msg.sender);
+
+            vault.renounceRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), msg.sender);
+            vault.renounceRole(vault_.DEPOSIT_MANAGER_ROLE(), msg.sender);
+            vault.renounceRole(vault_.ALLOCATOR_MANAGER_ROLE(), msg.sender);
             console.log("YNBNBX is still undefined (zero address). Run configure allocator script after deployment.");
         } else {
             _renounceTemporaryRoles();
