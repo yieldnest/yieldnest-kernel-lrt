@@ -117,7 +117,6 @@ contract DeployYnclisBNBkStrategy is BaseKernelScript {
         vault_.processAccounting();
 
         if (contracts.YNBNBX() == address(0)) {
-
             vault.renounceRole(vault.PROCESSOR_MANAGER_ROLE(), msg.sender);
             vault.renounceRole(vault.BUFFER_MANAGER_ROLE(), msg.sender);
             vault.renounceRole(vault.PROVIDER_MANAGER_ROLE(), msg.sender);
