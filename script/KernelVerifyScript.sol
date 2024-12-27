@@ -44,16 +44,26 @@ abstract contract KernelVerifyScript is BaseVerifyScript {
 
         // verify timelock roles
         bool timelockRole = vault.hasRole(vault.KERNEL_DEPENDENCY_MANAGER_ROLE(), address(timelock));
-        console.log(timelockRole ? "\u2705" : "\u274C", "timelock has KERNEL_DEPENDENCY_MANAGER_ROLE:", address(timelock));
+        console.log(
+            timelockRole ? "\u2705" : "\u274C", "timelock has KERNEL_DEPENDENCY_MANAGER_ROLE:", address(timelock)
+        );
         assertEq(timelockRole, true);
 
         // verify actors_ roles
         bool depositManagerRole = vault.hasRole(vault.DEPOSIT_MANAGER_ROLE(), actors_.DEPOSIT_MANAGER());
-        console.log(depositManagerRole ? "\u2705" : "\u274C", "DEPOSIT_MANAGER has DEPOSIT_MANAGER_ROLE:", actors_.DEPOSIT_MANAGER());
+        console.log(
+            depositManagerRole ? "\u2705" : "\u274C",
+            "DEPOSIT_MANAGER has DEPOSIT_MANAGER_ROLE:",
+            actors_.DEPOSIT_MANAGER()
+        );
         assertEq(depositManagerRole, true);
 
         bool allocationManagerRole = vault.hasRole(vault.ALLOCATOR_MANAGER_ROLE(), actors_.ALLOCATOR_MANAGER());
-        console.log(allocationManagerRole ? "\u2705" : "\u274C", "ALLOCATOR_MANAGER has ALLOCATOR_MANAGER_ROLE:", actors.ALLOCATOR_MANAGER());
+        console.log(
+            allocationManagerRole ? "\u2705" : "\u274C",
+            "ALLOCATOR_MANAGER has ALLOCATOR_MANAGER_ROLE:",
+            actors.ALLOCATOR_MANAGER()
+        );
         assertEq(allocationManagerRole, true);
     }
 
@@ -62,9 +72,7 @@ abstract contract KernelVerifyScript is BaseVerifyScript {
 
         bool kernelDependencyManagerRole = vault.hasRole(vault.KERNEL_DEPENDENCY_MANAGER_ROLE(), deployer);
         console.log(
-            kernelDependencyManagerRole ? "\u2705" : "\u274C",
-            "deployer has KERNEL_DEPENDENCY_MANAGER_ROLE:",
-            deployer
+            kernelDependencyManagerRole ? "\u2705" : "\u274C", "deployer has KERNEL_DEPENDENCY_MANAGER_ROLE:", deployer
         );
         assertEq(kernelDependencyManagerRole, true);
 
