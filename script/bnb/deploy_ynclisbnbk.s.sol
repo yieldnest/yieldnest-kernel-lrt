@@ -20,7 +20,7 @@ import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.so
 // FOUNDRY_PROFILE=mainnet forge script DeployYnclisBNBkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
 contract DeployYnclisBNBkStrategy is BaseKernelScript {
     function symbol() public pure override returns (string memory) {
-        return "ynclisBNBk";
+        return "ynClisBNBk";
     }
 
     function deployRateProvider() internal {
@@ -117,11 +117,16 @@ contract DeployYnclisBNBkStrategy is BaseKernelScript {
         vault_.processAccounting();
 
         if (contracts.YNBNBX() == address(0)) {
-            vault.renounceRole(keccak256("PROCESSOR_MANAGER_ROLE"), msg.sender);
-            vault.renounceRole(keccak256("BUFFER_MANAGER_ROLE"), msg.sender);
-            vault.renounceRole(keccak256("PROVIDER_MANAGER_ROLE"), msg.sender);
-            vault.renounceRole(keccak256("ASSET_MANAGER_ROLE"), msg.sender);
-            vault.renounceRole(keccak256("UNPAUSER_ROLE"), msg.sender);
+            // unroll all the roles
+            vault.renounceRole(vault.PROCESSOR_MANAGER_ROLE(), msg.sender);
+            vault.renounceRole(vault.BUFFER_MANAGER_ROLE(), msg.sender);
+            vault.renounceRole(vault.PROVIDER_MANAGER_ROLE(), msg.sender);
+            vault.renounceRole(vault.ASSET_MANAGER_ROLE(), msg.sender);
+            vault.renounceRole(vault.UNPAUSER_ROLE(), msg.sender);
+
+            vault.renounceRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), msg.sender);
+            vault.renounceRole(vault_.DEPOSIT_MANAGER_ROLE(), msg.sender);
+            vault.renounceRole(vault_.ALLOCATOR_MANAGER_ROLE(), msg.sender);
             console.log("YNBNBX is still undefined (zero address). Run configure allocator script after deployment.");
         } else {
             _renounceTemporaryRoles();

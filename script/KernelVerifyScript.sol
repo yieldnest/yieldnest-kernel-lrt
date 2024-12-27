@@ -43,20 +43,19 @@ abstract contract KernelVerifyScript is BaseVerifyScript {
         super._verifyDefaultRoles();
 
         // verify timelock roles
-        assertEq(vault.hasRole(keccak256("KERNEL_DEPENDENCY_MANAGER_ROLE"), address(timelock)), true);
+        assertEq(vault.hasRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), address(timelock)), true);
 
         // verify actors_ roles
-        assertEq(vault.hasRole(keccak256("DEPOSIT_MANAGER_ROLE"), actors_.DEPOSIT_MANAGER()), true);
-        assertEq(vault.hasRole(keccak256("ALLOCATOR_MANAGER_ROLE"), actors_.ALLOCATOR_MANAGER()), true);
+        assertEq(vault.hasRole(vault_.DEPOSIT_MANAGER_ROLE(), actors_.DEPOSIT_MANAGER()), true);
+        assertEq(vault.hasRole(vault_.ALLOCATOR_MANAGER_ROLE(), actors_.ALLOCATOR_MANAGER()), true);
     }
 
     function _verifyTemporaryRoles() internal view override {
         super._verifyTemporaryRoles();
 
-        assertEq(vault.hasRole(keccak256("KERNEL_DEPENDENCY_MANAGER_ROLE"), deployer), false);
-
-        assertEq(vault.hasRole(keccak256("DEPOSIT_MANAGER_ROLE"), deployer), false);
-        assertEq(vault.hasRole(keccak256("ALLOCATOR_MANAGER_ROLE"), deployer), false);
+        assertEq(vault.hasRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), deployer), false);
+        assertEq(vault.hasRole(vault_.DEPOSIT_MANAGER_ROLE(), deployer), false);
+        assertEq(vault.hasRole(vault_.ALLOCATOR_MANAGER_ROLE(), deployer), false);
     }
 
     function _verifyStakingRule(IVault v, address contractAddress, address asset) internal view {
