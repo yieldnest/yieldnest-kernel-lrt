@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
 
+import {console} from "lib/forge-std/src/console.sol";
 import {IActors} from "lib/yieldnest-vault/script/BaseScript.sol";
 import {BaseVerifyScript, IVault} from "lib/yieldnest-vault/script/BaseVerifyScript.sol";
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
@@ -43,19 +44,50 @@ abstract contract KernelVerifyScript is BaseVerifyScript {
         super._verifyDefaultRoles();
 
         // verify timelock roles
-        assertEq(vault.hasRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), address(timelock)), true);
+        bool timelockRole = vault_.hasRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), address(timelock));
+        console.log(
+            timelockRole ? "\u2705" : "\u274C", "timelock has KERNEL_DEPENDENCY_MANAGER_ROLE:", address(timelock)
+        );
+        assertEq(timelockRole, true);
 
         // verify actors_ roles
-        assertEq(vault.hasRole(vault_.DEPOSIT_MANAGER_ROLE(), actors_.DEPOSIT_MANAGER()), true);
-        assertEq(vault.hasRole(vault_.ALLOCATOR_MANAGER_ROLE(), actors_.ALLOCATOR_MANAGER()), true);
+        bool depositManagerRole = vault_.hasRole(vault_.DEPOSIT_MANAGER_ROLE(), actors_.DEPOSIT_MANAGER());
+        console.log(
+            depositManagerRole ? "\u2705" : "\u274C",
+            "DEPOSIT_MANAGER has DEPOSIT_MANAGER_ROLE:",
+            actors_.DEPOSIT_MANAGER()
+        );
+        assertEq(depositManagerRole, true);
+
+        bool allocationManagerRole = vault_.hasRole(vault_.ALLOCATOR_MANAGER_ROLE(), actors_.ALLOCATOR_MANAGER());
+        console.log(
+            allocationManagerRole ? "\u2705" : "\u274C",
+            "ALLOCATOR_MANAGER has ALLOCATOR_MANAGER_ROLE:",
+            actors_.ALLOCATOR_MANAGER()
+        );
+        assertEq(allocationManagerRole, true);
     }
 
     function _verifyTemporaryRoles() internal view override {
         super._verifyTemporaryRoles();
 
-        assertEq(vault.hasRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), deployer), false);
-        assertEq(vault.hasRole(vault_.DEPOSIT_MANAGER_ROLE(), deployer), false);
-        assertEq(vault.hasRole(vault_.ALLOCATOR_MANAGER_ROLE(), deployer), false);
+        bool kernelDependencyManagerRole = vault_.hasRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), deployer);
+        console.log(
+            kernelDependencyManagerRole ? "\u2705" : "\u274C",
+            "deployer has renounced KERNEL_DEPENDENCY_MANAGER_ROLE:",
+            deployer
+        );
+        assertEq(kernelDependencyManagerRole, false);
+
+        bool depositManagerRole = vault_.hasRole(vault_.DEPOSIT_MANAGER_ROLE(), deployer);
+        console.log(depositManagerRole ? "\u2705" : "\u274C", "deployer has renounced DEPOSIT_MANAGER_ROLE:", deployer);
+        assertEq(depositManagerRole, false);
+
+        bool allocatorManagerRole = vault_.hasRole(vault_.ALLOCATOR_MANAGER_ROLE(), deployer);
+        console.log(
+            allocatorManagerRole ? "\u2705" : "\u274C", "deployer has renounced ALLOCATOR_MANAGER_ROLE:", deployer
+        );
+        assertEq(allocatorManagerRole, false);
     }
 
     function _verifyStakingRule(IVault v, address contractAddress, address asset) internal view {
