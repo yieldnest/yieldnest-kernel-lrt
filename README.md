@@ -1,3 +1,3 @@
 # Yieldnest Kernel LRT
 
-Liquid Restaking Tokens built on top of https://kerneldao.com/
+Liquid Restaking Tokens powered by https://kerneldao.com/ 
