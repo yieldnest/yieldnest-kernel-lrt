@@ -42,7 +42,7 @@ jobs:
       - name: Run Forge Unit tests
         env:
           FOUNDRY_PROFILE: default
-          BNB_MAINNET_RPC_URL:
+          BNB_MAINNET_RPC_URL: ${{ secrets.BNB_MAINNET_RPC_URL }}
         run: |
           forge test -vvv
         id: test
