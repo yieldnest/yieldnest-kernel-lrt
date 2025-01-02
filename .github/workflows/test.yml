@@ -42,7 +42,6 @@ jobs:
       - name: Run Forge Unit tests
         env:
           FOUNDRY_PROFILE: default
-          BNB_MAINNET_RPC_URL: ${{ secrets.BNB_MAINNET_RPC_URL }}
         run: |
           forge test -vvv
         id: test
@@ -51,5 +50,6 @@ jobs:
         env:
           FOUNDRY_PROFILE: mainnet
           BSCSCAN_API_KEY: invalid
+          BNB_MAINNET_RPC_URL: ${{ secrets.BNB_MAINNET_RPC_URL }}
         run: |
           forge test -vvv 
