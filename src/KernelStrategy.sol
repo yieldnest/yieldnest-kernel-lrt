@@ -289,9 +289,10 @@ contract KernelStrategy is Vault {
             _unstake(asset_, assets - vaultBalance, IStakerGateway(strategyStorage.stakerGateway));
         }
 
-        SafeERC20.safeTransfer(IERC20(asset_), receiver, assets);
-
+        // NOTE: burn shares before withdrawing the assets
         _burn(owner, shares);
+
+        SafeERC20.safeTransfer(IERC20(asset_), receiver, assets);
 
         emit WithdrawAsset(caller, receiver, owner, asset_, assets, shares);
     }
