@@ -101,11 +101,16 @@ contract KernelStrategy is Vault {
      * @return maxShares The maximum amount of shares.
      */
     function maxRedeem(address owner) public view override returns (uint256 maxShares) {
-        if (paused()) {
-            return 0;
-        }
+        maxShares = _maxRedeemAsset(asset(), owner);
+    }
 
-        return balanceOf(owner);
+    function maxRedeemAsset(address asset_, address owner) public view returns (uint256 maxShares) {
+        maxShares = _maxRedeemAsset(asset_, owner);
+    }
+
+    function _maxRedeemAsset(address asset_, address owner) internal view virtual returns (uint256 maxShares) {
+        uint256 maxAssets = _maxWithdrawAsset(asset_, owner);
+        (maxShares,) = _convertToShares(asset_, maxAssets, Math.Rounding.Floor);
     }
 
     /**
@@ -205,7 +210,7 @@ contract KernelStrategy is Vault {
         if (paused()) {
             revert Paused();
         }
-        uint256 maxShares = maxRedeem(owner);
+        uint256 maxShares = maxRedeemAsset(asset_, owner);
         if (shares > maxShares) {
             revert ExceededMaxRedeem(owner, shares, maxShares);
         }

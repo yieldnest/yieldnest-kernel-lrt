@@ -935,12 +935,15 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
 
         uint256 shares = depositIntoVault(MC.SLISBNB, amount, false);
 
-        uint256 previewAssets = vault.previewRedeemAsset(MC.SLISBNB, shares);
+        uint256 maxRedeem = vault.maxRedeemAsset(MC.SLISBNB, bob);
+        uint256 previewAssets = vault.previewRedeemAsset(MC.SLISBNB, maxRedeem);
+
+        assertEqThreshold(maxRedeem, shares, 5, "Max redeem should be equal to shares");
 
         assertGt(asset.balanceOf(address(vault)), previewAssets, "Vault should have enough assets to withdraw");
 
         vm.prank(bob);
-        uint256 assets = vault.redeemAsset(MC.SLISBNB, shares, bob, bob);
+        uint256 assets = vault.redeemAsset(MC.SLISBNB, maxRedeem, bob, bob);
 
         assertEq(previewAssets, assets, "Preview assets should be equal to assets");
 
@@ -956,7 +959,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
             beforeBobBalance - amount + assets,
             "Bob should have the amount deposited after withdraw"
         );
-        assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have no shares after withdraw");
+        assertEqThreshold(vault.balanceOf(bob), beforeBobShares, 5, "Bob should have no shares after withdraw");
     }
 
     function test_Vault_ynBNBk_deposit_and_stake_slisBNB(uint256 amount) public {
@@ -1072,10 +1075,13 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
             uint256 beforeBobBalance = asset.balanceOf(bob);
             uint256 beforeBobShares = vault.balanceOf(bob);
 
-            uint256 previewAssets = vault.previewRedeemAsset(MC.SLISBNB, beforeBobShares);
+            uint256 maxRedeem = vault.maxRedeemAsset(MC.SLISBNB, bob);
+            uint256 previewAssets = vault.previewRedeemAsset(MC.SLISBNB, maxRedeem);
+
+            assertEqThreshold(maxRedeem, beforeBobShares, 5, "Max redeem should be equal to shares");
 
             vm.prank(bob);
-            uint256 assets = vault.redeemAsset(MC.SLISBNB, beforeBobShares, bob, bob);
+            uint256 assets = vault.redeemAsset(MC.SLISBNB, maxRedeem, bob, bob);
 
             assertEq(previewAssets, assets, "Preview assets should be equal to assets");
 
@@ -1091,7 +1097,7 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
             );
             assertEq(afterVaultBalance, beforeVaultBalance, "Vault balance should remain same");
             assertEq(afterBobBalance, beforeBobBalance + assets, "Bob balance should increase by assets");
-            assertEq(afterBobShares, 0, "Bob shares should decrease by shares");
+            assertEqThreshold(afterBobShares, 0, 5, "Bob shares should decrease by shares");
         }
     }
 }

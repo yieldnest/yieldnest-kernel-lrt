@@ -69,9 +69,10 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
         depositAmount = bound(depositAmount, 10, INITIAL_BALANCE);
         // deposit amount
         vm.prank(alice);
-        vault.deposit(depositAmount, alice);
+        uint256 shares = vault.deposit(depositAmount, alice);
 
         assertEq(vault.maxWithdrawAsset(MC.WBNB, alice), depositAmount);
+        assertEq(vault.maxRedeemAsset(MC.WBNB, alice), shares);
     }
 
     function test_KernelStrategy_ynBNBk_withdraw_previewWithdrawAsset(uint256 depositAmount, uint256 withdrawalAmount)
@@ -515,10 +516,12 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
             assertEq(maxWithdraw, maxWithdraw1, "maxWithdraw is incorrect");
 
             assertEq(maxWithdraw1, depositAmount, "Max withdraw for asset1 is incorrect");
+            assertEq(vault.maxRedeemAsset(address(asset1), alice), shares1, "maxRedeem is incorrect");
 
             uint256 maxWithdraw2 = vault.maxWithdrawAsset(address(asset2), alice);
 
             assertEq(maxWithdraw2, depositAmount, "Max withdraw for asset2 is incorrect");
+            assertEq(vault.maxRedeemAsset(address(asset2), alice), shares2, "maxRedeem is incorrect");
         }
 
         {
