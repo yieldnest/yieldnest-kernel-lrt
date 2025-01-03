@@ -20,16 +20,6 @@ contract MigratedKernelStrategy is KernelStrategy {
     }
 
     /**
-     * @dev Structure to represent an asset's details.
-     * @param asset The address of the asset.
-     * @param active Whether the asset is active.
-     */
-    struct Asset {
-        address asset;
-        bool active;
-    }
-
-    /**
      * @notice Retrieves the storage location for ERC4626 storage.
      * @dev The storage slot is hardcoded for optimized access.
      * @return $ The ERC4626Storage reference at the designated slot.
@@ -45,46 +35,18 @@ contract MigratedKernelStrategy is KernelStrategy {
      * @param admin The address of the admin.
      * @param name The name of the vault.
      * @param symbol The symbol of the vault.
-     * @param assets The array of Asset structs containing addresses and active states.
-     * @param stakerGateway The address of the staker gateway.
      * @param baseWithdrawalFee The base fee for withdrawals.
      */
-    function initializeAndMigrate(
-        address admin,
-        string memory name,
-        string memory symbol,
-        Asset[] calldata assets,
-        address stakerGateway,
-        uint64 baseWithdrawalFee
-    ) external reinitializer(2) {
+    function initializeAndMigrate(address admin, string memory name, string memory symbol, uint64 baseWithdrawalFee)
+        external
+        reinitializer(2)
+    {
         _initialize(admin, name, symbol, 18, baseWithdrawalFee, true, true);
 
-        StrategyStorage storage strategyStorage = _getStrategyStorage();
-        strategyStorage.stakerGateway = stakerGateway;
-        strategyStorage.syncDeposit = true;
-        strategyStorage.syncWithdraw = true;
-
-        _migrate(assets);
-    }
-
-    /**
-     * @notice Migrates assets to the vault and resets ERC4626 storage.
-     * @dev This function clears the previous storage and adds new assets.
-     * @param assets The array of assets to be added to the vault.
-     */
-    function _migrate(Asset[] memory assets) private {
         ERC4626Storage storage erc4626Storage = _getERC4626Storage();
 
         // Clear existing storage
         erc4626Storage._asset = IERC20(0x0000000000000000000000000000000000000000);
         erc4626Storage._underlyingDecimals = 0;
-
-        // Add new assets
-        Asset memory tempAsset;
-        for (uint256 i; i < assets.length; i++) {
-            tempAsset = assets[i];
-
-            _addAsset(tempAsset.asset, 18, tempAsset.active);
-        }
     }
 }

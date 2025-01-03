@@ -111,12 +111,6 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         }
 
         {
-            MigratedKernelStrategy.Asset[] memory assets = new MigratedKernelStrategy.Asset[](3);
-
-            assets[0] = MigratedKernelStrategy.Asset({asset: MC.WBNB, active: false});
-            assets[1] = MigratedKernelStrategy.Asset({asset: MC.SLISBNB, active: true});
-            assets[2] = MigratedKernelStrategy.Asset({asset: MC.BNBX, active: true});
-
             vm.prank(proxyAdmin.owner());
 
             proxyAdmin.upgradeAndCall(
@@ -127,8 +121,6 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
                     address(ADMIN),
                     "YieldNest Restaked BNB - Kernel",
                     "ynBNBk",
-                    assets,
-                    MC.STAKER_GATEWAY,
                     0 // base fee
                 )
             );
@@ -216,6 +208,14 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
 
         // set provider
         vault_.setProvider(address(MC.PROVIDER));
+        vault_.setStakerGateway(MC.STAKER_GATEWAY);
+
+        vault_.setSyncDeposit(true);
+        vault_.setSyncWithdraw(true);
+
+        vault_.addAsset(MC.WBNB, false);
+        vault_.addAsset(MC.SLISBNB, true);
+        vault_.addAsset(MC.BNBX, true);
 
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.WBNB), 18, false);
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SLISBNB), 18, false);
