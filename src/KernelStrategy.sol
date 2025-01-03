@@ -92,11 +92,7 @@ contract KernelStrategy is Vault {
      * @return maxAssets The maximum amount of assets.
      */
     function maxWithdraw(address owner) public view override returns (uint256 maxAssets) {
-        if (paused()) {
-            return 0;
-        }
-
-        (maxAssets,) = _convertToAssets(asset(), balanceOf(owner), Math.Rounding.Floor);
+        maxAssets = _maxWithdrawAsset(asset(), owner);
     }
 
     /**
@@ -119,11 +115,29 @@ contract KernelStrategy is Vault {
      * @return maxAssets The maximum amount of assets.
      */
     function maxWithdrawAsset(address asset_, address owner) public view returns (uint256 maxAssets) {
-        if (paused()) {
+        maxAssets = _maxWithdrawAsset(asset_, owner);
+    }
+
+    function _maxWithdrawAsset(address asset_, address owner) internal view virtual returns (uint256 maxAssets) {
+        if (paused() || !_getAssetStorage().assets[asset_].active) {
             return 0;
         }
 
         (maxAssets,) = _convertToAssets(asset_, balanceOf(owner), Math.Rounding.Floor);
+
+        uint256 availableAssets = IERC20(asset_).balanceOf(address(this));
+
+        StrategyStorage storage strategyStorage = _getStrategyStorage();
+
+        if (strategyStorage.syncWithdraw) {
+            uint256 availableAssetsInKernel =
+                IStakerGateway(strategyStorage.stakerGateway).balanceOf(asset_, address(this));
+            availableAssets += availableAssetsInKernel;
+        }
+
+        if (availableAssets < maxAssets) {
+            maxAssets = availableAssets;
+        }
     }
 
     /**

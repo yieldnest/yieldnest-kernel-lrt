@@ -15,7 +15,7 @@ import {BaseKernelScript} from "script/BaseKernelScript.sol";
 
 import {console} from "lib/forge-std/src/console.sol";
 import {KernelClisVaultViewer} from "src/utils/KernelClisVaultViewer.sol";
-import {BaseVaultViewer, KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
+import {KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 
 // FOUNDRY_PROFILE=mainnet forge script DeployYnclisBNBkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
 contract DeployYnclisBNBkStrategy is BaseKernelScript {
