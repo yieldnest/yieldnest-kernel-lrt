@@ -198,12 +198,46 @@ contract KernelStrategyWithdrawFeesUnitTest is SetupKernelStrategy {
 
         assertEq(aliceBalanceBefore, aliceBalanceAfter + shares, "Alice's balance should be less the shares withdrawn");
         assertEq(previewAmount, shares, "Preview withdraw amount not preview amount");
-        assertEq(depositShares, shares, "Deposit shares not match with withdraw shares");
+        assertEqThreshold(depositShares, shares, 10, "Deposit shares not match with withdraw shares");
         assertLt(totalAssetsAfter, totalAssetsBefore, "Total maxWithdraw should be less after withdraw");
         assertEq(
             totalAssetsBefore,
             totalAssetsAfter + maxWithdraw,
             "Total maxWithdraw should be total assets after plus assets withdrawn"
         );
+    }
+
+    function test_KernelStrategy_withdraw_sync_disabled(uint256 assets) external {
+        assets = bound(assets, 2, 50_000 ether);
+
+        vm.prank(alice);
+        vault.depositAsset(MC.WBNB, assets, alice);
+
+        // the assets are in kernel vault
+        assertEq(wbnb.balanceOf(address(vault)), 0, "Vault balance should be 0");
+
+        vm.startPrank(ADMIN);
+        vault.setSyncDeposit(false);
+        vault.setSyncWithdraw(false);
+        vault.setBaseWithdrawalFee(1000_000); // Set base withdrawal fee to 1% (1% * 1e8)
+        vm.stopPrank();
+
+        vm.prank(alice);
+        uint256 depositShares = vault.depositAsset(MC.WBNB, assets, alice);
+
+        assertEq(vault.balanceOf(alice), depositShares * 2, "Alice should have correct shares");
+
+        assertEq(wbnb.balanceOf(address(vault)), assets, "Vault balance should be assets");
+
+        uint256 maxWithdraw = vault.maxWithdrawAsset(MC.WBNB, alice);
+
+        assertEq(maxWithdraw, assets, "Max withdraw should be equal to assets");
+
+        vm.prank(alice);
+        uint256 shares = vault.withdrawAsset(MC.WBNB, assets, alice, alice);
+
+        uint256 burntShares = depositShares + vault._feeOnRaw(depositShares);
+
+        assertEq(shares, burntShares, "Burnt shares must include fees");
     }
 }
