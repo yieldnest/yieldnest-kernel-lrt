@@ -3,7 +3,10 @@ pragma solidity ^0.8.24;
 
 import {KernelStrategy} from "./KernelStrategy.sol";
 
+import {IERC20} from "lib/yieldnest-vault/src/Common.sol";
 import {IWBNB} from "src/interface/external/IWBNB.sol";
+
+import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 /**
@@ -37,5 +40,18 @@ contract KernelClisStrategy is KernelStrategy {
 
         //wrap native token
         IWBNB(asset_).deposit{value: assets}();
+    }
+
+    function _availableAssets(address asset_) internal view virtual override returns (uint256 availableAssets) {
+        availableAssets = IERC20(asset_).balanceOf(address(this));
+
+        StrategyStorage storage strategyStorage = _getStrategyStorage();
+
+        if (strategyStorage.syncWithdraw && asset_ == asset()) {
+            IStakerGateway stakerGateway = IStakerGateway(strategyStorage.stakerGateway);
+            address clisbnb = IKernelConfig(stakerGateway.getConfig()).getClisBnbAddress();
+            uint256 availableAssetsInKernel = stakerGateway.balanceOf(clisbnb, address(this));
+            availableAssets += _convertAssetToBase(clisbnb, availableAssetsInKernel);
+        }
     }
 }

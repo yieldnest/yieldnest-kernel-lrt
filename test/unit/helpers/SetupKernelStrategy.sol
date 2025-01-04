@@ -36,7 +36,10 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetKernelActors, EtchUtil
     IStakerGateway public mockGateway;
     MockRateProvider public lowDecimalProvider;
 
-    address public alice = address(0xa11ce);
+    address public alice = address(0x0a11ce);
+    address public bob = address(0x0b0b);
+    address public chad = address(0x0cad);
+
     uint256 public constant INITIAL_BALANCE = 100_000 ether;
 
     function deploy() public {
@@ -90,6 +93,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetKernelActors, EtchUtil
         vault.grantRole(vault.KERNEL_DEPENDENCY_MANAGER_ROLE(), ADMIN);
         vault.grantRole(vault.DEPOSIT_MANAGER_ROLE(), ADMIN);
         vault.grantRole(vault.ALLOCATOR_MANAGER_ROLE(), ADMIN);
+        vault.grantRole(vault.FEE_MANAGER_ROLE(), ADMIN);
 
         // set provider
         vault.setProvider(address(provider));

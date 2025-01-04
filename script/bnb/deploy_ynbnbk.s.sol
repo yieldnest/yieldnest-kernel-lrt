@@ -91,20 +91,12 @@ contract DeployYnBNBkStrategy is BaseKernelScript, BatchScript {
     function deployMigrateVault(bool isSafeTx) internal {
         implementation = Vault(payable(address(new MigratedKernelStrategy())));
 
-        MigratedKernelStrategy.Asset[] memory assets = new MigratedKernelStrategy.Asset[](3);
-
-        assets[0] = MigratedKernelStrategy.Asset({asset: contracts.WBNB(), active: false});
-        assets[1] = MigratedKernelStrategy.Asset({asset: contracts.SLISBNB(), active: true});
-        assets[2] = MigratedKernelStrategy.Asset({asset: contracts.BNBX(), active: true});
-
         if (isSafeTx) {
             bytes memory initData = abi.encodeWithSelector(
                 MigratedKernelStrategy.initializeAndMigrate.selector,
                 actors_.ADMIN(),
                 "YieldNest Restaked BNB - Kernel",
                 symbol(),
-                assets,
-                contracts.STAKER_GATEWAY(),
                 0
             );
 
@@ -115,8 +107,6 @@ contract DeployYnBNBkStrategy is BaseKernelScript, BatchScript {
                 msg.sender,
                 "YieldNest Restaked BNB - Kernel",
                 symbol(),
-                assets,
-                contracts.STAKER_GATEWAY(),
                 0
             );
 
@@ -186,6 +176,14 @@ contract DeployYnBNBkStrategy is BaseKernelScript, BatchScript {
 
         IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
 
+        vault_.setStakerGateway(contracts.STAKER_GATEWAY());
+        vault_.setSyncDeposit(true);
+        vault_.setSyncWithdraw(true);
+
+        vault_.addAsset(contracts.WBNB(), false);
+        vault_.addAsset(contracts.SLISBNB(), true);
+        vault_.addAsset(contracts.BNBX(), true);
+
         vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.WBNB()), 18, false);
         vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.SLISBNB()), 18, false);
         vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.BNBX()), 18, false);
@@ -206,9 +204,7 @@ contract DeployYnBNBkStrategy is BaseKernelScript, BatchScript {
         addToBatch(
             address(vault),
             0,
-            abi.encodeWithSelector(
-                AccessControlUpgradeable.grantRole.selector, keccak256("DEFAULT_ADMIN_ROLE"), actors_.ADMIN()
-            )
+            abi.encodeWithSelector(AccessControlUpgradeable.grantRole.selector, bytes32(0), actors_.ADMIN())
         );
         addToBatch(
             address(vault),
@@ -305,6 +301,15 @@ contract DeployYnBNBkStrategy is BaseKernelScript, BatchScript {
             )
         );
         addToBatch(address(vault), 0, abi.encodeWithSelector(IVault.setProvider.selector, address(rateProvider)));
+
+        addToBatch(
+            address(vault),
+            0,
+            abi.encodeWithSelector(KernelStrategy.setStakerGateway.selector, contracts.STAKER_GATEWAY())
+        );
+        addToBatch(address(vault), 0, abi.encodeWithSelector(KernelStrategy.setSyncDeposit.selector, true));
+        addToBatch(address(vault), 0, abi.encodeWithSelector(KernelStrategy.setSyncWithdraw.selector, true));
+
         addToBatch(
             address(vault),
             0,
@@ -323,6 +328,11 @@ contract DeployYnBNBkStrategy is BaseKernelScript, BatchScript {
                 AccessControlUpgradeable.grantRole.selector, keccak256("ASSET_MANAGER_ROLE"), actors_.ADMIN()
             )
         );
+
+        addToBatch(address(vault), 0, abi.encodeWithSelector(IVault.addAsset.selector, contracts.WBNB(), false));
+        addToBatch(address(vault), 0, abi.encodeWithSelector(IVault.addAsset.selector, contracts.SLISBNB(), true));
+        addToBatch(address(vault), 0, abi.encodeWithSelector(IVault.addAsset.selector, contracts.BNBX(), true));
+
         addToBatch(
             address(vault),
             0,
