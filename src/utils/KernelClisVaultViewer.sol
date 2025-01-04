@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {IERC20, Math} from "lib/yieldnest-vault/src/Common.sol";
+import {IERC20Metadata as IERC20, Math} from "lib/yieldnest-vault/src/Common.sol";
 
 import {IKernelProvider} from "src/interface/IKernelProvider.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
@@ -11,6 +11,14 @@ import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 
 contract KernelClisVaultViewer is KernelVaultViewer {
+    error ZeroAddress();
+
+    function _convertAssetToBase(address asset_, uint256 assets) internal view virtual returns (uint256) {
+        if (asset_ == address(0)) revert ZeroAddress();
+        uint256 rate = IKernelProvider(vault().provider()).getRate(asset_);
+        return Math.mulDiv(assets, rate, 10 ** (IERC20(asset_).decimals()), Math.Rounding.Floor);
+    }
+
     function _maxWithdrawAsset(address asset_, address owner) internal view override returns (uint256 maxAssets) {
         if (!vault().getAsset(asset_).active) {
             return 0;
@@ -24,7 +32,7 @@ contract KernelClisVaultViewer is KernelVaultViewer {
             address clisbnb = IKernelConfig(IStakerGateway(vault().getStakerGateway()).getConfig()).getClisBnbAddress();
             address kernelVault = IStakerGateway(vault().getStakerGateway()).getVault(clisbnb);
             uint256 availableAssetsInKernel = IERC20(kernelVault).balanceOf(address(vault()));
-            availableAssets += availableAssetsInKernel;
+            availableAssets += _convertAssetToBase(clisbnb, availableAssetsInKernel);
         }
 
         if (availableAssets < maxAssets) {

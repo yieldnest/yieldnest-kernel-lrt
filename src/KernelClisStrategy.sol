@@ -51,7 +51,7 @@ contract KernelClisStrategy is KernelStrategy {
             IStakerGateway stakerGateway = IStakerGateway(strategyStorage.stakerGateway);
             address clisbnb = IKernelConfig(stakerGateway.getConfig()).getClisBnbAddress();
             uint256 availableAssetsInKernel = stakerGateway.balanceOf(clisbnb, address(this));
-            availableAssets += availableAssetsInKernel;
+            availableAssets += _convertAssetToBase(clisbnb, availableAssetsInKernel);
         }
     }
 }
