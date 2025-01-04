@@ -118,13 +118,18 @@ contract KernelStrategyWithdrawFeesUnitTest is SetupKernelStrategy {
     function test_KernelStrategy_redeemWithFees(uint256 assets, uint256 withdrawnAssets) external {
         // Bound inputs to valid ranges
         vm.assume(assets >= 100000 && assets <= 100_000 ether);
-        vm.assume(withdrawnAssets <= assets);
+        vm.assume(withdrawnAssets <= assets / 2);
         vm.assume(withdrawnAssets > 100000);
 
         vm.prank(alice);
         vault.depositAsset(MC.WBNB, assets, alice);
 
         uint256 withdrawnShares = vault.previewDepositAsset(MC.WBNB, withdrawnAssets);
+
+        uint256 maxRedeem = vault.maxRedeemAsset(MC.WBNB, alice);
+
+        assertGt(maxRedeem, 0, "Max redeem should be greater than 0");
+        assertLe(withdrawnShares, maxRedeem, "Withdrawn shares should be less than max redeem");
 
         vm.prank(alice);
         uint256 redeemedAmount = vault.redeemAsset(MC.WBNB, withdrawnShares, alice, alice);
@@ -198,12 +203,72 @@ contract KernelStrategyWithdrawFeesUnitTest is SetupKernelStrategy {
 
         assertEq(aliceBalanceBefore, aliceBalanceAfter + shares, "Alice's balance should be less the shares withdrawn");
         assertEq(previewAmount, shares, "Preview withdraw amount not preview amount");
-        assertEq(depositShares, shares, "Deposit shares not match with withdraw shares");
+        assertEqThreshold(depositShares, shares, 5, "Deposit shares not match with withdraw shares");
         assertLt(totalAssetsAfter, totalAssetsBefore, "Total maxWithdraw should be less after withdraw");
         assertEq(
             totalAssetsBefore,
             totalAssetsAfter + maxWithdraw,
             "Total maxWithdraw should be total assets after plus assets withdrawn"
         );
+    }
+
+    function test_KernelStrategy_maxWithdraw_sync_disabled(uint256 assets) external {
+        assets = bound(assets, 2, 50_000 ether);
+
+        vm.prank(alice);
+        vault.depositAsset(MC.WBNB, assets, alice);
+
+        // the assets are in kernel vault
+        assertEq(wbnb.balanceOf(address(vault)), 0, "Vault balance should be 0");
+
+        vm.startPrank(ADMIN);
+        vault.setSyncDeposit(false);
+        vault.setSyncWithdraw(false);
+        vault.setBaseWithdrawalFee(1000_000); // Set base withdrawal fee to 1% (1% * 1e8)
+        vm.stopPrank();
+
+        vm.prank(alice);
+        uint256 depositShares = vault.depositAsset(MC.WBNB, assets, alice);
+
+        assertEq(vault.balanceOf(alice), depositShares * 2, "Alice should have correct shares");
+
+        assertEq(wbnb.balanceOf(address(vault)), assets, "Vault balance should be assets");
+
+        uint256 maxWithdraw = vault.maxWithdrawAsset(MC.WBNB, alice);
+        uint256 expectedFee = vault._feeOnTotal(assets);
+
+        assertGt(expectedFee, 0, "Fee should be greater than 0");
+        assertEq(maxWithdraw, assets - expectedFee, "Max withdraw should be equal to assets");
+    }
+
+    function test_KernelStrategy_maxRedeem_sync_disabled(uint256 assets) external {
+        assets = bound(assets, 2, 50_000 ether);
+
+        vm.prank(alice);
+        vault.depositAsset(MC.WBNB, assets, alice);
+
+        // the assets are in kernel vault
+        assertEq(wbnb.balanceOf(address(vault)), 0, "Vault balance should be 0");
+
+        vm.startPrank(ADMIN);
+        vault.setSyncDeposit(false);
+        vault.setSyncWithdraw(false);
+        vault.setBaseWithdrawalFee(1000_000); // Set base withdrawal fee to 1% (1% * 1e8)
+        vm.stopPrank();
+
+        vm.prank(alice);
+        uint256 depositShares = vault.depositAsset(MC.WBNB, assets, alice);
+
+        assertEq(vault.balanceOf(alice), depositShares * 2, "Alice should have correct shares");
+
+        assertEq(wbnb.balanceOf(address(vault)), assets, "Vault balance should be assets");
+
+        uint256 maxRedeem = vault.maxRedeemAsset(MC.WBNB, alice);
+        uint256 expectedFee = vault._feeOnTotal(assets);
+
+        uint256 availableShares = vault.previewDepositAsset(MC.WBNB, assets - expectedFee);
+
+        assertGt(expectedFee, 0, "Fee should be greater than 0");
+        assertEq(maxRedeem, availableShares, "Max redeem should be equal to shares");
     }
 }

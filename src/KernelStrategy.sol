@@ -118,9 +118,11 @@ contract KernelStrategy is Vault {
 
         uint256 availableAssets = _availableAssets(asset_);
 
-        maxAssets = previewRedeemAsset(asset_, balanceOf(owner));
+        (maxAssets,) = _convertToAssets(asset_, balanceOf(owner), Math.Rounding.Floor);
 
         maxAssets = availableAssets < maxAssets ? availableAssets : maxAssets;
+
+        maxAssets = maxAssets - _feeOnTotal(maxAssets);
     }
 
     /**
@@ -170,13 +172,15 @@ contract KernelStrategy is Vault {
             return 0;
         }
 
-        uint256 availableAssets = _availableAssets(asset_);
+        uint256 availableAssetsWithFee = _availableAssets(asset_);
 
         maxShares = balanceOf(owner);
 
-        maxShares = availableAssets < previewRedeemAsset(asset_, maxShares)
-            ? previewWithdrawAsset(asset_, availableAssets)
-            : maxShares;
+        uint256 availableAssets = availableAssetsWithFee - _feeOnTotal(availableAssetsWithFee);
+
+        (uint256 availableShares,) = _convertToShares(asset_, availableAssets, Math.Rounding.Floor);
+
+        maxShares = availableShares < maxShares ? availableShares : maxShares;
     }
 
     /**
