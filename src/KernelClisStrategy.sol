@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {KernelStrategy} from "./KernelStrategy.sol";
 
-import {IERC20, Math} from "lib/yieldnest-vault/src/Common.sol";
+import {IERC20} from "lib/yieldnest-vault/src/Common.sol";
 import {IWBNB} from "src/interface/external/IWBNB.sol";
 
 import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
@@ -42,17 +42,8 @@ contract KernelClisStrategy is KernelStrategy {
         IWBNB(asset_).deposit{value: assets}();
     }
 
-    /**
-     * @dev See {maxWithdrawAsset}.
-     */
-    function _maxWithdrawAsset(address asset_, address owner) internal view override returns (uint256 maxAssets) {
-        if (paused() || !_getAssetStorage().assets[asset_].active) {
-            return 0;
-        }
-
-        (maxAssets,) = _convertToAssets(asset_, balanceOf(owner), Math.Rounding.Floor);
-
-        uint256 availableAssets = IERC20(asset_).balanceOf(address(this));
+    function _availableAssets(address asset_) internal view virtual override returns (uint256 availableAssets) {
+        availableAssets = IERC20(asset_).balanceOf(address(this));
 
         StrategyStorage storage strategyStorage = _getStrategyStorage();
 
@@ -61,10 +52,6 @@ contract KernelClisStrategy is KernelStrategy {
             address clisbnb = IKernelConfig(stakerGateway.getConfig()).getClisBnbAddress();
             uint256 availableAssetsInKernel = stakerGateway.balanceOf(clisbnb, address(this));
             availableAssets += availableAssetsInKernel;
-        }
-
-        if (availableAssets < maxAssets) {
-            maxAssets = availableAssets;
         }
     }
 }

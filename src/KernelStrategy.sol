@@ -96,24 +96,6 @@ contract KernelStrategy is Vault {
     }
 
     /**
-     * @notice Returns the maximum amount of shares that can be redeemed by a given owner.
-     * @param owner The address of the owner.
-     * @return maxShares The maximum amount of shares.
-     */
-    function maxRedeem(address owner) public view override returns (uint256 maxShares) {
-        maxShares = _maxRedeemAsset(asset(), owner);
-    }
-
-    function maxRedeemAsset(address asset_, address owner) public view returns (uint256 maxShares) {
-        maxShares = _maxRedeemAsset(asset_, owner);
-    }
-
-    function _maxRedeemAsset(address asset_, address owner) internal view virtual returns (uint256 maxShares) {
-        uint256 maxAssets = _maxWithdrawAsset(asset_, owner);
-        (maxShares,) = _convertToShares(asset_, maxAssets, Math.Rounding.Floor);
-    }
-
-    /**
      * @notice Returns the maximum amount of assets that can be withdrawn for a specific asset by a given owner.
      * @param asset_ The address of the asset.
      * @param owner The address of the owner.
@@ -123,14 +105,31 @@ contract KernelStrategy is Vault {
         maxAssets = _maxWithdrawAsset(asset_, owner);
     }
 
+    /**
+     * @notice Internal function to get the maximum amount of assets that can be withdrawn by a given owner.
+     * @param asset_ The address of the asset.
+     * @param owner The address of the owner.
+     * @return maxAssets The maximum amount of assets.
+     */
     function _maxWithdrawAsset(address asset_, address owner) internal view virtual returns (uint256 maxAssets) {
         if (paused() || !_getAssetStorage().assets[asset_].active) {
             return 0;
         }
 
-        (maxAssets,) = _convertToAssets(asset_, balanceOf(owner), Math.Rounding.Floor);
+        uint256 availableAssets = _availableAssets(asset_);
 
-        uint256 availableAssets = IERC20(asset_).balanceOf(address(this));
+        maxAssets = previewRedeemAsset(asset_, balanceOf(owner));
+
+        maxAssets = availableAssets < maxAssets ? availableAssets : maxAssets;
+    }
+
+    /**
+     * @notice Internal function to get the available amount of assets.
+     * @param asset_ The address of the asset.
+     * @return availableAssets The available amount of assets.
+     */
+    function _availableAssets(address asset_) internal view virtual returns (uint256 availableAssets) {
+        availableAssets = IERC20(asset_).balanceOf(address(this));
 
         StrategyStorage storage strategyStorage = _getStrategyStorage();
 
@@ -139,10 +138,55 @@ contract KernelStrategy is Vault {
                 IStakerGateway(strategyStorage.stakerGateway).balanceOf(asset_, address(this));
             availableAssets += availableAssetsInKernel;
         }
+    }
 
-        if (availableAssets < maxAssets) {
-            maxAssets = availableAssets;
+    /**
+     * @notice Returns the maximum amount of shares that can be redeemed by a given owner.
+     * @param owner The address of the owner.
+     * @return maxShares The maximum amount of shares.
+     */
+    function maxRedeem(address owner) public view override returns (uint256 maxShares) {
+        maxShares = _maxRedeemAsset(asset(), owner);
+    }
+
+    /**
+     * @notice Returns the maximum amount of shares that can be redeemed by a given owner.
+     * @param asset_ The address of the asset.
+     * @param owner The address of the owner.
+     * @return maxShares The maximum amount of shares.
+     */
+    function maxRedeemAsset(address asset_, address owner) public view returns (uint256 maxShares) {
+        maxShares = _maxRedeemAsset(asset_, owner);
+    }
+
+    /**
+     * @notice Internal function to get the maximum amount of shares that can be redeemed by a given owner.
+     * @param asset_ The address of the asset.
+     * @param owner The address of the owner.
+     * @return maxShares The maximum amount of shares.
+     */
+    function _maxRedeemAsset(address asset_, address owner) internal view virtual returns (uint256 maxShares) {
+        if (paused() || !_getAssetStorage().assets[asset_].active) {
+            return 0;
         }
+
+        uint256 availableAssets = _availableAssets(asset_);
+
+        maxShares = balanceOf(owner);
+
+        maxShares = availableAssets < previewRedeemAsset(asset_, maxShares)
+            ? previewWithdrawAsset(asset_, availableAssets)
+            : maxShares;
+    }
+
+    /**
+     * @notice Previews the amount of assets that would be required to mint a given amount of shares.
+     * @param asset_ The address of the asset.
+     * @param shares The amount of shares to mint.
+     * @return assets The equivalent amount of assets.
+     */
+    function previewMintAsset(address asset_, uint256 shares) public view virtual returns (uint256 assets) {
+        (assets,) = _convertToAssets(asset_, shares, Math.Rounding.Ceil);
     }
 
     /**
@@ -164,8 +208,24 @@ contract KernelStrategy is Vault {
      */
     function previewRedeemAsset(address asset_, uint256 shares) public view virtual returns (uint256 assets) {
         (assets,) = _convertToAssets(asset_, shares, Math.Rounding.Floor);
+        assets = assets - _feeOnTotal(assets);
+    }
 
-        return assets - _feeOnTotal(assets);
+    /**
+     * @notice Withdraws a given amount of assets and burns the equivalent amount of shares from the owner.
+     * @param assets The amount of assets to withdraw.
+     * @param receiver The address of the receiver.
+     * @param owner The address of the owner.
+     * @return shares The equivalent amount of shares.
+     */
+    function withdraw(uint256 assets, address receiver, address owner)
+        public
+        virtual
+        override
+        nonReentrant
+        returns (uint256 shares)
+    {
+        shares = _withdrawAsset(asset(), assets, receiver, owner);
     }
 
     /**
@@ -182,6 +242,21 @@ contract KernelStrategy is Vault {
         nonReentrant
         returns (uint256 shares)
     {
+        shares = _withdrawAsset(asset_, assets, receiver, owner);
+    }
+
+    /**
+     * @notice Internal function for withdraws assets and burns equivalent shares from the owner.
+     * @param asset_ The address of the asset.
+     * @param assets The amount of assets to withdraw.
+     * @param receiver The address of the receiver.
+     * @param owner The address of the owner.
+     * @return shares The equivalent amount of shares burned.
+     */
+    function _withdrawAsset(address asset_, uint256 assets, address receiver, address owner)
+        internal
+        returns (uint256 shares)
+    {
         if (paused()) {
             revert Paused();
         }
@@ -191,6 +266,23 @@ contract KernelStrategy is Vault {
         }
         shares = previewWithdrawAsset(asset_, assets);
         _withdrawAsset(asset_, _msgSender(), receiver, owner, assets, shares);
+    }
+
+    /**
+     * @notice Redeems a given amount of shares and transfers the equivalent amount of assets to the receiver.
+     * @param shares The amount of shares to redeem.
+     * @param receiver The address of the receiver.
+     * @param owner The address of the owner.
+     * @return assets The equivalent amount of assets.
+     */
+    function redeem(uint256 shares, address receiver, address owner)
+        public
+        virtual
+        override
+        nonReentrant
+        returns (uint256 assets)
+    {
+        assets = _redeemAsset(asset(), shares, receiver, owner);
     }
 
     /**
@@ -205,6 +297,21 @@ contract KernelStrategy is Vault {
         public
         virtual
         nonReentrant
+        returns (uint256 assets)
+    {
+        assets = _redeemAsset(asset_, shares, receiver, owner);
+    }
+
+    /**
+     * @notice Internal function for redeems shares and transfers equivalent assets to the receiver.
+     * @param asset_ The address of the asset.
+     * @param shares The amount of shares to redeem.
+     * @param receiver The address of the receiver.
+     * @param owner The address of the owner.
+     * @return assets The equivalent amount of assets.
+     */
+    function _redeemAsset(address asset_, uint256 shares, address receiver, address owner)
+        internal
         returns (uint256 assets)
     {
         if (paused()) {
