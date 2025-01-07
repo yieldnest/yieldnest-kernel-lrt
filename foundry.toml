@@ -45,7 +45,7 @@ fs_permissions = [
 
 [rpc_endpoints]
 bnb_mainnet = "${BNB_MAINNET_RPC_URL}"
-bnb_testnet = "${https://rpc.ankr.com/bsc_testnet_chapel}"
+bnb_testnet = "https://rpc.ankr.com/bsc_testnet_chapel"
 
 [fmt]
 sort_imports = true
