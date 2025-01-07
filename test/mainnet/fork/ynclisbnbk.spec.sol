@@ -132,14 +132,16 @@ contract YnClisBNBkForkTest is Test, MainnetKernelActors, ProxyUtils {
         vm.startPrank(ADMIN);
         timelock.schedule(address(proxyAdmin), 0, upgradeData, bytes32(0), bytes32(0), delay);
         vm.stopPrank();
-
+        uint256 timestamp = block.timestamp;
         // Wait for timelock delay
-        vm.warp(block.timestamp + delay);
+        vm.warp(timestamp + delay);
 
         // Execute upgrade
         vm.startPrank(ADMIN);
         timelock.execute(address(proxyAdmin), 0, upgradeData, bytes32(0), bytes32(0));
         vm.stopPrank();
+        // warp back to original timestamp for oracle 
+        vm.warp(timestamp);
 
         // Verify upgrade was successful
         assertEq(
