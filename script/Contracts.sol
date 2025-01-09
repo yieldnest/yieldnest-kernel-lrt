@@ -17,6 +17,7 @@ interface IContracts {
     function BTCB() external view returns (address);
     function SOLVBTC() external view returns (address);
     function SOLVBTC_BBN() external view returns (address);
+    function ASBNB() external view returns (address);
 }
 
 library MainnetContracts {
@@ -25,6 +26,7 @@ library MainnetContracts {
     address public constant SLISBNB = 0xB0b84D294e0C75A6abe60171b70edEb2EFd14A1B;
     address public constant BNBX = 0x1bdd3Cf7F79cfB8EdbB955f20ad99211551BA275;
     address public constant CLISBNB = 0x4b30fcAA7945fE9fDEFD2895aae539ba102Ed6F6;
+    address public constant ASBNB = 0x77734e70b6E88b4d82fE632a168EDf6e700912b6;
 
     // btc tokens
     address public constant BTCB = 0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c;
@@ -67,6 +69,7 @@ library TestnetContracts {
     address public constant BTCB = 0x6ce8dA28E2f864420840cF74474eFf5fD80E65B8;
     address public constant SOLVBTC = 0x1cF0e51005971c5B78b4A8feE419832CFCCD8cf9;
     address public constant SOLVBTC_BBN = 0xB4618618b6Fcb61b72feD991AdcC344f43EE57Ad;
+    address public constant ASBNB = 0x0000000000000000000000000000000000000000;
 
     // stake managers
     address public constant BNBX_STAKE_MANAGER = address(0);
@@ -130,6 +133,10 @@ contract ChapelContracts is IContracts {
     function SOLVBTC_BBN() external pure override returns (address) {
         return TestnetContracts.SOLVBTC_BBN;
     }
+
+    function ASBNB() external pure override returns (address) {
+        return TestnetContracts.ASBNB;
+    }
 }
 
 contract BscContracts is IContracts {
@@ -176,5 +183,9 @@ contract BscContracts is IContracts {
 
     function SOLVBTC_BBN() external pure override returns (address) {
         return MainnetContracts.SOLVBTC_BBN;
+    }
+
+    function ASBNB() external pure override returns (address) {
+        return MainnetContracts.ASBNB;
     }
 }
