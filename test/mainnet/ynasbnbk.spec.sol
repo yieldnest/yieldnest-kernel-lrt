@@ -62,6 +62,10 @@ contract YnAsBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
         etchBuffer(address(vault));
         stakerGateway = IStakerGateway(MC.STAKER_GATEWAY);
         kernelVault = IKernelVault(stakerGateway.getVault(MC.ASBNB));
+        wbnb = IERC20(MC.WBNB);
+        asbnb = IERC20(MC.ASBNB);
+        slisbnb = IERC20(MC.SLISBNB);
+        
         address config = kernelVault.getConfig();
         bytes32 role = IKernelConfig(config).ROLE_MANAGER();
 
