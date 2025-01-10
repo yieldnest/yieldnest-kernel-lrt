@@ -18,6 +18,9 @@ interface IContracts {
     function SOLVBTC() external view returns (address);
     function SOLVBTC_BBN() external view returns (address);
     function ASBNB() external view returns (address);
+
+    function AS_BNB_MINTER() external view returns (address);
+    function SLIS_BNB_STAKE_MANAGER() external view returns (address);
 }
 
 library MainnetContracts {
@@ -36,6 +39,7 @@ library MainnetContracts {
     // stake managers
     address public constant BNBX_STAKE_MANAGER = 0x3b961e83400D51e6E1AF5c450d3C7d7b80588d28;
     address public constant SLIS_BNB_STAKE_MANAGER = 0x1adB950d8bB3dA4bE104211D5AB038628e477fE6;
+    address public constant AS_BNB_MINTER = 0x2F31ab8950c50080E77999fa456372f276952fD8;
 
     // BNB max vault
     address public constant YNBNBX = 0x32C830f5c34122C6afB8aE87ABA541B7900a2C5F;
@@ -74,6 +78,7 @@ library TestnetContracts {
     // stake managers
     address public constant BNBX_STAKE_MANAGER = address(0);
     address public constant SLIS_BNB_STAKE_MANAGER = address(0);
+    address public constant AS_BNB_MINTER = address(0);
 
     address public constant YNBNBX = 0x6164f96Fa28147508d3545c38B61eD0BD7c5DF03;
     // bnb vault
@@ -105,7 +110,6 @@ contract ChapelContracts is IContracts {
         return TestnetContracts.YNBNBK;
     }
 
-    // TODO: Update with deployed YNBNBX
     function YNBNBX() external pure override returns (address) {
         return TestnetContracts.YNBNBX;
     }
@@ -137,6 +141,14 @@ contract ChapelContracts is IContracts {
     function ASBNB() external pure override returns (address) {
         return TestnetContracts.ASBNB;
     }
+
+    function AS_BNB_MINTER() external pure override returns (address) {
+        return TestnetContracts.AS_BNB_MINTER;
+    }
+
+    function SLIS_BNB_STAKE_MANAGER() external pure override returns (address) {
+        return TestnetContracts.SLIS_BNB_STAKE_MANAGER;
+    }
 }
 
 contract BscContracts is IContracts {
@@ -160,7 +172,6 @@ contract BscContracts is IContracts {
         return MainnetContracts.YNBNBK;
     }
 
-    // TODO: Update with deployed YNBNBX
     function YNBNBX() external pure override returns (address) {
         return MainnetContracts.YNBNBX;
     }
@@ -187,5 +198,13 @@ contract BscContracts is IContracts {
 
     function ASBNB() external pure override returns (address) {
         return MainnetContracts.ASBNB;
+    }
+
+    function AS_BNB_MINTER() external pure override returns (address) {
+        return MainnetContracts.AS_BNB_MINTER;
+    }
+
+    function SLIS_BNB_STAKE_MANAGER() external pure override returns (address) {
+        return MainnetContracts.SLIS_BNB_STAKE_MANAGER;
     }
 }

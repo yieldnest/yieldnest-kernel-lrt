@@ -8,7 +8,6 @@ import {TestnetBNBRateProvider} from "test/module/BNBRateProvider.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
-import {console} from "lib/forge-std/src/console.sol";
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {BaseKernelScript} from "script/BaseKernelScript.sol";
@@ -48,10 +47,14 @@ contract DeployYnAsBNBkStrategy is BaseKernelScript {
     }
 
     function deploy() internal {
+        if (contracts.ASBNB() == address(0)) {
+            revert InvalidSetup();
+        }
+
         implementation = Vault(payable(address(new KernelStrategy())));
 
         address admin = msg.sender;
-        string memory name = "YieldNest AsBNB Buffer - Kernel";
+        string memory name = "YieldNest Restaked asBNB - Kernel";
         string memory symbol_ = "ynAsBNBk";
         uint8 decimals = 18;
         uint64 baseWithdrawalFee = 0;
@@ -71,15 +74,7 @@ contract DeployYnAsBNBkStrategy is BaseKernelScript {
         _configureDefaultRoles();
         _configureTemporaryRoles();
 
-        console.log("ASBNB address:", contracts.ASBNB());
-
-        // set allocator to ynbnbx
-        if (contracts.ASBNB() != address(0)) {
-            // TODO: set allocator correct allocator might need an slisBnB vault
-            vault_.grantRole(vault_.ALLOCATOR_ROLE(), contracts.YNBNBX());
-        } else {
-            console.log("ASBNB is still undefined (zero address)");
-        }
+        vault_.grantRole(vault_.ALLOCATOR_ROLE(), contracts.YNBNBX());
 
         vault_.setProvider(address(rateProvider));
         vault_.setHasAllocator(true);
@@ -87,37 +82,34 @@ contract DeployYnAsBNBkStrategy is BaseKernelScript {
         vault_.setSyncDeposit(true);
         vault_.setSyncWithdraw(true);
 
-        vault_.addAsset(contracts.WBNB(), true);
-        vault_.addAssetWithDecimals(IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.ASBNB()), 18, true);
+        vault_.addAsset(contracts.WBNB(), false);
+        vault_.addAsset(contracts.SLISBNB(), false);
+        vault_.addAsset(contracts.ASBNB(), true);
 
-        setApprovalRule(vault_, contracts.WBNB(), contracts.STAKER_GATEWAY());
-        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.ASBNB());
-        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.WBNB());
-        setUnstakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.ASBNB());
+        address asbnbKernelVault = IStakerGateway(contracts.STAKER_GATEWAY()).getVault(contracts.ASBNB());
+        vault_.addAssetWithDecimals(asbnbKernelVault, 18, false);
 
-        // wbnb
+        // bnb <=> wbnb
         setWethDepositRule(vault, contracts.WBNB());
-        setWethDepositRule(vault, contracts.ASBNB());
         setWethWithdrawRule(vault, contracts.WBNB());
-        setWithdrawAssetRule(vault, contracts.STAKER_GATEWAY(), contracts.ASBNB());
+
+        // wbnb => slisbnb
+        setSlisDepositRule(vault, contracts.SLIS_BNB_STAKE_MANAGER());
+
+        // slisbnb <=> asbnb
+        setApprovalRule(vault, contracts.SLISBNB(), contracts.AS_BNB_MINTER());
+        setAstherusMintRule(vault, contracts.AS_BNB_MINTER());
+        setAstherusBurnRule(vault, contracts.AS_BNB_MINTER());
+
+        // asbnb <=> kernel
+        setApprovalRule(vault_, contracts.ASBNB(), contracts.STAKER_GATEWAY());
+        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.ASBNB());
+        setUnstakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.ASBNB());
 
         vault_.unpause();
 
         vault_.processAccounting();
 
-        if (contracts.YNBNBX() == address(0)) {
-            vault.renounceRole(vault.PROCESSOR_MANAGER_ROLE(), msg.sender);
-            vault.renounceRole(vault.BUFFER_MANAGER_ROLE(), msg.sender);
-            vault.renounceRole(vault.PROVIDER_MANAGER_ROLE(), msg.sender);
-            vault.renounceRole(vault.ASSET_MANAGER_ROLE(), msg.sender);
-            vault.renounceRole(vault.UNPAUSER_ROLE(), msg.sender);
-
-            vault.renounceRole(vault_.KERNEL_DEPENDENCY_MANAGER_ROLE(), msg.sender);
-            vault.renounceRole(vault_.DEPOSIT_MANAGER_ROLE(), msg.sender);
-            vault.renounceRole(vault_.ALLOCATOR_MANAGER_ROLE(), msg.sender);
-            console.log("YNBNBX is still undefined (zero address). Run configure allocator script after deployment.");
-        } else {
-            _renounceTemporaryRoles();
-        }
+        _renounceTemporaryRoles();
     }
 }
