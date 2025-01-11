@@ -13,3 +13,4 @@ Built using https://github.com/yieldnest/yieldnest-vault
 | ynWBNBk | [0x6EC6b7F106674d6D82b7b24446C7ebaf349d59A1](https://bscscan.com/address/0x6EC6b7F106674d6D82b7b24446C7ebaf349d59A1) |
 | ynBTCk | [0x78839cE14a8213779128Ee4da6D75E1326606A56](https://bscscan.com/address/0x78839cE14a8213779128Ee4da6D75E1326606A56) |
 | ynClisBNBk | [0x03276919F8b6eE37BA8EE4ee68a1c5f48b667834](https://bscscan.com/address/0x03276919F8b6eE37BA8EE4ee68a1c5f48b667834) |
+| ynAsBNBk | [0x504A89a3Ed6A51D17D4f936E58476c779EE7315b](https://bscscan.com/address/0x504A89a3Ed6A51D17D4f936E58476c779EE7315b) |
