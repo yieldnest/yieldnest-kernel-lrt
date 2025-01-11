@@ -75,7 +75,8 @@ contract DeployYnAsBNBkStrategy is BaseKernelScript {
         _configureTemporaryRoles();
 
         vault_.grantRole(vault_.ALLOCATOR_ROLE(), contracts.YNBNBX());
-
+        vault_.grantRole(vault_.ALLOCATOR_ROLE(), actors.BOOTSTRAPPER());
+        
         vault_.setProvider(address(rateProvider));
         vault_.setHasAllocator(true);
         vault_.setStakerGateway(contracts.STAKER_GATEWAY());
