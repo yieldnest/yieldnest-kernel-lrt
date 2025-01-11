@@ -87,4 +87,43 @@ contract VaultKernelUtils {
 
         vault_.setProcessorRule(contractAddress, funcSig, rule);
     }
+
+    function setSlisDepositRule(IVault vault_, address contractAddress) public {
+        bytes4 funcSig = bytes4(keccak256("deposit()"));
+
+        IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](0);
+
+        IVault.FunctionRule memory rule =
+            IVault.FunctionRule({isActive: true, paramRules: paramRules, validator: IValidator(address(0))});
+
+        vault_.setProcessorRule(contractAddress, funcSig, rule);
+    }
+
+    function setAstherusMintRule(IVault vault_, address contractAddress) public {
+        bytes4 funcSig = bytes4(keccak256("mintAsBnb(uint256)"));
+
+        IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](1);
+
+        paramRules[0] =
+            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
+
+        IVault.FunctionRule memory rule =
+            IVault.FunctionRule({isActive: true, paramRules: paramRules, validator: IValidator(address(0))});
+
+        vault_.setProcessorRule(contractAddress, funcSig, rule);
+    }
+
+    function setAstherusBurnRule(IVault vault_, address contractAddress) public {
+        bytes4 funcSig = bytes4(keccak256("burnAsBnb(uint256)"));
+
+        IVault.ParamRule[] memory paramRules = new IVault.ParamRule[](1);
+
+        paramRules[0] =
+            IVault.ParamRule({paramType: IVault.ParamType.UINT256, isArray: false, allowList: new address[](0)});
+
+        IVault.FunctionRule memory rule =
+            IVault.FunctionRule({isActive: true, paramRules: paramRules, validator: IValidator(address(0))});
+
+        vault_.setProcessorRule(contractAddress, funcSig, rule);
+    }
 }

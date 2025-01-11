@@ -4,7 +4,9 @@ pragma solidity ^0.8.24;
 
 import {ISlisBnbStakeManager} from "lib/yieldnest-vault/src/interface/external/lista/ISlisBnbStakeManager.sol";
 import {IBNBXStakeManagerV2} from "lib/yieldnest-vault/src/interface/external/stader/IBNBXStakeManagerV2.sol";
+
 import {MainnetContracts as MC} from "script/Contracts.sol";
+import {IAsBnbMinter} from "src/interface/external/astherus/IAsBnbMinter.sol";
 
 import {BaseKernelRateProvider} from "./BaseKernelRateProvider.sol";
 
@@ -42,6 +44,12 @@ contract BNBRateProvider is BaseKernelRateProvider {
 
         if (asset == MC.CLISBNB) {
             return 1e18;
+        }
+
+        if (asset == MC.ASBNB) {
+            return ISlisBnbStakeManager(MC.SLIS_BNB_STAKE_MANAGER).convertSnBnbToBnb(
+                IAsBnbMinter(MC.AS_BNB_MINTER).convertToTokens(1e18)
+            );
         }
 
         // check if a kernel vault is added as an asset

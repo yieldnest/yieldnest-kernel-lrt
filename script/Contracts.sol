@@ -17,6 +17,10 @@ interface IContracts {
     function BTCB() external view returns (address);
     function SOLVBTC() external view returns (address);
     function SOLVBTC_BBN() external view returns (address);
+    function ASBNB() external view returns (address);
+
+    function AS_BNB_MINTER() external view returns (address);
+    function SLIS_BNB_STAKE_MANAGER() external view returns (address);
 }
 
 library MainnetContracts {
@@ -25,6 +29,7 @@ library MainnetContracts {
     address public constant SLISBNB = 0xB0b84D294e0C75A6abe60171b70edEb2EFd14A1B;
     address public constant BNBX = 0x1bdd3Cf7F79cfB8EdbB955f20ad99211551BA275;
     address public constant CLISBNB = 0x4b30fcAA7945fE9fDEFD2895aae539ba102Ed6F6;
+    address public constant ASBNB = 0x77734e70b6E88b4d82fE632a168EDf6e700912b6;
 
     // btc tokens
     address public constant BTCB = 0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c;
@@ -34,6 +39,7 @@ library MainnetContracts {
     // stake managers
     address public constant BNBX_STAKE_MANAGER = 0x3b961e83400D51e6E1AF5c450d3C7d7b80588d28;
     address public constant SLIS_BNB_STAKE_MANAGER = 0x1adB950d8bB3dA4bE104211D5AB038628e477fE6;
+    address public constant AS_BNB_MINTER = 0x2F31ab8950c50080E77999fa456372f276952fD8;
 
     // BNB max vault
     address public constant YNBNBX = 0x32C830f5c34122C6afB8aE87ABA541B7900a2C5F;
@@ -67,10 +73,12 @@ library TestnetContracts {
     address public constant BTCB = 0x6ce8dA28E2f864420840cF74474eFf5fD80E65B8;
     address public constant SOLVBTC = 0x1cF0e51005971c5B78b4A8feE419832CFCCD8cf9;
     address public constant SOLVBTC_BBN = 0xB4618618b6Fcb61b72feD991AdcC344f43EE57Ad;
+    address public constant ASBNB = 0x0000000000000000000000000000000000000000;
 
     // stake managers
     address public constant BNBX_STAKE_MANAGER = address(0);
     address public constant SLIS_BNB_STAKE_MANAGER = address(0);
+    address public constant AS_BNB_MINTER = address(0);
 
     address public constant YNBNBX = 0x6164f96Fa28147508d3545c38B61eD0BD7c5DF03;
     // bnb vault
@@ -102,7 +110,6 @@ contract ChapelContracts is IContracts {
         return TestnetContracts.YNBNBK;
     }
 
-    // TODO: Update with deployed YNBNBX
     function YNBNBX() external pure override returns (address) {
         return TestnetContracts.YNBNBX;
     }
@@ -130,6 +137,18 @@ contract ChapelContracts is IContracts {
     function SOLVBTC_BBN() external pure override returns (address) {
         return TestnetContracts.SOLVBTC_BBN;
     }
+
+    function ASBNB() external pure override returns (address) {
+        return TestnetContracts.ASBNB;
+    }
+
+    function AS_BNB_MINTER() external pure override returns (address) {
+        return TestnetContracts.AS_BNB_MINTER;
+    }
+
+    function SLIS_BNB_STAKE_MANAGER() external pure override returns (address) {
+        return TestnetContracts.SLIS_BNB_STAKE_MANAGER;
+    }
 }
 
 contract BscContracts is IContracts {
@@ -153,7 +172,6 @@ contract BscContracts is IContracts {
         return MainnetContracts.YNBNBK;
     }
 
-    // TODO: Update with deployed YNBNBX
     function YNBNBX() external pure override returns (address) {
         return MainnetContracts.YNBNBX;
     }
@@ -176,5 +194,17 @@ contract BscContracts is IContracts {
 
     function SOLVBTC_BBN() external pure override returns (address) {
         return MainnetContracts.SOLVBTC_BBN;
+    }
+
+    function ASBNB() external pure override returns (address) {
+        return MainnetContracts.ASBNB;
+    }
+
+    function AS_BNB_MINTER() external pure override returns (address) {
+        return MainnetContracts.AS_BNB_MINTER;
+    }
+
+    function SLIS_BNB_STAKE_MANAGER() external pure override returns (address) {
+        return MainnetContracts.SLIS_BNB_STAKE_MANAGER;
     }
 }
