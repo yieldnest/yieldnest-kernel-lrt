@@ -26,8 +26,8 @@ import {KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 import {BaseVaultViewer} from "src/utils/KernelVaultViewer.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
+import {IAsBnbMinter} from "lib/yieldnest-vault/src/interface/external/astherus/IAsBnbMinter.sol";
 import {ISlisBnbStakeManager} from "lib/yieldnest-vault/src/interface/external/lista/ISlisBnbStakeManager.sol";
-import {IAsBnbMinter} from "src/interface/external/astherus/IAsBnbMinter.sol";
 
 contract YnAsBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultUtils, VaultKernelUtils {
     KernelStrategy public vault;

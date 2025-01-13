@@ -5,8 +5,8 @@ pragma solidity ^0.8.24;
 import {ISlisBnbStakeManager} from "lib/yieldnest-vault/src/interface/external/lista/ISlisBnbStakeManager.sol";
 import {IBNBXStakeManagerV2} from "lib/yieldnest-vault/src/interface/external/stader/IBNBXStakeManagerV2.sol";
 
+import {IAsBnbMinter} from "lib/yieldnest-vault/src/interface/external/astherus/IAsBnbMinter.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
-import {IAsBnbMinter} from "src/interface/external/astherus/IAsBnbMinter.sol";
 
 import {BaseKernelRateProvider} from "./BaseKernelRateProvider.sol";
 
