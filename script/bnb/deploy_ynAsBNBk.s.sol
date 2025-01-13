@@ -12,7 +12,7 @@ import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {BaseKernelScript} from "script/BaseKernelScript.sol";
 
-// FOUNDRY_PROFILE=mainnet forge script DeployYnWBNBkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
+// FOUNDRY_PROFILE=mainnet forge script DeployYnAsBNBkStrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
 contract DeployYnAsBNBkStrategy is BaseKernelScript {
     function symbol() public pure override returns (string memory) {
         return "ynAsBNBk";
