@@ -126,6 +126,49 @@ contract YnBTCkForkTest is BaseForkTest {
         uint256 afterTVL = vault.totalAssets();
         assertEq(afterTVL - beforeTVL, expectedTVLIncrease, "TVL should increase by 100 ether");
 
+
+        uint256 withdrawSharesAmount = vault.balanceOf(ENZO_WHALE) / 4;
+
+        {
+            uint256 withdrawAmount = amount / 4; // 2.5 * 1e8 enzoBTC
+            uint256 expectedTVLDecrease = 2.5 ether; // Expected 18 decimal decrease
+
+            beforeTVL = vault.totalAssets();
+            uint256 beforeWhaleBalance = IERC20(MainnetContracts.ENZOBTC).balanceOf(ENZO_WHALE);
+
+            vault.withdrawAsset(MainnetContracts.ENZOBTC, withdrawAmount, ENZO_WHALE, ENZO_WHALE);
+
+            afterTVL = vault.totalAssets();
+            uint256 afterWhaleBalance = IERC20(MainnetContracts.ENZOBTC).balanceOf(ENZO_WHALE);
+
+            assertEq(beforeTVL - afterTVL, expectedTVLDecrease, "TVL should decrease by 50 ether");
+            assertEq(
+                afterWhaleBalance - beforeWhaleBalance,
+                withdrawAmount,
+                "Whale should have received enzoBTC back minus withdrawal fee"
+            );
+        }
+
+        {
+            uint256 withdrawAmount = (amount / 4) * 999 / 1000; // 2.5 * 1e8 enzoBTC with 0.1% fee
+            uint256 expectedTVLDecrease = (2.5 ether * 999) / 1000; // Expected 18 decimal decrease with 0.1% fee
+
+            beforeTVL = vault.totalAssets();
+            uint256 beforeWhaleBalance = IERC20(MainnetContracts.ENZOBTC).balanceOf(ENZO_WHALE);
+
+            vault.redeemAsset(MainnetContracts.ENZOBTC, withdrawSharesAmount, ENZO_WHALE, ENZO_WHALE);
+
+            afterTVL = vault.totalAssets();
+            uint256 afterWhaleBalance = IERC20(MainnetContracts.ENZOBTC).balanceOf(ENZO_WHALE);
+
+            assertEq(beforeTVL - afterTVL, expectedTVLDecrease, "TVL should decrease by 50 ether");
+            assertEq(
+                afterWhaleBalance - beforeWhaleBalance,
+                withdrawAmount,
+                "Whale should have received enzoBTC back minus withdrawal fee"
+            );
+        }
+
         vm.stopPrank();
     }
 }
