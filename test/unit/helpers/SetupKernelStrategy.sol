@@ -10,8 +10,9 @@ import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 import {MockSTETH} from "lib/yieldnest-vault/test/unit/mocks/MockST_ETH.sol";
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
-import {MainnetActors} from "script/Actors.sol";
+
 import {MainnetContracts as MC} from "script/Contracts.sol";
+import {MainnetKernelActors} from "script/KernelActors.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 
@@ -19,11 +20,12 @@ import {MockERC20LowDecimals} from "../mocks/MockERC20LowDecimals.sol";
 import {MockStakerGateway} from "../mocks/MockStakerGateway.sol";
 import {MockRateProvider} from "test/unit/mocks/MockRateProvider.sol";
 
-import {VaultUtils} from "script/VaultUtils.sol";
+import {VaultUtils} from "lib/yieldnest-vault/script/VaultUtils.sol";
+import {VaultKernelUtils} from "script/VaultKernelUtils.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {EtchUtils} from "test/unit/helpers/EtchUtils.sol";
 
-contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
+contract SetupKernelStrategy is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultKernelUtils, VaultUtils {
     KernelStrategy public vault;
     BNBRateProvider public provider;
 
@@ -34,7 +36,10 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
     IStakerGateway public mockGateway;
     MockRateProvider public lowDecimalProvider;
 
-    address public alice = address(0xa11ce);
+    address public alice = address(0x0a11ce);
+    address public bob = address(0x0b0b);
+    address public chad = address(0x0cad);
+
     uint256 public constant INITIAL_BALANCE = 100_000 ether;
 
     function deploy() public {
@@ -46,7 +51,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
         );
 
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(implementation), address(MainnetActors.ADMIN), initData);
+            new TransparentUpgradeableProxy(address(implementation), address(ADMIN), initData);
 
         vault = KernelStrategy(payable(address(proxy)));
 
@@ -88,6 +93,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetActors, EtchUtils, Vau
         vault.grantRole(vault.KERNEL_DEPENDENCY_MANAGER_ROLE(), ADMIN);
         vault.grantRole(vault.DEPOSIT_MANAGER_ROLE(), ADMIN);
         vault.grantRole(vault.ALLOCATOR_MANAGER_ROLE(), ADMIN);
+        vault.grantRole(vault.FEE_MANAGER_ROLE(), ADMIN);
 
         // set provider
         vault.setProvider(address(provider));

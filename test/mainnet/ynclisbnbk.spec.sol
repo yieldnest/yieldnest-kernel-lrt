@@ -6,36 +6,39 @@ import {Test} from "lib/forge-std/src/Test.sol";
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
+import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {IERC20} from "lib/yieldnest-vault/src/Common.sol";
 import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 
-import {MainnetActors} from "script/Actors.sol";
 import {MainnetContracts as MC} from "script/Contracts.sol";
+import {MainnetKernelActors} from "script/KernelActors.sol";
 import {KernelClisStrategy} from "src/KernelClisStrategy.sol";
 
 import {IAccessControl} from
     "lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
-import {VaultUtils} from "script/VaultUtils.sol";
+import {VaultUtils} from "lib/yieldnest-vault/script/VaultUtils.sol";
 import {IWBNB} from "src/interface/external/IWBNB.sol";
 import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 
+import {VaultKernelUtils} from "script/VaultKernelUtils.sol";
 import {KernelClisVaultViewer} from "src/utils/KernelClisVaultViewer.sol";
 import {BaseVaultViewer} from "src/utils/KernelVaultViewer.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
-contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUtils {
+contract YnClisBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultUtils, VaultKernelUtils {
     KernelClisStrategy public vault;
     BNBRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
     KernelClisVaultViewer public viewer;
 
     address public bob = address(0xB0B);
-    address public clisBnbVault;
+    address public clisBnb;
+    address public kernelVault;
 
     function setUp() public {
         kernelProvider = new BNBRateProvider();
@@ -43,7 +46,8 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
 
         stakerGateway = IStakerGateway(MC.STAKER_GATEWAY);
 
-        clisBnbVault = IKernelConfig(stakerGateway.getConfig()).getClisBnbAddress();
+        clisBnb = IKernelConfig(stakerGateway.getConfig()).getClisBnbAddress();
+        assertEq(clisBnb, MC.CLISBNB);
 
         vault = deployClisBNBk();
         viewer = KernelClisVaultViewer(
@@ -62,7 +66,7 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         vm.label(address(vault), "kernel strategy");
         vm.label(address(kernelProvider), "kernel rate provider");
 
-        address kernelVault = IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.CLISBNB);
+        kernelVault = IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.CLISBNB);
         address config = IKernelVault(kernelVault).getConfig();
         bytes32 role = IKernelConfig(config).ROLE_MANAGER();
 
@@ -75,18 +79,11 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
     function deployClisBNBk() public returns (KernelClisStrategy _vault) {
         KernelClisStrategy implementation = new KernelClisStrategy();
         bytes memory initData = abi.encodeWithSelector(
-            Vault.initialize.selector,
-            MainnetActors.ADMIN,
-            "YieldNest Restaked slisBNB - Kernel",
-            "ynclisWBNBk",
-            18,
-            0,
-            true,
-            false
+            Vault.initialize.selector, ADMIN, "YieldNest Restaked slisBNB - Kernel", "ynclisWBNBk", 18, 0, true, false
         );
 
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(implementation), address(MainnetActors.ADMIN), initData);
+            new TransparentUpgradeableProxy(address(implementation), address(ADMIN), initData);
 
         _vault = KernelClisStrategy(payable(address(proxy)));
 
@@ -176,7 +173,7 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         vm.startPrank(withdrawer);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, withdrawer, vault.ALLOCATOR_ROLE()
+                IVault.ExceededMaxWithdraw.selector, withdrawer, amount, vault.maxWithdraw(withdrawer)
             )
         );
         vault.withdrawAsset(MC.WBNB, amount, withdrawer, withdrawer);
@@ -317,9 +314,7 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         );
         assertEq(asset.balanceOf(bob), beforeBobBalance - amount, "Bob should not have the assets");
         assertEq(vault.balanceOf(bob), beforeBobShares + shares, "Bob should have shares after deposit");
-        assertEq(
-            stakerGateway.balanceOf(clisBnbVault, address(vault)), amount, "vault should have shares after deposit"
-        );
+        assertEq(stakerGateway.balanceOf(clisBnb, address(vault)), amount, "vault should have shares after deposit");
     }
 
     function test_ynclisBNBk_withdraw_success_syncEnabled(uint256 amount) public {
@@ -341,15 +336,19 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
 
         vault.processAccounting();
 
-        uint256 maxWithdraw = vault.maxWithdraw(bob);
-        uint256 vaultShares = stakerGateway.balanceOf(clisBnbVault, address(vault));
+        uint256 maxWithdraw = vault.maxWithdrawAsset(MC.WBNB, bob);
+        uint256 vaultShares = stakerGateway.balanceOf(clisBnb, address(vault));
+        uint256 kernelVaultBalance = IERC20(kernelVault).balanceOf(address(vault));
+        assertEq(vaultShares, kernelVaultBalance, "vault should have shares after deposit");
+
+        assertEq(asset.balanceOf(address(vault)), 0, "vault should have no assets");
+        assertEq(vault.balanceOf(bob), shares, "bob should have shares");
+
         assertGt(vaultShares, 0, "vault should have some shares");
         assertGt(maxWithdraw, 0, "max withdraw should not be 0");
         assertEq(maxWithdraw, shares, "incorrect maxWithdraw amount");
 
-        assertEq(
-            stakerGateway.balanceOf(clisBnbVault, address(vault)), amount, "vault should have shares after deposit"
-        );
+        assertEq(stakerGateway.balanceOf(clisBnb, address(vault)), amount, "vault should have shares after deposit");
 
         uint256 withdrawAmount = vault.maxWithdraw(bob);
         assertGt(withdrawAmount, 0, "can't withdraw 0");
@@ -370,6 +369,6 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetActors, EtchUtils, VaultUti
         );
         assertEq(asset.balanceOf(bob), beforeBobBalance + amount, "Bob should have the assets");
         assertEq(vault.balanceOf(bob), beforeBobShares - shares, "Bob should not have shares after withdraw");
-        assertEq(stakerGateway.balanceOf(clisBnbVault, address(vault)), 0, "vault should have 0 shares after deposit");
+        assertEq(stakerGateway.balanceOf(clisBnb, address(vault)), 0, "vault should have 0 shares after deposit");
     }
 }

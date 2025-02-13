@@ -14,7 +14,7 @@ contract KernelVaultViewer is BaseVaultViewer {
     using Math for uint256;
 
     function vault() public view returns (KernelStrategy) {
-        return KernelStrategy(payable(address(_getStorage().vault)));
+        return KernelStrategy(payable(address(_getViewerStorage().vault)));
     }
     /**
      * @notice Returns the maximum amount of assets that can be withdrawn for a specific asset by a given owner.

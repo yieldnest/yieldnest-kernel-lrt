@@ -1,0 +1,13 @@
+{
+  "admin": "0x721688652DEa9Cabec70BD99411EAEAB9485d436",
+  "deployer": "0xa1E340bd1e3ea09B3981164BBB4AfeDdF0e7bA0D",
+  "rateProvider": "0xa4DCB6779f7977534dd37Fb3DD0090Ef507DF173",
+  "symbol": "ynAsBNBk",
+  "timelock": "0xF8D7646Be3A78638879138723E590634c15e5958",
+  "viewer-implementation": "0x2275fefbc408b09BAFaBAFA768E1c5c4911762b5",
+  "viewer-proxy": "0x61097DDA6c9660be4b42d7E943d662aC4269ed47",
+  "viewer-proxyAdmin": "0xb30777f2Af5BD4CfC856e42f005a0d58266EE0A6",
+  "ynAsBNBk-implementation": "0x5a04d49d53572AD0A1dcc29D16802f5518B81Cf8",
+  "ynAsBNBk-proxy": "0x504A89a3Ed6A51D17D4f936E58476c779EE7315b",
+  "ynAsBNBk-proxyAdmin": "0x7de9128CDdfC4B8f02A729FCf66F11A46dE5eb4f"
+}

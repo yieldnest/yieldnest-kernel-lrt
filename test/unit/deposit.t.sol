@@ -96,9 +96,10 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
         // Check that shares were minted
         assertGt(sharesMinted, 0, "No shares were minted");
 
+        address mockVault = mockGateway.getVault(address(wbnb));
         // Check that the vault received the tokens
         assertEq(
-            wbnb.balanceOf(address(mockGateway)),
+            wbnb.balanceOf(address(mockVault)),
             beforeGatewayBalance + depositAmount,
             "KernelStrategy did not receive tokens"
         );
@@ -176,8 +177,9 @@ contract KernelStrategyDepositUnitTest is SetupKernelStrategy {
         assertGt(sharesMinted, 0, "No shares were minted");
         assertEq(sharesMinted, previewDepositAsset, "Incorrect shares minted");
 
+        address mockVault = mockGateway.getVault(address(slisbnb));
         // Check that the vault received the tokens
-        assertEq(slisbnb.balanceOf(address(mockGateway)), depositAmount, "KernelStrategy did not receive tokens");
+        assertEq(slisbnb.balanceOf(address(mockVault)), depositAmount, "KernelStrategy did not receive tokens");
 
         // Check that Alice's token balance decreased
         assertEq(slisbnb.balanceOf(alice), 0, "Alice's balance did not decrease correctly");
