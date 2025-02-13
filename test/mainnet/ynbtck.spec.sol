@@ -316,8 +316,6 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         address ENZO_NETWORK = 0x7EFb3515d9eC4537FaFCA635a1De7Da7A5C5c567;
         address ENZO_STRATEGY = 0xB3cF78f3e483b63280CFe19D52C9c1bDD03D02aB;
         
-        uint256 beforeBobBTCB = btcb.balanceOf(bob);
-        
         // Get BTCB first
         getBTCB(amount + 1 ether);
 
@@ -454,10 +452,10 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
     }
 
     function test_Vault_ynBTCk_deposit_EnzoBTC(
-        uint256 amount
+        uint256 btcbAmount
     ) public {
-        // amount is in 18 decimals
-        amount = bound(amount, 1e11, 1e12);
+        // amount is in 18 decimals, enzoBTC is in 8 decimals so starting at 1e11
+        uint256 amount = bound(btcbAmount, 1e11, 1000 ether);
 
         // set BTC amount in 18 decimals to be enzoBTC amount (8 decimals)
         amount = getEnzoBTC(amount);
@@ -470,6 +468,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         uint256 beforeVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
 
         uint256 previewShares = vault.previewDepositAsset(MC.ENZOBTC, amount);
+
 
         vm.startPrank(bob);
         asset.approve(address(vault), amount + 1 ether);
