@@ -6,7 +6,7 @@ import {Test} from "lib/forge-std/src/Test.sol";
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import {IERC20} from "lib/yieldnest-vault/src/Common.sol";
+import {IERC20, IERC20Metadata} from "lib/yieldnest-vault/src/Common.sol";
 
 import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
@@ -26,6 +26,8 @@ import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
+import {IEnzoNetwork} from "src/interface/external/lorenzo/IEnzoNetwork.sol";
+
 
 contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultUtils, VaultKernelUtils {
     KernelStrategy public vault;
@@ -125,6 +127,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         vault_.addAsset(MC.BTCB, true);
         vault_.addAsset(MC.SOLVBTC, true);
         vault_.addAsset(MC.SOLVBTC_BBN, true);
+        vault_.addAsset(MC.ENZOBTC, true);
 
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.BTCB), 18, false);
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SOLVBTC), 18, false);
@@ -308,6 +311,42 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         assertEq(btcb.balanceOf(bob), beforeBobBTCB + amount, "Bob's BTCB balance should increase by amount");
     }
 
+
+    function getEnzoBTC(uint256 amount) internal returns (uint256) {
+        address ENZO_NETWORK = 0x7EFb3515d9eC4537FaFCA635a1De7Da7A5C5c567;
+        address ENZO_STRATEGY = 0xB3cF78f3e483b63280CFe19D52C9c1bDD03D02aB;
+        
+        uint256 beforeBobBTCB = btcb.balanceOf(bob);
+        
+        // Get BTCB first
+        getBTCB(amount + 1 ether);
+
+        // Approve BTCB spend
+        vm.prank(bob);
+        btcb.approve(ENZO_NETWORK, amount + 1 ether);
+
+        // Approve BTCB spend to strategy
+        vm.prank(bob);
+        btcb.approve(ENZO_STRATEGY, amount + 1 ether);
+        // Deposit BTCB to get enzoBTC
+        vm.prank(bob);
+        IEnzoNetwork(ENZO_NETWORK).deposit(
+            ENZO_STRATEGY,
+            address(MC.ENZOBTC),
+            amount
+        );
+
+        // BTCB has 18 decimals, enzoBTC has 8 decimals
+        uint256 decimalsFrom = IERC20Metadata(MC.BTCB).decimals();
+        uint256 decimalsTo = IERC20Metadata(MC.ENZOBTC).decimals();
+        uint256 expectedEnzoBTC = amount / 10 ** (decimalsFrom - decimalsTo); // Adjust for decimal difference
+        
+        uint256 actualEnzoBTC = IERC20(MC.ENZOBTC).balanceOf(bob);
+        assertEq(actualEnzoBTC, expectedEnzoBTC, "Bob should have received the correct amount of enzoBTC");
+        assertEq(expectedEnzoBTC, amount / 10 ** 10, "Expected enzoBTC should be amount divided by 10^10");
+        return actualEnzoBTC;
+    }
+
     function test_Vault_ynBTCk_deposit_BTCB(uint256 amount) public {
         amount = bound(amount, 10, 10_000 ether);
 
@@ -414,41 +453,47 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have no shares after withdraw");
     }
 
-    // function test_Vault_ynBTCk_deposit_EnzoBTC(uint256 amount) public {
-    //     amount = bound(amount, 10, 100_000 ether);
+    function test_Vault_ynBTCk_deposit_EnzoBTC(
+        // uint256 amount
+    ) public {
 
-    //     getBTCB(amount);
+        //amount = bound(amount, 10, 1_000 ether);
 
-    //     IERC20 asset = IERC20(MC.BTCB);
+        uint256 amount = 100 ether;
 
-    //     uint256 beforeVaultBalance = asset.balanceOf(address(vault));
-    //     uint256 beforeBobBalance = asset.balanceOf(bob);
-    //     uint256 beforeBobShares = vault.balanceOf(bob);
-    //     uint256 beforeVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
+        // set BTC amount in 18 decimals to be enzoBTC amount (8 decimals)
+        amount = getEnzoBTC(amount);
 
-    //     uint256 previewShares = vault.previewDepositAsset(MC.ENZOBTC, amount);
+        IERC20 asset = IERC20(MC.ENZOBTC);
 
-    //     vm.startPrank(bob);
-    //     asset.approve(address(vault), amount);
-    //     uint256 shares = vault.depositAsset(MC.ENZOBTC, amount, bob);
-    //     vm.stopPrank();
+        uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+        uint256 beforeBobBalance = asset.balanceOf(bob);
+        uint256 beforeBobShares = vault.balanceOf(bob);
+        uint256 beforeVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
 
-    //     assertEq(previewShares, shares, "Preview shares should be equal to shares");
+        uint256 previewShares = vault.previewDepositAsset(MC.ENZOBTC, amount);
 
-    //     uint256 afterVaultBalance = asset.balanceOf(address(vault));
-    //     uint256 afterBobBalance = asset.balanceOf(bob);
-    //     uint256 afterBobShares = vault.balanceOf(bob);
-    //     uint256 afterVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
+        vm.startPrank(bob);
+        asset.approve(address(vault), amount + 1 ether);
+        uint256 shares = vault.depositAsset(MC.ENZOBTC, amount, bob);
+        vm.stopPrank();
 
-    //     assertEq(afterVaultBalance, beforeVaultBalance, "Vault balance should be 0");
-    //     assertEq(afterBobBalance, beforeBobBalance - amount, "Bob balance should decrease by amount");
-    //     assertEq(afterBobShares, beforeBobShares + shares, "Bob shares should increase by shares");
-    //     assertEq(
-    //         afterVaultStakerShares,
-    //         beforeVaultStakerShares + amount,
-    //         "Vault staker shares should increase after deposit"
-    //     );
-    // }
+        assertEq(previewShares, shares, "Preview shares should be equal to shares");
+
+        uint256 afterVaultBalance = asset.balanceOf(address(vault));
+        uint256 afterBobBalance = asset.balanceOf(bob);
+        uint256 afterBobShares = vault.balanceOf(bob);
+        uint256 afterVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
+
+        assertEq(afterVaultBalance, beforeVaultBalance, "Vault balance should be 0");
+        assertEq(afterBobBalance, beforeBobBalance - amount, "Bob balance should decrease by amount");
+        assertEq(afterBobShares, beforeBobShares + shares, "Bob shares should increase by shares");
+        assertEq(
+            afterVaultStakerShares,
+            beforeVaultStakerShares + amount,
+            "Vault staker shares should increase after deposit"
+        );
+    }
 
     function test_Vault_ynBTCk_rewards_BTCB(uint256 amount, uint256 rewards) public {
         amount = bound(amount, 1000, 10_000 ether);
