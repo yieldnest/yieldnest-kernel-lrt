@@ -468,7 +468,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         uint256 beforeVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
 
         uint256 previewShares = vault.previewDepositAsset(MC.ENZOBTC, amount);
-
+        uint256 beforeTotalAssets = vault.totalAssets();
 
         vm.startPrank(bob);
         asset.approve(address(vault), amount + 1 ether);
@@ -476,19 +476,29 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         vm.stopPrank();
 
         assertEq(previewShares, shares, "Preview shares should be equal to shares");
+        {
+            uint256 afterVaultBalance = asset.balanceOf(address(vault));
+            uint256 afterBobBalance = asset.balanceOf(bob);
+            uint256 afterBobShares = vault.balanceOf(bob);
+            uint256 afterVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
 
-        uint256 afterVaultBalance = asset.balanceOf(address(vault));
-        uint256 afterBobBalance = asset.balanceOf(bob);
-        uint256 afterBobShares = vault.balanceOf(bob);
-        uint256 afterVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
-
-        assertEq(afterVaultBalance, beforeVaultBalance, "Vault balance should be 0");
-        assertEq(afterBobBalance, beforeBobBalance - amount, "Bob balance should decrease by amount");
-        assertEq(afterBobShares, beforeBobShares + shares, "Bob shares should increase by shares");
+            assertEq(afterVaultBalance, beforeVaultBalance, "Vault balance should be 0");
+            assertEq(afterBobBalance, beforeBobBalance - amount, "Bob balance should decrease by amount");
+            assertEq(afterBobShares, beforeBobShares + shares, "Bob shares should increase by shares");
+            assertEq(
+                afterVaultStakerShares,
+                beforeVaultStakerShares + amount,
+                "Vault staker shares should increase after deposit"
+            );
+        }
+        
+        uint256 afterTotalAssets = vault.totalAssets();
+        uint256 decimalsFrom = IERC20Metadata(MC.BTCB).decimals();
+        uint256 decimalsTo = IERC20Metadata(MC.ENZOBTC).decimals();
         assertEq(
-            afterVaultStakerShares,
-            beforeVaultStakerShares + amount,
-            "Vault staker shares should increase after deposit"
+            afterTotalAssets,
+            beforeTotalAssets + amount * 10 ** (decimalsFrom - decimalsTo),
+            "Total assets should increase by amount * 10^(decimalsFrom-decimalsTo)"
         );
     }
 
