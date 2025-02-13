@@ -27,9 +27,6 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 import {IEnzoNetwork} from "src/interface/external/lorenzo/IEnzoNetwork.sol";
-import {console} from "lib/forge-std/src/console.sol";
-
-
 
 contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultUtils, VaultKernelUtils {
     KernelStrategy public vault;
@@ -451,8 +448,13 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
     }
 
     function test_Vault_ynBTCk_deposit_EnzoBTC(
-        uint256 btcbAmount
+        uint256 btcbAmount,
+        bool alwaysComputeTotalAssets
     ) public {
+
+        // Test both with and without always compute total assets
+        vm.prank(ASSET_MANAGER);
+        vault.setAlwaysComputeTotalAssets(alwaysComputeTotalAssets);
 
         // amount is in 18 decimals, enzoBTC is in 8 decimals so starting at 1e11
         vm.assume(btcbAmount >= 1e11 && btcbAmount <= 1000 ether);
@@ -503,9 +505,6 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         uint256 decimalsFrom = IERC20Metadata(MC.BTCB).decimals();
         uint256 decimalsTo = IERC20Metadata(MC.ENZOBTC).decimals();
 
-        console.log("beforeTotalAssets", beforeTotalAssets);
-        console.log("afterTotalAssets", afterTotalAssets);
-        console.log("vault ENZOBTC balance", IERC20(MC.ENZOBTC).balanceOf(address(vault)));
         assertEq(
             afterTotalAssets,
             beforeTotalAssets + amount * 10 ** (decimalsFrom - decimalsTo),
