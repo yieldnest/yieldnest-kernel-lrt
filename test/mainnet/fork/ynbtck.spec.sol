@@ -11,6 +11,7 @@ import {ITransparentUpgradeableProxy} from "lib/openzeppelin-contracts/contracts
 import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 import {IVault} from "lib/yieldnest-vault/src/interface/IVault.sol";
+import {console} from "lib/forge-std/src/console.sol";
 
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
@@ -95,15 +96,37 @@ contract YnBTCkForkTest is BaseForkTest {
 
         vault.setProvider(provider);
 
+        address enzoBTCVault = IStakerGateway(MainnetContracts.STAKER_GATEWAY).getVault(MainnetContracts.ENZOBTC);
+        // Get initial rate before adding assets
+        uint256 initialRate = vault.convertToAssets(1e18);
+
         // Add asset
         vault.addAsset(MainnetContracts.ENZOBTC, true);
-        vault.addAssetWithDecimals(IStakerGateway(MainnetContracts.STAKER_GATEWAY).getVault(MainnetContracts.ENZOBTC), 8, false);
+        vault.addAssetWithDecimals(enzoBTCVault, 8, false);
 
         vm.stopPrank();
         // Verify asset was added
         assertTrue( vault.getAsset(MainnetContracts.ENZOBTC).active, "enzoBTC should be active");
         assertEq( vault.getAsset(MainnetContracts.ENZOBTC).decimals, 8, "enzoBTC should have 8 decimals");
+        assertEq( vault.getAsset(enzoBTCVault).decimals, 8, "enzoBTC should have 8 decimals");
+        assertEq( vault.getAsset(enzoBTCVault).active, false, "enzoBTC should not be active");
 
+        // Verify rate after adding assets
+        assertEq(vault.convertToAssets(1e18), initialRate, "Rate should not change after adding assets");
+
+        {
+            // Test that preview deposit returns same shares for equivalent amounts
+            uint256 btcbAmount = 1000 ether; // 1000 BTCB in 18 decimals
+            uint256 enzoAmount = 1000 * 1e8; // 1000 enzoBTC in 8 decimals
+
+            uint256 btcbShares = vault.previewDepositAsset(MainnetContracts.BTCB, btcbAmount);
+            uint256 enzoShares = vault.previewDepositAsset(MainnetContracts.ENZOBTC, enzoAmount);
+
+            console.log("BTCB - Amount: %s, Shares: %s", btcbAmount, btcbShares);
+            console.log("Enzo - Amount: %s, Shares: %s", enzoAmount, enzoShares);
+
+            assertEq(btcbShares, enzoShares, "Preview deposit shares should be equal for equivalent amounts");
+        }
 
         // Impersonate enzoBTC whale
         address ENZO_WHALE = 0x16b9CA0A8f5b90a531286E2886BAc5e1A19072E3;
@@ -126,6 +149,8 @@ contract YnBTCkForkTest is BaseForkTest {
         uint256 afterTVL = vault.totalAssets();
         assertEq(afterTVL - beforeTVL, expectedTVLIncrease, "TVL should increase by 100 ether");
 
+        // Verify rate after deposit
+        assertEq(vault.convertToAssets(1e18), initialRate, "Rate should not change after deposit");
 
         uint256 withdrawSharesAmount = vault.balanceOf(ENZO_WHALE) / 4;
 
@@ -150,6 +175,9 @@ contract YnBTCkForkTest is BaseForkTest {
                 "Whale should have received enzoBTC back minus withdrawal fee"
             );
         }
+
+        // Verify rate after withdraw due to the fee
+        assertGe(vault.convertToAssets(1e18), initialRate, "Rate should not decrease after withdraw");
 
         {
             uint256 withdrawAmount = amount / 4; // 2.5 * 1e8 enzoBTC

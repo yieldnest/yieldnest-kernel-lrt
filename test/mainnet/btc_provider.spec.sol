@@ -50,6 +50,12 @@ contract BTCProviderTest is Test {
         assertEq(rate, 1e18, "Rate for Kernel BTCx Vault should be 1e18");
     }
 
+    function test_Provider_GetRateKernelVault_EnzoBTC() public view {
+        address kernelEnzoBTCVault = IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.ENZOBTC);
+        uint256 rate = provider.getRate(kernelEnzoBTCVault);
+        assertEq(rate, 1e18, "Rate for Kernel enzoBTC Vault should be 1e18");
+    }
+
     function test_Provider_UnsupportedAsset() public {
         address unsupportedAsset = address(0x123);
         vm.expectRevert();
