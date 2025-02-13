@@ -457,6 +457,12 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         // amount is in 18 decimals, enzoBTC is in 8 decimals so starting at 1e11
         uint256 amount = bound(btcbAmount, 1e11, 1000 ether);
 
+        {
+            // deposit BTCB first
+            getBTCB(100 ether);
+            depositIntoVault(MC.BTCB, 100 ether);
+        }
+
         // set BTC amount in 18 decimals to be enzoBTC amount (8 decimals)
         amount = getEnzoBTC(amount);
 

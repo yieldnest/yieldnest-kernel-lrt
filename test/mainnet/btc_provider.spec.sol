@@ -34,6 +34,12 @@ contract BTCProviderTest is Test {
         assertEq(rate, expected, "Rate for SolvBTC BBN should be correct");
     }
 
+    function test_Provider_GetRateEnzoBTC() public view {
+        uint256 rate = provider.getRate(MC.ENZOBTC);
+        // enzoBTC has 8 decimals, BTCB has 18 decimals. 138 enzoBTC is worth 1e18 BTCB
+        assertEq(rate, 1e18, "Rate for enzoBTC should be 1e10");
+    }
+
     function test_Provider_GetRateKernelVault() public view {
         address kernelBTCBVault = IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.BTCB);
         uint256 rate = provider.getRate(kernelBTCBVault);
