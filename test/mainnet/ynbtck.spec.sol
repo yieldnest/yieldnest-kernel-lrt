@@ -454,11 +454,8 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         uint256 btcbAmount
     ) public {
 
-
         // amount is in 18 decimals, enzoBTC is in 8 decimals so starting at 1e11
         vm.assume(btcbAmount >= 1e11 && btcbAmount <= 1000 ether);
-
-        uint256 btcbAmount = 100 ether;
 
         {
             // deposit BTCB first
@@ -513,6 +510,64 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
             afterTotalAssets,
             beforeTotalAssets + amount * 10 ** (decimalsFrom - decimalsTo),
             "Total assets should increase by amount * 10^(decimalsFrom-decimalsTo)"
+        );
+    }
+
+    function test_Vault_ynBTCk_withdraw_enzoBTC(uint256 btcbAmount) public {
+        // amount is in 18 decimals, enzoBTC is in 8 decimals so starting at 1e11
+        vm.assume(btcbAmount >= 1e11 && btcbAmount <= 1000 ether);
+
+        {
+            // deposit BTCB first
+            getBTCB(100 ether);
+            depositIntoVault(MC.BTCB, 100 ether);
+        }
+
+        // set BTC amount in 18 decimals to be enzoBTC amount (8 decimals)
+        uint256 amount = getEnzoBTC(btcbAmount);
+
+        IERC20 asset = IERC20(MC.ENZOBTC);
+
+        depositIntoVault(MC.ENZOBTC, amount);
+
+        uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+        uint256 beforeBobBalance = asset.balanceOf(bob);
+        uint256 beforeBobShares = vault.balanceOf(bob);
+        uint256 beforeVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
+        uint256 beforeTotalAssets = vault.totalAssets();
+
+        uint256 maxWithdraw = vault.maxWithdrawAsset(MC.ENZOBTC, bob);
+        assertEqThreshold(maxWithdraw, amount, 10, "Max withdraw should be equal to amount");
+
+        uint256 previewShares = vault.previewWithdrawAsset(MC.ENZOBTC, maxWithdraw);
+
+        vm.prank(bob);
+        uint256 shares = vault.withdrawAsset(MC.ENZOBTC, maxWithdraw, bob, bob);
+
+        assertEq(previewShares, shares, "Preview shares should be equal to shares");
+
+        uint256 afterVaultBalance = asset.balanceOf(address(vault));
+        uint256 afterBobBalance = asset.balanceOf(bob);
+        uint256 afterBobShares = vault.balanceOf(bob);
+        uint256 afterVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
+        uint256 afterTotalAssets = vault.totalAssets();
+
+        assertEq(afterVaultBalance, beforeVaultBalance, "Vault balance should be 0");
+        assertEq(afterBobBalance, beforeBobBalance + maxWithdraw, "Bob balance should increase by maxWithdraw");
+        assertEq(afterBobShares, beforeBobShares - shares, "Bob shares should decrease by shares");
+        assertEq(
+            afterVaultStakerShares,
+            beforeVaultStakerShares - maxWithdraw,
+            "Vault staker shares should decrease after withdraw"
+        );
+
+        uint256 decimalsFrom = IERC20Metadata(MC.BTCB).decimals();
+        uint256 decimalsTo = IERC20Metadata(MC.ENZOBTC).decimals();
+
+        assertEq(
+            afterTotalAssets,
+            beforeTotalAssets - maxWithdraw * 10 ** (decimalsFrom - decimalsTo),
+            "Total assets should decrease by maxWithdraw * 10^(decimalsFrom-decimalsTo)"
         );
     }
 
