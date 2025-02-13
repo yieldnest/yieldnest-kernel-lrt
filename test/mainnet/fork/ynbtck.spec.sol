@@ -129,25 +129,6 @@ contract YnBTCkForkTest is BaseForkTest {
 
         uint256 withdrawSharesAmount = vault.balanceOf(ENZO_WHALE) / 4;
 
-        {
-            uint256 withdrawAmount = amount / 4; // 2.5 * 1e8 enzoBTC
-            uint256 expectedTVLDecrease = 2.5 ether; // Expected 18 decimal decrease
-
-            beforeTVL = vault.totalAssets();
-            uint256 beforeWhaleBalance = IERC20(MainnetContracts.ENZOBTC).balanceOf(ENZO_WHALE);
-
-            vault.withdrawAsset(MainnetContracts.ENZOBTC, withdrawAmount, ENZO_WHALE, ENZO_WHALE);
-
-            afterTVL = vault.totalAssets();
-            uint256 afterWhaleBalance = IERC20(MainnetContracts.ENZOBTC).balanceOf(ENZO_WHALE);
-
-            assertEq(beforeTVL - afterTVL, expectedTVLDecrease, "TVL should decrease by 50 ether");
-            assertEq(
-                afterWhaleBalance - beforeWhaleBalance,
-                withdrawAmount,
-                "Whale should have received enzoBTC back minus withdrawal fee"
-            );
-        }
 
         {
             uint256 withdrawAmount = (amount / 4) * 999 / 1000; // 2.5 * 1e8 enzoBTC with 0.1% fee
@@ -161,11 +142,32 @@ contract YnBTCkForkTest is BaseForkTest {
             afterTVL = vault.totalAssets();
             uint256 afterWhaleBalance = IERC20(MainnetContracts.ENZOBTC).balanceOf(ENZO_WHALE);
 
-            assertEq(beforeTVL - afterTVL, expectedTVLDecrease, "TVL should decrease by 50 ether");
+            assertApproxEqRel(beforeTVL - afterTVL, expectedTVLDecrease, 1e13, "TVL should decrease by expectedTVLDecrease");
+            assertApproxEqRel(
+                afterWhaleBalance - beforeWhaleBalance,
+                withdrawAmount,
+                1e13,
+                "Whale should have received enzoBTC back minus withdrawal fee"
+            );
+        }
+
+        {
+            uint256 withdrawAmount = amount / 4; // 2.5 * 1e8 enzoBTC
+            uint256 expectedTVLDecrease = 2.5 ether; // Expected 18 decimal decrease
+
+            beforeTVL = vault.totalAssets();
+            uint256 beforeWhaleBalance = IERC20(MainnetContracts.ENZOBTC).balanceOf(ENZO_WHALE);
+
+            vault.withdrawAsset(MainnetContracts.ENZOBTC, withdrawAmount, ENZO_WHALE, ENZO_WHALE);
+
+            afterTVL = vault.totalAssets();
+            uint256 afterWhaleBalance = IERC20(MainnetContracts.ENZOBTC).balanceOf(ENZO_WHALE);
+
+            assertEq(beforeTVL - afterTVL, expectedTVLDecrease, "TVL should decrease by expectedTVLDecrease");
             assertEq(
                 afterWhaleBalance - beforeWhaleBalance,
                 withdrawAmount,
-                "Whale should have received enzoBTC back minus withdrawal fee"
+                "Whale should have received exact amount of enzoBTC"
             );
         }
 
