@@ -454,12 +454,10 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
     }
 
     function test_Vault_ynBTCk_deposit_EnzoBTC(
-        // uint256 amount
+        uint256 amount
     ) public {
-
-        //amount = bound(amount, 10, 1_000 ether);
-
-        uint256 amount = 100 ether;
+        // amount is in 18 decimals
+        amount = bound(amount, 1e11, 1e12);
 
         // set BTC amount in 18 decimals to be enzoBTC amount (8 decimals)
         amount = getEnzoBTC(amount);
