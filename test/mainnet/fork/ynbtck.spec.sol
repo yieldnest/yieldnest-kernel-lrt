@@ -92,7 +92,7 @@ contract YnBTCkForkTest is BaseForkTest {
         vm.startPrank(TIMELOCK);
 
         // Deploy and set provider
-        address provider = address(new BTCRateProvider());
+        address provider = 0x75D4d5C7633a0fD0acB2A2dC07F3eaa068c1a798; // address(new BTCRateProvider());
 
         vault.setProvider(provider);
 
