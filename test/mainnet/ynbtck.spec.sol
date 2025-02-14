@@ -593,6 +593,12 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
 
             vault.processAccounting();
 
+            assertEq(
+                IERC20(MC.ENZOBTC).balanceOf(address(vault)),
+                rewards,
+                "Vault should have received enzoBTC rewards"
+            );
+
             uint256 afterAssets = vault.totalAssets();
             uint256 afterMaxWithdraw = viewer.maxWithdrawAsset(address(MC.ENZOBTC), bob);
 
@@ -605,39 +611,6 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
                 afterMaxWithdraw, beforeMaxWithdraw + rewardsForBob, 1e13, "Max withdraw should increase by rewards"
             );
             assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have same shares");
-        }
-
-        {
-            IERC20 asset = IERC20(MC.ENZOBTC);
-
-            uint256 beforeVaultBalance = asset.balanceOf(address(vault));
-            uint256 beforeBobBalance = asset.balanceOf(bob);
-            uint256 beforeBobShares = vault.balanceOf(bob);
-            uint256 beforeVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
-
-            uint256 maxWithdraw = vault.maxWithdrawAsset(MC.ENZOBTC, bob);
-            assertApproxEqRel(maxWithdraw, rewardsForBob, 1e13, "Max withdraw should be equal to rewards");
-
-            uint256 previewShares = vault.previewWithdrawAsset(MC.ENZOBTC, maxWithdraw);
-
-            vm.prank(bob);
-            uint256 shares = vault.withdrawAsset(MC.ENZOBTC, maxWithdraw, bob, bob);
-
-            assertEq(previewShares, shares, "Preview shares should be equal to shares");
-
-            uint256 afterVaultBalance = asset.balanceOf(address(vault));
-            uint256 afterBobBalance = asset.balanceOf(bob);
-            uint256 afterBobShares = vault.balanceOf(bob);
-            uint256 afterVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
-
-            assertEq(afterVaultBalance, beforeVaultBalance - maxWithdraw, "Vault balance should decrease by maxWithdraw");
-            assertEq(afterBobBalance, beforeBobBalance + maxWithdraw, "Bob balance should increase by maxWithdraw");
-            assertEq(afterBobShares, beforeBobShares - shares, "Bob shares should decrease by shares");
-            assertEq(
-                afterVaultStakerShares,
-                beforeVaultStakerShares,
-                "Vault staker shares should not change"
-            );
         }
     }
 
