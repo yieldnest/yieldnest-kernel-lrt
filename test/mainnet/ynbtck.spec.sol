@@ -570,6 +570,77 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         );
     }
 
+    function test_Vault_ynBTCk_rewards_enzoBTC(uint256 amount, uint256 rewardsinBTCB) public {
+        vm.assume(amount >= 1 ether && amount <= 10_000 ether);
+        vm.assume(rewardsinBTCB >= 0 && rewardsinBTCB <= amount); // enzoBTC has 8 decimals
+
+        getBTCB(amount);
+
+        depositIntoVault(MC.BTCB, amount);
+
+        // Get enzoBTC rewards
+        uint256 rewards = getEnzoBTC(rewardsinBTCB);
+        uint256 rewardsForBob = rewards * vault.balanceOf(bob) / vault.totalSupply();
+
+        {
+            uint256 beforeAssets = vault.totalAssets();
+            uint256 beforeShares = vault.totalSupply();
+            uint256 beforeMaxWithdraw = viewer.maxWithdrawAsset(address(MC.ENZOBTC), bob);
+            uint256 beforeBobShares = vault.balanceOf(bob);
+
+            vm.prank(bob);
+            IERC20(MC.ENZOBTC).transfer(address(vault), rewards);
+
+            vault.processAccounting();
+
+            uint256 afterAssets = vault.totalAssets();
+            uint256 afterMaxWithdraw = viewer.maxWithdrawAsset(address(MC.ENZOBTC), bob);
+
+            // Convert rewards to 18 decimals for comparison
+            uint256 rewardsIn18Dec = rewards * 10 ** (18 - 8);
+
+            assertEq(afterAssets, beforeAssets + rewardsIn18Dec, "Total assets should increase by rewards");
+            assertEq(vault.totalSupply(), beforeShares, "Total shares should not change");
+            assertApproxEqRel(
+                afterMaxWithdraw, beforeMaxWithdraw + rewardsForBob, 1e13, "Max withdraw should increase by rewards"
+            );
+            assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have same shares");
+        }
+
+        {
+            IERC20 asset = IERC20(MC.ENZOBTC);
+
+            uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+            uint256 beforeBobBalance = asset.balanceOf(bob);
+            uint256 beforeBobShares = vault.balanceOf(bob);
+            uint256 beforeVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
+
+            uint256 maxWithdraw = vault.maxWithdrawAsset(MC.ENZOBTC, bob);
+            assertApproxEqRel(maxWithdraw, rewardsForBob, 1e13, "Max withdraw should be equal to rewards");
+
+            uint256 previewShares = vault.previewWithdrawAsset(MC.ENZOBTC, maxWithdraw);
+
+            vm.prank(bob);
+            uint256 shares = vault.withdrawAsset(MC.ENZOBTC, maxWithdraw, bob, bob);
+
+            assertEq(previewShares, shares, "Preview shares should be equal to shares");
+
+            uint256 afterVaultBalance = asset.balanceOf(address(vault));
+            uint256 afterBobBalance = asset.balanceOf(bob);
+            uint256 afterBobShares = vault.balanceOf(bob);
+            uint256 afterVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
+
+            assertEq(afterVaultBalance, beforeVaultBalance - maxWithdraw, "Vault balance should decrease by maxWithdraw");
+            assertEq(afterBobBalance, beforeBobBalance + maxWithdraw, "Bob balance should increase by maxWithdraw");
+            assertEq(afterBobShares, beforeBobShares - shares, "Bob shares should decrease by shares");
+            assertEq(
+                afterVaultStakerShares,
+                beforeVaultStakerShares,
+                "Vault staker shares should not change"
+            );
+        }
+    }
+
     function test_Vault_ynBTCk_rewards_BTCB(uint256 amount, uint256 rewards) public {
         amount = bound(amount, 1000, 10_000 ether);
         rewards = bound(rewards, 10, amount / 10);
