@@ -199,6 +199,26 @@ contract YnBTCkForkTest is BaseForkTest {
             );
         }
 
+        {
+            uint256 donationAmount = 1e8; // 1 enzoBTC
+            uint256 expectedTVLIncrease = 1 ether; // 1e18 for accounting
+
+            beforeTVL = vault.totalAssets();
+            uint256 beforeVaultBalance = IERC20(MainnetContracts.ENZOBTC).balanceOf(address(vault));
+            uint256 beforeRate = vault.convertToAssets(1e18);
+
+            // Transfer enzoBTC directly to vault as donation
+            IERC20(MainnetContracts.ENZOBTC).transfer(address(vault), donationAmount);
+
+            afterTVL = vault.totalAssets();
+            uint256 afterVaultBalance = IERC20(MainnetContracts.ENZOBTC).balanceOf(address(vault));
+            uint256 afterRate = vault.convertToAssets(1e18);
+
+            assertEq(afterTVL - beforeTVL, expectedTVLIncrease, "TVL should increase by donation amount");
+            assertEq(afterVaultBalance - beforeVaultBalance, donationAmount, "Vault balance should increase by donation");
+            assertGt(afterRate, beforeRate, "Rate should increase after donation");
+        }
+
         vm.stopPrank();
     }
 }
