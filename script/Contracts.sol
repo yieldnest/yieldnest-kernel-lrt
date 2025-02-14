@@ -17,6 +17,7 @@ interface IContracts {
     function BTCB() external view returns (address);
     function SOLVBTC() external view returns (address);
     function SOLVBTC_BBN() external view returns (address);
+    function ENZOBTC() external view returns (address);
     function ASBNB() external view returns (address);
 
     function AS_BNB_MINTER() external view returns (address);
@@ -35,6 +36,7 @@ library MainnetContracts {
     address public constant BTCB = 0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c;
     address public constant SOLVBTC = 0x4aae823a6a0b376De6A78e74eCC5b079d38cBCf7;
     address public constant SOLVBTC_BBN = 0x1346b618dC92810EC74163e4c27004c921D446a5;
+    address public constant ENZOBTC = 0x6A9A65B84843F5fD4aC9a0471C4fc11AFfFBce4a;
 
     // stake managers
     address public constant BNBX_STAKE_MANAGER = 0x3b961e83400D51e6E1AF5c450d3C7d7b80588d28;
@@ -73,6 +75,8 @@ library TestnetContracts {
     address public constant BTCB = 0x6ce8dA28E2f864420840cF74474eFf5fD80E65B8;
     address public constant SOLVBTC = 0x1cF0e51005971c5B78b4A8feE419832CFCCD8cf9;
     address public constant SOLVBTC_BBN = 0xB4618618b6Fcb61b72feD991AdcC344f43EE57Ad;
+    address public constant ENZOBTC = 0x0000000000000000000000000000000000000000;
+
     address public constant ASBNB = 0x0000000000000000000000000000000000000000;
 
     // stake managers
@@ -132,6 +136,10 @@ contract ChapelContracts is IContracts {
 
     function SOLVBTC() external pure override returns (address) {
         return TestnetContracts.SOLVBTC;
+    }
+
+    function ENZOBTC() external pure override returns (address) {
+        return TestnetContracts.ENZOBTC;
     }
 
     function SOLVBTC_BBN() external pure override returns (address) {
@@ -194,6 +202,10 @@ contract BscContracts is IContracts {
 
     function SOLVBTC_BBN() external pure override returns (address) {
         return MainnetContracts.SOLVBTC_BBN;
+    }
+
+    function ENZOBTC() external pure override returns (address) {
+        return MainnetContracts.ENZOBTC;
     }
 
     function ASBNB() external pure override returns (address) {
