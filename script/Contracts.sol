@@ -18,6 +18,7 @@ interface IContracts {
     function SOLVBTC() external view returns (address);
     function SOLVBTC_BBN() external view returns (address);
     function ENZOBTC() external view returns (address);
+    function COBTC() external view returns (address);
     function ASBNB() external view returns (address);
 
     function AS_BNB_MINTER() external view returns (address);
@@ -37,6 +38,7 @@ library MainnetContracts {
     address public constant SOLVBTC = 0x4aae823a6a0b376De6A78e74eCC5b079d38cBCf7;
     address public constant SOLVBTC_BBN = 0x1346b618dC92810EC74163e4c27004c921D446a5;
     address public constant ENZOBTC = 0x6A9A65B84843F5fD4aC9a0471C4fc11AFfFBce4a;
+    address public constant COBTC = 0x918b3aa73e2D42D96CF64CBdB16838985992dAbc;
 
     // stake managers
     address public constant BNBX_STAKE_MANAGER = 0x3b961e83400D51e6E1AF5c450d3C7d7b80588d28;
@@ -76,6 +78,7 @@ library TestnetContracts {
     address public constant SOLVBTC = 0x1cF0e51005971c5B78b4A8feE419832CFCCD8cf9;
     address public constant SOLVBTC_BBN = 0xB4618618b6Fcb61b72feD991AdcC344f43EE57Ad;
     address public constant ENZOBTC = 0x0000000000000000000000000000000000000000;
+    address public constant COBTC = 0x0000000000000000000000000000000000000000;
 
     address public constant ASBNB = 0x0000000000000000000000000000000000000000;
 
@@ -142,6 +145,10 @@ contract ChapelContracts is IContracts {
         return TestnetContracts.ENZOBTC;
     }
 
+    function COBTC() external pure override returns (address) {
+        return TestnetContracts.COBTC;
+    }
+
     function SOLVBTC_BBN() external pure override returns (address) {
         return TestnetContracts.SOLVBTC_BBN;
     }
@@ -206,6 +213,10 @@ contract BscContracts is IContracts {
 
     function ENZOBTC() external pure override returns (address) {
         return MainnetContracts.ENZOBTC;
+    }
+
+    function COBTC() external pure override returns (address) {
+        return MainnetContracts.COBTC;
     }
 
     function ASBNB() external pure override returns (address) {
