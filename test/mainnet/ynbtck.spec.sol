@@ -8,7 +8,6 @@ import {TransparentUpgradeableProxy} from
 
 import {IERC20, IERC20Metadata} from "lib/yieldnest-vault/src/Common.sol";
 
-import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
 
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";

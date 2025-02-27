@@ -7,10 +7,7 @@ import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IProvider} from "lib/yieldnest-vault/src/interface/IProvider.sol";
 
-import {IERC20, IERC20Metadata, Math} from "lib/yieldnest-vault/src/Common.sol";
-
-import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
-import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
+import {IERC20, Math} from "lib/yieldnest-vault/src/Common.sol";
 
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
 
@@ -26,7 +23,6 @@ import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
-import {IEnzoNetwork} from "src/interface/external/lorenzo/IEnzoNetwork.sol";
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
