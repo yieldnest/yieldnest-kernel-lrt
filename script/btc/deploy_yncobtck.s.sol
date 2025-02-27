@@ -10,11 +10,13 @@ import {TestnetBTCRateProvider} from "test/module/BTCRateProvider.sol";
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
+import {console} from "lib/forge-std/src/console.sol";
 import {FeeMath} from "lib/yieldnest-vault/src/module/FeeMath.sol";
 import {BaseKernelScript} from "script/BaseKernelScript.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
-// FOUNDRY_PROFILE=mainnet forge script DeployYnCoBTCktrategy --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
+// FOUNDRY_PROFILE=mainnet forge script DeployYnCoBTCkStrategy --sender 0xa1E340bd1e3ea09B3981164BBB4AfeDdF0e7bA0D
+// --account [accountname]
 contract DeployYnCoBTCkStrategy is BaseKernelScript {
     function symbol() public pure override returns (string memory) {
         return "ynCoBTCk";
@@ -52,6 +54,9 @@ contract DeployYnCoBTCkStrategy is BaseKernelScript {
         implementation = Vault(payable(address(new KernelStrategy())));
 
         address admin = msg.sender;
+
+        console.log("Admin:", admin);
+
         string memory name = "YieldNest Restaked Coffer BTC - Kernel";
         uint8 decimals = 18;
 
