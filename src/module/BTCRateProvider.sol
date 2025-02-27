@@ -44,6 +44,11 @@ contract BTCRateProvider is BaseKernelRateProvider {
             return 1e18;
         }
 
+        if (asset == MC.COBTC) {
+            // CO BTC is pegged 1:1 to BTC. The rate to BTCB  1e8:1e18
+            return 1e18;
+        }
+
         // check if a kernel vault is added as an asset
         address vaultAsset = tryGetVaultAsset(asset);
 

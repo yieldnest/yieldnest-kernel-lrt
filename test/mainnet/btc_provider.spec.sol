@@ -36,8 +36,14 @@ contract BTCProviderTest is Test {
 
     function test_Provider_GetRateEnzoBTC() public view {
         uint256 rate = provider.getRate(MC.ENZOBTC);
-        // enzoBTC has 8 decimals, BTCB has 18 decimals. 138 enzoBTC is worth 1e18 BTCB
-        assertEq(rate, 1e18, "Rate for enzoBTC should be 1e10");
+        // enzoBTC has 8 decimals, BTCB has 18 decimals. 1e8 enzoBTC is worth 1e18 BTCB
+        assertEq(rate, 1e18, "Rate for enzoBTC should be 1e18");
+    }
+
+    function test_Provider_GetRateCoBTC() public view {
+        uint256 rate = provider.getRate(MC.COBTC);
+        // coBTC has 8 decimals, BTCB has 18 decimals. 1e8 coBTC is worth 1e18 BTCB
+        assertEq(rate, 1e18, "Rate for coBTC should be 1e18");
     }
 
     function test_Provider_GetRateKernelVault() public view {
@@ -54,6 +60,12 @@ contract BTCProviderTest is Test {
         address kernelEnzoBTCVault = IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.ENZOBTC);
         uint256 rate = provider.getRate(kernelEnzoBTCVault);
         assertEq(rate, 1e18, "Rate for Kernel enzoBTC Vault should be 1e18");
+    }
+
+    function test_Provider_GetRateKernelVault_CoBTC() public view {
+        address kernelCoBTCVault = IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.COBTC);
+        uint256 rate = provider.getRate(kernelCoBTCVault);
+        assertEq(rate, 1e18, "Rate for Kernel coBTC Vault should be 1e18");
     }
 
     function test_Provider_UnsupportedAsset() public {
