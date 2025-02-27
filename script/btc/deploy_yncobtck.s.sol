@@ -55,10 +55,10 @@ contract DeployYnCoBTCkStrategy is BaseKernelScript {
 
         address admin = msg.sender;
 
-        console.log("Admin:", admin);
-
         string memory name = "YieldNest Restaked Coffer BTC - Kernel";
         uint8 decimals = 18;
+
+        console.log("Deploying YieldNest Restaked Coffer BTC - Kernel (ynCoBTCk) by", msg.sender);
 
         uint64 baseWithdrawalFee = uint64(0.001 ether * FeeMath.BASIS_POINT_SCALE / 1 ether); // 0.1%
         bool countNativeAsset = false;
