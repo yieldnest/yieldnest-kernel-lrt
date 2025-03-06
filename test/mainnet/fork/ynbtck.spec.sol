@@ -9,10 +9,8 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 import {ITransparentUpgradeableProxy} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
-import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 import {IVault} from "lib/yieldnest-vault/src/interface/IVault.sol";
-import {console} from "lib/forge-std/src/console.sol";
-
+import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
 
