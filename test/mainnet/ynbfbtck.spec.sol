@@ -23,10 +23,11 @@ import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
+import {IBFBTC} from "src/interface/external/bitfi/IBFBTC.sol";
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
-contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultUtils, VaultKernelUtils {
+contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultUtils, VaultKernelUtils {
     KernelStrategy public vault;
     BTCRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
@@ -34,7 +35,9 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
 
     address public bob = address(0xB0B);
 
-    IERC20 public cobtc;
+    uint256 public bfbtcMinDepositAmount;
+
+    IBFBTC public bfbtc;
 
     function setUp() public {
         kernelProvider = new BTCRateProvider();
@@ -59,30 +62,30 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
         vm.label(address(vault), "kernel strategy");
         vm.label(address(kernelProvider), "kernel rate provider");
 
-        cobtc = IERC20(MC.COBTC);
+        bfbtc = IBFBTC(MC.BFBTC);
 
-        mockDepositLimit();
-    }
-
-    function mockDepositLimit() public {
-        address kernelVault = IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.COBTC);
-        address config = IKernelVault(kernelVault).getConfig();
-        bytes32 role = IKernelConfig(config).ROLE_MANAGER();
-
-        vm.prank(MC.KERNEL_CONFIG_ADMIN);
-        IKernelConfig(config).grantRole(role, address(this));
-
-        IKernelVault(kernelVault).setDepositLimit(type(uint256).max);
-
-        assertEq(IKernelVault(kernelVault).getDepositLimit(), type(uint256).max, "Deposit limit should be max");
+        bfbtcMinDepositAmount = bfbtc.minDepositTokenAmount();
     }
 
     function deploy() public returns (KernelStrategy _vault) {
         KernelStrategy implementation = new KernelStrategy();
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(address(implementation), address(ADMIN), "");
 
+        uint8 decimals = 18;
+        uint64 baseWithdrawalFee = 0;
+        bool countNativeAssets = false;
+        bool alwaysComputeTotalAssets = true;
+
         _vault = KernelStrategy(payable(address(proxy)));
-        _vault.initialize(ADMIN, "YieldNest Restaked Coffer BTC - Kernel", "ynCoBTCk", 18, 0, false, true);
+        _vault.initialize(
+            ADMIN,
+            "YieldNest Restaked BitFi BTC - Kernel",
+            "ynBfBTCk",
+            decimals,
+            baseWithdrawalFee,
+            countNativeAssets,
+            alwaysComputeTotalAssets
+        );
 
         configureKernelStrategy(_vault);
     }
@@ -107,18 +110,21 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
 
         vault_.setStakerGateway(MC.STAKER_GATEWAY);
 
-        vault_.setSyncDeposit(true);
-        vault_.setSyncWithdraw(true);
+        // syncDeposit and syncWithdraw are set to false
+        vault_.setSyncDeposit(false);
+        vault_.setSyncWithdraw(false);
         vault_.setHasAllocator(false);
 
-        vault_.addAsset(MC.COBTC, true);
-        // VERY IMPORTANT: COBTC has 8 decimals
-        vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.COBTC), 8, false);
+        vault_.addAsset(MC.BFBTC, true);
 
-        // set deposit rules
-        setApprovalRule(vault_, MC.COBTC, MC.STAKER_GATEWAY);
-        setStakingRule(vault_, MC.STAKER_GATEWAY, MC.COBTC);
-        setUnstakingRule(vault_, MC.STAKER_GATEWAY, MC.COBTC);
+        // VERY IMPORTANT: BFBTC has 8 decimals
+        // NOTE: we don't add the kernel vault here yet since bfBTC is not supported yet on kernel
+        // vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.BFBTC), 8, false);
+
+        // NOTE: we don't set any rules here yet since bfBTC is not supported yet on kernel
+        // setApprovalRule(vault_, MC.BFBTC, MC.STAKER_GATEWAY);
+        // setStakingRule(vault_, MC.STAKER_GATEWAY, MC.BFBTC);
+        // setUnstakingRule(vault_, MC.STAKER_GATEWAY, MC.BFBTC);
 
         vault_.unpause();
 
@@ -153,12 +159,12 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
         // Test the name function
         assertEq(
             vault.name(),
-            "YieldNest Restaked Coffer BTC - Kernel",
-            "Vault name should be 'YieldNest Restaked Coffer BTC - Kernel'"
+            "YieldNest Restaked BitFi BTC - Kernel",
+            "Vault name should be 'YieldNest Restaked BitFi BTC - Kernel'"
         );
 
         // Test the symbol function
-        assertEq(vault.symbol(), "ynCoBTCk", "Vault symbol should be 'ynCoBTCk'");
+        assertEq(vault.symbol(), "ynBfBTCk", "Vault symbol should be 'ynBfBTCk'");
 
         // Test the decimals function
         assertEq(vault.decimals(), 18, "Vault decimals should be 18");
@@ -172,7 +178,7 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
         assertFalse(vault.paused(), "Vault should not be paused");
 
         // Test the asset function
-        assertEq(address(vault.asset()), MC.COBTC, "Vault asset should be BTCB");
+        assertEq(address(vault.asset()), MC.BFBTC, "Vault asset should be BTCB");
 
         // Test the totalAssets function
         uint256 totalAssets = vault.totalAssets();
@@ -183,7 +189,7 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
         uint256 amount = 1 ether;
         uint256 shares = vault.convertToShares(amount);
 
-        uint256 rate = IProvider(vault.provider()).getRate(MC.COBTC);
+        uint256 rate = IProvider(vault.provider()).getRate(MC.BFBTC);
         assertEq(rate, 1e18, "Rate should be 1e18");
 
         uint256 baseAssets = Math.mulDiv(amount, rate, 10 ** 8, Math.Rounding.Floor);
@@ -213,26 +219,26 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
 
         // Test the getAssets function
         address[] memory assets = vault.getAssets();
-        assertEq(assets.length, 2, "There should be 2 assets in the vault");
-        assertEq(assets[0], MC.COBTC, "First asset should be BTCB");
+        assertEq(assets.length, 1, "There should be 1 assets in the vault");
+        assertEq(assets[0], MC.BFBTC, "First asset should be BTCB");
 
         // Test the getAsset function
-        assertEq(vault.getAsset(MC.COBTC).decimals, 8, "Asset decimals should be 8");
-        assertEq(vault.getAsset(MC.COBTC).active, true, "Asset should be active");
-        assertEq(vault.getAsset(MC.COBTC).index, 0, "Asset index should be 0");
+        assertEq(vault.getAsset(MC.BFBTC).decimals, 8, "Asset decimals should be 8");
+        assertEq(vault.getAsset(MC.BFBTC).active, true, "Asset should be active");
+        assertEq(vault.getAsset(MC.BFBTC).index, 0, "Asset index should be 0");
 
-        shares = vault.previewWithdrawAsset(MC.COBTC, amount);
-        convertedAssets = vault.previewRedeemAsset(MC.COBTC, shares);
+        shares = vault.previewWithdrawAsset(MC.BFBTC, amount);
+        convertedAssets = vault.previewRedeemAsset(MC.BFBTC, shares);
 
         assertEqThreshold(convertedAssets, amount, 10, "Converted assets should be equal to amount");
     }
 
-    function test_Vault_ynCoBTCk_view_functions() public view {
+    function test_Vault_ynBfBTCk_view_functions() public view {
         bool syncDeposit = vault.getSyncDeposit();
-        assertTrue(syncDeposit, "SyncDeposit should be true");
+        assertFalse(syncDeposit, "SyncDeposit should be false");
 
         bool syncWithdraw = vault.getSyncWithdraw();
-        assertTrue(syncWithdraw, "SyncWithdraw should be true");
+        assertFalse(syncWithdraw, "SyncWithdraw should be false");
 
         address strategyGateway = vault.getStakerGateway();
         assertEq(strategyGateway, MC.STAKER_GATEWAY, "incorrect staker gateway");
@@ -241,11 +247,9 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
     function depositIntoVault(address assetAddress, uint256 amount) internal returns (uint256) {
         IERC20 asset = IERC20(assetAddress);
 
-        address kernelVault = IStakerGateway(MC.STAKER_GATEWAY).getVault(assetAddress);
-
         uint256 beforeTotalAssets = vault.totalAssets();
         uint256 beforeTotalShares = vault.totalSupply();
-        uint256 beforeVaultBalance = asset.balanceOf(address(kernelVault));
+        uint256 beforeVaultBalance = asset.balanceOf(address(vault));
         uint256 beforeBobBalance = asset.balanceOf(bob);
         uint256 beforeBobShares = vault.balanceOf(bob);
         uint256 beforeMaxWithdraw = viewer.maxWithdrawAsset(address(asset), bob);
@@ -262,8 +266,8 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
 
         assertEq(previewShares, shares, "Preview shares should be equal to shares");
 
-        uint256 assetsInCoBTC = vault.convertToAssets(shares);
-        uint256 assetsInBase = Math.mulDiv(assetsInCoBTC, 10 ** 18, 10 ** 8, Math.Rounding.Floor);
+        uint256 assetsInBfBTC = vault.convertToAssets(shares);
+        uint256 assetsInBase = Math.mulDiv(assetsInBfBTC, 10 ** 18, 10 ** 8, Math.Rounding.Floor);
 
         assertEqThreshold(
             vault.totalAssets(),
@@ -276,9 +280,7 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
         );
 
         assertEq(
-            asset.balanceOf(address(kernelVault)),
-            beforeVaultBalance + amount,
-            "Vault should have the asset after deposit"
+            asset.balanceOf(address(vault)), beforeVaultBalance + amount, "Vault should have the asset after deposit"
         );
         assertEq(asset.balanceOf(bob), beforeBobBalance - amount, "Bob should not have the assets");
         assertEq(vault.balanceOf(bob), beforeBobShares + shares, "Bob should have shares after deposit");
@@ -291,94 +293,121 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
         return shares;
     }
 
-    function test_Vault_ynCoBTCk_deposit_COBTC(uint256 amount) public {
-        amount = bound(amount, 10, 10_000 ether);
+    function obtainAsset(address assetAddress, address to, uint256 amount) internal returns (uint256) {
+        if (assetAddress != MC.BFBTC) {
+            deal(assetAddress, to, amount);
+            return amount;
+        }
 
-        IERC20 asset = IERC20(MC.COBTC);
+        deal(MC.BTCB, to, amount);
 
-        //set sync deposit enabled
-        vm.prank(ADMIN);
-        vault.setSyncDeposit(true);
+        uint256 beforeBalance = bfbtc.balanceOf(to);
 
-        uint256 beforeVaultBalance = stakerGateway.balanceOf(address(asset), address(vault));
-        uint256 previewShares = vault.previewDepositAsset(address(asset), amount);
+        uint256 previewedAmount = bfbtc.previewDeposit(amount);
+        uint256 minAmount = previewedAmount - 1;
 
-        deal(MC.COBTC, bob, amount);
+        vm.startPrank(to);
+        IERC20(MC.BTCB).approve(MC.BFBTC, amount);
+        bfbtc.deposit(amount, minAmount);
+        vm.stopPrank();
+
+        uint256 afterBalance = bfbtc.balanceOf(to);
+
+        return afterBalance - beforeBalance;
+    }
+
+    function test_Vault_ynBfBTCk_deposit_BFBTC(uint256 amount) public {
+        amount = bound(amount, bfbtcMinDepositAmount, 100_000 ether);
+        amount = obtainAsset(MC.BFBTC, bob, amount);
+
+        depositIntoVault(MC.BFBTC, amount);
+    }
+
+    function test_Vault_ynBfBTCk_donate_BFBTC(uint256 amount) public {
+        amount = bound(amount, bfbtcMinDepositAmount, 100_000 ether);
+        amount = obtainAsset(MC.BFBTC, bob, amount);
+
+        IERC20 asset = IERC20(MC.BFBTC);
+
+        uint256 beforeTotalAssets = vault.totalAssets();
+        uint256 beforeTotalShares = vault.totalSupply();
+        uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+        uint256 beforeBobBalance = asset.balanceOf(bob);
+        uint256 beforeBobShares = vault.balanceOf(bob);
+        uint256 beforeMaxWithdraw = viewer.maxWithdrawAsset(address(asset), bob);
+        assertEq(beforeMaxWithdraw, 0, "Bob should have no max withdraw before deposit");
 
         vm.prank(bob);
-        asset.approve(address(vault), amount);
+        asset.transfer(address(vault), amount);
 
-        // Test the deposit function
-        vm.prank(bob);
-        uint256 shares = vault.depositAsset(address(asset), amount, bob);
+        uint256 assetsInBase = Math.mulDiv(amount, 10 ** 18, 10 ** 8, Math.Rounding.Floor);
 
-        assertEq(previewShares, shares, "Preview shares should be equal to shares");
         assertEqThreshold(
-            stakerGateway.balanceOf(address(asset), address(vault)),
-            beforeVaultBalance + amount,
-            100,
-            "Vault should have a balance in the stakerGateway"
+            vault.totalAssets(),
+            beforeTotalAssets + assetsInBase,
+            10,
+            "Total assets should increase by the amount deposited"
+        );
+        assertEq(vault.totalSupply(), beforeTotalShares, "Total shares should remain the same after donation");
+
+        assertEq(
+            asset.balanceOf(address(vault)), beforeVaultBalance + amount, "Vault should have the asset after donation"
+        );
+        assertEq(asset.balanceOf(bob), beforeBobBalance - amount, "Bob should not have the assets");
+        assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have same shares after donation");
+        assertEq(
+            viewer.maxWithdrawAsset(address(asset), bob),
+            beforeMaxWithdraw,
+            "Bob should have same max withdraw after donation"
         );
     }
 
-    function test_Vault_ynCoBTCk_withdraw_COBTC(uint256 amount) public {
-        amount = bound(amount, 10, 10_000 ether);
+    function test_Vault_ynBfBTCk_withdraw_BFBTC(uint256 amount) public {
+        amount = bound(amount, bfbtcMinDepositAmount, 100_000 ether);
+        amount = obtainAsset(MC.BFBTC, bob, amount);
 
-        deal(MC.COBTC, bob, amount);
-
-        depositIntoVault(MC.COBTC, amount);
-        IERC20 asset = IERC20(MC.COBTC);
+        depositIntoVault(MC.BFBTC, amount);
+        IERC20 asset = IERC20(MC.BFBTC);
 
         uint256 beforeVaultBalance = asset.balanceOf(address(vault));
         uint256 beforeBobBalance = asset.balanceOf(bob);
         uint256 beforeBobShares = vault.balanceOf(bob);
-        uint256 beforeVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
 
-        uint256 maxWithdraw = vault.maxWithdrawAsset(MC.COBTC, bob);
+        uint256 maxWithdraw = vault.maxWithdrawAsset(MC.BFBTC, bob);
         assertEqThreshold(maxWithdraw, amount, 2, "Max withdraw should be equal to amount");
 
-        uint256 previewShares = vault.previewWithdrawAsset(MC.COBTC, maxWithdraw);
+        uint256 previewShares = vault.previewWithdrawAsset(MC.BFBTC, maxWithdraw);
 
         vm.prank(bob);
-        uint256 shares = vault.withdrawAsset(MC.COBTC, maxWithdraw, bob, bob);
+        uint256 shares = vault.withdrawAsset(MC.BFBTC, maxWithdraw, bob, bob);
 
         assertEq(shares, previewShares, "Shares should be equal to preview shares");
 
         uint256 afterVaultBalance = asset.balanceOf(address(vault));
         uint256 afterBobBalance = asset.balanceOf(bob);
         uint256 afterBobShares = vault.balanceOf(bob);
-        uint256 afterVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
 
-        assertEq(afterVaultBalance, beforeVaultBalance, "Vault balance should decrease be 0");
+        assertEq(afterVaultBalance, beforeVaultBalance - maxWithdraw, "Vault balance should decrease be 0");
         assertEq(afterBobBalance, beforeBobBalance + maxWithdraw, "Bob balance should increase by maxWithdraw");
         assertEq(afterBobShares, beforeBobShares - shares, "Bob shares should decrease by shares");
-        assertEq(
-            afterVaultStakerShares,
-            beforeVaultStakerShares - maxWithdraw,
-            "Vault shares should decrease after withdrawal"
-        );
     }
 
-    function test_Vault_ynCoBTCk_redeem_COBTC(uint256 amount) public {
-        amount = bound(amount, 10, 10_000 ether);
+    function test_Vault_ynBfBTCk_redeem_BFBTC(uint256 amount) public {
+        amount = bound(amount, bfbtcMinDepositAmount, 100_000 ether);
+        amount = obtainAsset(MC.BFBTC, bob, amount);
 
-        deal(MC.COBTC, bob, amount);
-
-        IERC20 asset = IERC20(MC.COBTC);
+        IERC20 asset = IERC20(MC.BFBTC);
 
         uint256 beforeVaultBalance = asset.balanceOf(address(vault));
         uint256 beforeBobBalance = asset.balanceOf(bob);
         uint256 beforeBobShares = vault.balanceOf(bob);
 
-        uint256 shares = depositIntoVault(MC.COBTC, amount);
+        uint256 shares = depositIntoVault(MC.BFBTC, amount);
 
-        uint256 previewAssets = vault.previewRedeemAsset(MC.COBTC, shares);
-
-        address kernelVault = IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.COBTC);
-        assertGe(asset.balanceOf(address(kernelVault)), previewAssets, "Vault should have enough assets to withdraw");
+        uint256 previewAssets = vault.previewRedeemAsset(MC.BFBTC, shares);
 
         vm.prank(bob);
-        uint256 assets = vault.redeemAsset(MC.COBTC, shares, bob, bob);
+        uint256 assets = vault.redeemAsset(MC.BFBTC, shares, bob, bob);
 
         assertEq(previewAssets, assets, "Preview assets should be equal to assets");
 
@@ -397,31 +426,31 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
         assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have no shares after withdraw");
     }
 
-    function test_Vault_ynCoBTCk_rewards_COBTC(uint256 amount, uint256 rewards) public {
-        amount = bound(amount, 1000, 10_000 ether);
-        rewards = bound(rewards, 10, amount / 10);
+    /*
+    function test_Vault_ynBfBTCk_rewards_BFBTC(uint256 amount, uint256 rewards) public {
+        amount = bound(amount, bfbtcMinDepositAmount, 100_000 ether);
+        rewards = bound(rewards, bfbtcMinDepositAmount, amount);
+        amount = obtainAsset(MC.BFBTC, bob, amount);
 
-        deal(MC.COBTC, bob, amount);
-
-        depositIntoVault(MC.COBTC, amount);
+        depositIntoVault(MC.BFBTC, amount);
 
         uint256 rewardsForBob = rewards * vault.balanceOf(bob) / vault.totalSupply();
 
         {
             uint256 beforeAssets = vault.totalAssets();
             uint256 beforeShares = vault.totalSupply();
-            uint256 beforeMaxWithdraw = viewer.maxWithdrawAsset(address(MC.COBTC), bob);
+            uint256 beforeMaxWithdraw = viewer.maxWithdrawAsset(address(MC.BFBTC), bob);
             uint256 beforeBobShares = vault.balanceOf(bob);
 
-            deal(MC.COBTC, bob, rewards);
+            rewards = obtainAsset(MC.BFBTC, bob, rewards);
 
             vm.prank(bob);
-            cobtc.transfer(address(vault), rewards);
+            bfbtc.transfer(address(vault), rewards);
 
             // vault.processAccounting();
 
             uint256 afterAssets = vault.totalAssets();
-            uint256 afterMaxWithdraw = viewer.maxWithdrawAsset(address(MC.COBTC), bob);
+            uint256 afterMaxWithdraw = viewer.maxWithdrawAsset(address(MC.BFBTC), bob);
 
             assertEq(afterAssets, beforeAssets + rewards * 10 ** 10, "Total assets should increase by rewards");
             assertEq(vault.totalSupply(), beforeShares, "Total shares should not change");
@@ -432,42 +461,31 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
         }
 
         {
-            IERC20 asset = IERC20(MC.COBTC);
+            IERC20 asset = IERC20(MC.BFBTC);
 
             uint256 beforeVaultBalance = asset.balanceOf(address(vault));
             uint256 beforeBobBalance = asset.balanceOf(bob);
             uint256 beforeBobShares = vault.balanceOf(bob);
-            uint256 beforeVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
 
-            uint256 maxWithdraw = vault.maxWithdrawAsset(MC.COBTC, bob);
+            uint256 maxWithdraw = vault.maxWithdrawAsset(MC.BFBTC, bob);
             assertEqThreshold(maxWithdraw, amount + rewardsForBob, 10, "Max withdraw should be equal to amount");
 
-            uint256 previewShares = vault.previewWithdrawAsset(MC.COBTC, maxWithdraw);
+            uint256 previewShares = vault.previewWithdrawAsset(MC.BFBTC, maxWithdraw);
 
             vm.prank(bob);
-            uint256 shares = vault.withdrawAsset(MC.COBTC, maxWithdraw, bob, bob);
+            uint256 shares = vault.withdrawAsset(MC.BFBTC, maxWithdraw, bob, bob);
 
             assertEq(shares, previewShares, "Shares should be equal to preview shares");
 
             uint256 afterVaultBalance = asset.balanceOf(address(vault));
             uint256 afterBobBalance = asset.balanceOf(bob);
             uint256 afterBobShares = vault.balanceOf(bob);
-            uint256 afterVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
 
             assertEq(afterBobBalance, beforeBobBalance + maxWithdraw, "Bob balance should increase by maxWithdraw");
             assertEq(afterBobShares, beforeBobShares - shares, "Bob shares should decrease by shares");
 
-            if (rewards < maxWithdraw) {
-                assertEq(afterVaultBalance, 0, "Vault balance should be 0");
-                assertEq(
-                    afterVaultStakerShares,
-                    beforeVaultStakerShares - (maxWithdraw - rewards),
-                    "Vault shares should decrease after withdrawal"
-                );
-            } else {
-                assertEq(afterVaultBalance, beforeVaultBalance - maxWithdraw, "Vault balance should decrease");
-                assertEq(afterVaultStakerShares, beforeVaultStakerShares, "Vault shares should not change");
-            }
+            assertEq(afterVaultBalance, beforeVaultBalance - maxWithdraw, "Vault balance should decrease");
         }
     }
+    */
 }

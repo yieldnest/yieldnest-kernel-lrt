@@ -49,6 +49,12 @@ contract BTCRateProvider is BaseKernelRateProvider {
             return 1e18;
         }
 
+        if (asset == MC.BFBTC) {
+            // BF BTC is a vault with BTCB as the underlying asset.
+            // TODO: move this rate to a separate BfBTCRateProvider contract
+            return 1e18;
+        }
+
         // check if a kernel vault is added as an asset
         address vaultAsset = tryGetVaultAsset(asset);
 

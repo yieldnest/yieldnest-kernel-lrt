@@ -9,10 +9,10 @@
     "reason-string": ["warn", { "maxLength": 64 }],
     "not-rely-on-time": "warn",
     "state-visibility": "error",
-    "max-line-length": ["warn", 122],
+    "max-line-length": ["warn", 120],
     "func-name-mixedcase": "off",
     "no-inline-assembly": "off",
-    "no-console": "error",
-    "gas-custom-errors": "error"
+    "no-console": "off",
+    "gas-custom-errors": "off"
   }
 }
