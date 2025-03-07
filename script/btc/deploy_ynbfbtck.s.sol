@@ -4,8 +4,7 @@ pragma solidity ^0.8.24;
 import {IProvider, Vault} from "lib/yieldnest-vault/script/BaseScript.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
-import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
-import {TestnetBTCRateProvider} from "test/module/BTCRateProvider.sol";
+import {BitFiBTCRateProvider} from "src/module/BitFiBTCRateProvider.sol";
 
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -15,19 +14,19 @@ import {FeeMath} from "lib/yieldnest-vault/src/module/FeeMath.sol";
 import {BaseKernelScript} from "script/BaseKernelScript.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
-// FOUNDRY_PROFILE=mainnet forge script DeployYnCoBTCkStrategy --sender 0xa1E340bd1e3ea09B3981164BBB4AfeDdF0e7bA0D
+// FOUNDRY_PROFILE=mainnet forge script DeployYnBfBTCkStrategy --sender 0xa1E340bd1e3ea09B3981164BBB4AfeDdF0e7bA0D
 // --account [accountname]
-contract DeployYnCoBTCkStrategy is BaseKernelScript {
+contract DeployYnBfBTCkStrategy is BaseKernelScript {
     function symbol() public pure override returns (string memory) {
-        return "ynCoBTCk";
+        return "ynBfBTCk";
     }
 
     function deployRateProvider() internal {
         if (block.chainid == 56) {
-            rateProvider = IProvider(address(new BTCRateProvider()));
+            rateProvider = IProvider(address(new BitFiBTCRateProvider()));
             return;
         }
-        // only bsc mainnet is supported for ynCoBTCk
+        // only bsc mainnet is supported for ynBfBTCk
         revert UnsupportedChain();
     }
 
@@ -35,6 +34,7 @@ contract DeployYnCoBTCkStrategy is BaseKernelScript {
         vm.startBroadcast();
 
         _setup();
+
         _deployTimelockController();
         deployRateProvider();
 
@@ -54,14 +54,15 @@ contract DeployYnCoBTCkStrategy is BaseKernelScript {
 
         address admin = msg.sender;
 
-        string memory name = "YieldNest Restaked Coffer BTC - Kernel";
+        string memory name = "YieldNest Restaked BitFi BTC - Kernel";
         uint8 decimals = 18;
 
-        console.log("Deploying YieldNest Restaked Coffer BTC - Kernel (ynCoBTCk) by", msg.sender);
+        console.log("Deploying YieldNest Restaked BitFi BTC - Kernel (ynBfBTCk) by", msg.sender);
 
-        uint64 baseWithdrawalFee = uint64(0.001 ether * FeeMath.BASIS_POINT_SCALE / 1 ether); // 0.1%
+        uint64 baseWithdrawalFee = 0;
         bool countNativeAsset = false;
         bool alwaysComputeTotalAssets = true;
+
         bytes memory initData = abi.encodeWithSelector(
             Vault.initialize.selector,
             admin,
@@ -88,18 +89,22 @@ contract DeployYnCoBTCkStrategy is BaseKernelScript {
         // set provider
         vault_.setStakerGateway(contracts.STAKER_GATEWAY());
         vault_.setProvider(address(rateProvider));
-        vault_.setSyncDeposit(true);
-        vault_.setSyncWithdraw(true);
 
-        vault_.addAsset(contracts.COBTC(), true);
-        IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
-        // VERY IMPORTANT: COBTC has 8 decimals
-        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.COBTC()), 8, false);
+        // set as false now, since kernel doesn't support it yet
+        vault_.setSyncDeposit(false);
+        vault_.setSyncWithdraw(false);
 
-        setApprovalRule(vault_, contracts.COBTC(), contracts.STAKER_GATEWAY());
+        vault_.addAsset(contracts.BFBTC(), true);
 
-        setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.COBTC());
-        setUnstakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.COBTC());
+        // not adding the kernel vault and rules now, since kernel doesn't support it yet
+        // IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
+        // // VERY IMPORTANT: BFBTC has 8 decimals
+        // vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.BFBTC()), 8, false);
+        //
+        // setApprovalRule(vault_, contracts.BFBTC(), contracts.STAKER_GATEWAY());
+        //
+        // setStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.BFBTC());
+        // setUnstakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.BFBTC());
 
         vault_.unpause();
 
