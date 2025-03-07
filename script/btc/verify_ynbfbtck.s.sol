@@ -3,10 +3,9 @@ pragma solidity ^0.8.24;
 
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {KernelVerifyScript} from "script/KernelVerifyScript.sol";
-import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
-// FOUNDRY_PROFILE=mainnet forge script VerifyYnBTCkStrategy
-contract VerifyYnBTCkStrategy is KernelVerifyScript {
+// FOUNDRY_PROFILE=mainnet forge script VerifyYnBfBTCkStrategy
+contract VerifyYnBfBTCkStrategy is KernelVerifyScript {
     function symbol() public pure override returns (string memory) {
         return "ynBfBTCk";
     }
@@ -33,7 +32,6 @@ contract VerifyYnBTCkStrategy is KernelVerifyScript {
         assertEq(vault_.baseWithdrawalFee(), 0, "base withdrawal fee is invalid");
         assertEq(vault_.countNativeAsset(), false, "count native asset is invalid");
         assertTrue(vault_.alwaysComputeTotalAssets(), "always compute total assets is invalid");
-
 
         address[] memory assets = vault_.getAssets();
         assertEq(assets.length, 1, "assets length is invalid");

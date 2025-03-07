@@ -5,7 +5,6 @@ import {IProvider, Vault} from "lib/yieldnest-vault/script/BaseScript.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
-import {TestnetBTCRateProvider} from "test/module/BTCRateProvider.sol";
 
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";

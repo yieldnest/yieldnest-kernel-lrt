@@ -10,9 +10,7 @@ import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {console} from "lib/forge-std/src/console.sol";
-import {FeeMath} from "lib/yieldnest-vault/src/module/FeeMath.sol";
 import {BaseKernelScript} from "script/BaseKernelScript.sol";
-import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 // FOUNDRY_PROFILE=mainnet forge script DeployYnBfBTCkStrategy --sender 0xa1E340bd1e3ea09B3981164BBB4AfeDdF0e7bA0D
 // --account [accountname]

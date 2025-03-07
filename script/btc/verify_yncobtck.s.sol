@@ -5,8 +5,8 @@ import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {KernelVerifyScript} from "script/KernelVerifyScript.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
-// FOUNDRY_PROFILE=mainnet forge script VerifyYnBTCkStrategy
-contract VerifyYnBTCkStrategy is KernelVerifyScript {
+// FOUNDRY_PROFILE=mainnet forge script VerifyYnCoBTCkStrategy
+contract VerifyYnCoBTCkStrategy is KernelVerifyScript {
     function symbol() public pure override returns (string memory) {
         return "ynCoBTCk";
     }
