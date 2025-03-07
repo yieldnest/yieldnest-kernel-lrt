@@ -24,12 +24,12 @@ import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 import {IBFBTC} from "src/interface/external/bitfi/IBFBTC.sol";
-import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
+import {BitFiBTCRateProvider} from "src/module/BitFiBTCRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
 contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultUtils, VaultKernelUtils {
     KernelStrategy public vault;
-    BTCRateProvider public kernelProvider;
+    BitFiBTCRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
     KernelVaultViewer public viewer;
 
@@ -40,7 +40,7 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
     IBFBTC public bfbtc;
 
     function setUp() public {
-        kernelProvider = new BTCRateProvider();
+        kernelProvider = new BitFiBTCRateProvider();
         etchProvider(address(kernelProvider));
 
         stakerGateway = IStakerGateway(MC.STAKER_GATEWAY);

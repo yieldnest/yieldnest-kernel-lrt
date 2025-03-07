@@ -5,14 +5,13 @@ pragma solidity ^0.8.24;
 import {MainnetContracts as MC} from "script/Contracts.sol";
 
 import {BaseKernelRateProvider} from "./BaseKernelRateProvider.sol";
-import {ISolvBTCYieldToken} from "src/interface/external/solv/ISolvBTCYieldToken.sol";
 
 /**
- * @title BTCRateProvider
+ * @title BitFiBTCRateProvider
  * @author Yieldnest
  * @notice Provides the rate of BTC for the Yieldnest Kernel
  */
-contract BTCRateProvider is BaseKernelRateProvider {
+contract BitFiBTCRateProvider is BaseKernelRateProvider {
     /**
      * @notice Returns the staker gateway address
      * @return The staker gateway address
@@ -27,25 +26,9 @@ contract BTCRateProvider is BaseKernelRateProvider {
      * @return The rate of the asset
      */
     function getRate(address asset) public view override returns (uint256) {
-        if (asset == MC.BTCB) {
-            return 1e18;
-        }
-
-        if (asset == MC.SOLVBTC) {
-            return 1e18;
-        }
-
-        if (asset == MC.SOLVBTC_BBN) {
-            return ISolvBTCYieldToken(MC.SOLVBTC_BBN).getValueByShares(1e18);
-        }
-
-        if (asset == MC.ENZOBTC) {
-            // ENZO BTC is pegged 1:1 to BTC. The rate to BTCB  1e8:1e18
-            return 1e18;
-        }
-
-        if (asset == MC.COBTC) {
-            // CO BTC is pegged 1:1 to BTC. The rate to BTCB  1e8:1e18
+        if (asset == MC.BFBTC) {
+            // BF BTC is a vault with BTCB as the underlying asset.
+            // BFBTC is the only asset in this vault so we can just return 1e18
             return 1e18;
         }
 

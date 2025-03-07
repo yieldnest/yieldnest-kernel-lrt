@@ -63,6 +63,7 @@ library MainnetContracts {
     address public constant KERNEL_CONFIG = 0x45d7Bb73253A908E6160aa5FD9DA083F7Bc6faf5;
     address public constant KERNEL_CONFIG_ADMIN = 0x40f5f0f5E78289B33E450fBCA1cbD8700098cd23;
     address public constant ASSET_REGISTRY = 0xd0B91Fc0a323bbb726faAF8867CdB1cA98c44ABB;
+    address public constant KERNEL_VAULT_BEACON = 0xA026462C57BE1bDd668dE6ce2F8Ab2E332c112fE;
 
     address public constant PROVIDER = address(123456789); // TODO: Update with deployed Provider
     address public constant BUFFER = address(987654321); // TODO: Update with deployed buffer
