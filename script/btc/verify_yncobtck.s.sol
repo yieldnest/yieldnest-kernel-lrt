@@ -30,7 +30,7 @@ contract VerifyYnCoBTCkStrategy is KernelVerifyScript {
         assertFalse(vault_.getHasAllocator(), "has allocator is invalid");
         assertTrue(vault_.getSyncDeposit(), "sync deposit is invalid");
         assertTrue(vault_.getSyncWithdraw(), "sync withdraw is invalid");
-        assertEq(vault_.baseWithdrawalFee(), 100000, "base withdrawal fee is invalid");
+        assertEq(vault_.baseWithdrawalFee(), 0, "base withdrawal fee is invalid");
         assertEq(vault_.countNativeAsset(), false, "count native asset is invalid");
         assertTrue(vault_.alwaysComputeTotalAssets(), "always compute total assets is invalid");
         IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
