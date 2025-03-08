@@ -271,10 +271,10 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
 
         uint256 assetsInBfBTC = vault.convertToAssets(shares);
 
+        assertEq(assetsInBfBTC, amount, "Assets in BfBTC should equal deposited amount");
+
         assertEq(
-            vault.totalAssets(),
-            beforeTotalAssets + assetsInBfBTC,
-            "Total assets should increase by the amount deposited"
+            vault.totalAssets(), beforeTotalAssets + amount, "Total assets should increase by the amount deposited"
         );
         assertEq(
             vault.totalSupply(), beforeTotalShares + shares, "Total shares should increase by the amount deposited"
