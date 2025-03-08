@@ -26,7 +26,7 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
-contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultUtils, VaultKernelUtils {
+contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultUtils, VaultKernelUtils {
     KernelStrategy public vault;
     BTCRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
@@ -213,7 +213,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
 
         // Test the getAssets function
         address[] memory assets = vault.getAssets();
-        assertEq(assets.length, 2, "There should be six assets in the vault");
+        assertEq(assets.length, 2, "There should be 2 assets in the vault");
         assertEq(assets[0], MC.COBTC, "First asset should be BTCB");
 
         // Test the getAsset function

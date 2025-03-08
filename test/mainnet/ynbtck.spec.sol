@@ -36,6 +36,9 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
 
     address public bob = address(0xB0B);
 
+    address public constant ENZO_NETWORK = 0x7EFb3515d9eC4537FaFCA635a1De7Da7A5C5c567;
+    address public constant ENZO_STRATEGY = 0xB3cF78f3e483b63280CFe19D52C9c1bDD03D02aB;
+
     IERC20 public btcb;
 
     function setUp() public {
@@ -307,9 +310,6 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
     }
 
     function getEnzoBTC(uint256 amount) internal returns (uint256) {
-        address ENZO_NETWORK = 0x7EFb3515d9eC4537FaFCA635a1De7Da7A5C5c567;
-        address ENZO_STRATEGY = 0xB3cF78f3e483b63280CFe19D52C9c1bDD03D02aB;
-
         // Get BTCB first
         getBTCB(amount + 1 ether);
 
