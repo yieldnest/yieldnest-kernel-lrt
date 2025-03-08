@@ -202,7 +202,7 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
 
         // Test the convertToAssets function
         uint256 convertedAssets = vault.convertToAssets(shares);
-        assertEqThreshold(convertedAssets, amount, 10, "Converted assets should be close to amount deposited");
+        assertEq(convertedAssets, amount, "Converted assets should be close to amount deposited");
 
         // Test the maxDeposit function
         uint256 maxDeposit = vault.maxDeposit(address(this));
@@ -233,7 +233,7 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
         shares = vault.previewWithdrawAsset(MC.BFBTC, amount);
         convertedAssets = vault.previewRedeemAsset(MC.BFBTC, shares);
 
-        assertEqThreshold(convertedAssets, amount, 10, "Converted assets should be equal to amount");
+        assertEq(convertedAssets, amount, "Converted assets should be equal to amount");
     }
 
     function test_Vault_ynBfBTCk_view_functions() public view {
@@ -271,10 +271,9 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
 
         uint256 assetsInBfBTC = vault.convertToAssets(shares);
 
-        assertEqThreshold(
+        assertEq(
             vault.totalAssets(),
             beforeTotalAssets + assetsInBfBTC,
-            10,
             "Total assets should increase by the amount deposited"
         );
         assertEq(
@@ -342,11 +341,8 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
         vm.prank(bob);
         asset.transfer(address(vault), amount);
 
-        assertEqThreshold(
-            vault.totalAssets(),
-            beforeTotalAssets + amount,
-            10,
-            "Total assets should increase by the amount deposited"
+        assertEq(
+            vault.totalAssets(), beforeTotalAssets + amount, "Total assets should increase by the amount deposited"
         );
         assertEq(vault.totalSupply(), beforeTotalShares, "Total shares should remain the same after donation");
 
@@ -374,7 +370,7 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
         uint256 beforeBobShares = vault.balanceOf(bob);
 
         uint256 maxWithdraw = vault.maxWithdrawAsset(MC.BFBTC, bob);
-        assertEqThreshold(maxWithdraw, amount, 2, "Max withdraw should be equal to amount");
+        assertEq(maxWithdraw, amount, "Max withdraw should be equal to amount");
 
         uint256 previewShares = vault.previewWithdrawAsset(MC.BFBTC, maxWithdraw);
 
@@ -411,7 +407,7 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
 
         assertEq(previewAssets, assets, "Preview assets should be equal to assets");
 
-        assertEqThreshold(assets, amount, 10, "Assets should be close to amount");
+        assertEq(assets, amount, "Assets should be close to amount");
 
         assertEq(
             asset.balanceOf(address(vault)),
@@ -453,7 +449,7 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
             assertEq(afterAssets, beforeAssets + rewards, "Total assets should increase by rewards");
             assertEq(vault.totalSupply(), beforeShares, "Total shares should not change");
             assertEqThreshold(
-                afterMaxWithdraw, beforeMaxWithdraw + rewardsForBob, 10, "Max withdraw should increase by rewards"
+                afterMaxWithdraw, beforeMaxWithdraw + rewardsForBob, 2, "Max withdraw should increase by rewards"
             );
             assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have same shares");
         }
@@ -466,7 +462,9 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
             uint256 beforeBobShares = vault.balanceOf(bob);
 
             uint256 maxWithdraw = vault.maxWithdrawAsset(MC.BFBTC, bob);
-            assertEqThreshold(maxWithdraw, amount + rewardsForBob, 10, "Max withdraw should be equal to amount");
+            assertEqThreshold(
+                maxWithdraw, amount + rewardsForBob, 2, "Max withdraw should be equal to amount + rewards"
+            );
 
             uint256 previewShares = vault.previewWithdrawAsset(MC.BFBTC, maxWithdraw);
 
@@ -481,6 +479,7 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
 
             assertEq(afterBobBalance, beforeBobBalance + maxWithdraw, "Bob balance should increase by maxWithdraw");
             assertEq(afterBobShares, beforeBobShares - shares, "Bob shares should decrease by shares");
+            assertEq(vault.maxWithdrawAsset(MC.BFBTC, bob), 0, "Max withdraw should be zero");
 
             assertEq(afterVaultBalance, beforeVaultBalance - maxWithdraw, "Vault balance should decrease");
         }
@@ -494,6 +493,45 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
         _configureKernelStrategyToSupportKernelVault(vault, kernelVault);
 
         _depositIntoVault_WithKernelVault(MC.BFBTC, amount);
+    }
+
+    function test_Vault_ynBfBTCk_donate_BFBTC_WithKernelVault(uint256 amount) public {
+        amount = bound(amount, bfbtcMinDepositAmount, 100_000 ether);
+        amount = obtainAsset(MC.BFBTC, bob, amount);
+
+        IKernelVault kernelVault = _deployKernelVaultAndAddToAssetRegistry(MC.BFBTC);
+        _configureKernelStrategyToSupportKernelVault(vault, kernelVault);
+
+        IERC20 asset = IERC20(MC.BFBTC);
+
+        uint256 beforeTotalAssets = vault.totalAssets();
+        uint256 beforeTotalShares = vault.totalSupply();
+        uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+        uint256 beforeKernelVaultBalance = asset.balanceOf(address(kernelVault));
+        uint256 beforeBobBalance = asset.balanceOf(bob);
+        uint256 beforeBobShares = vault.balanceOf(bob);
+        uint256 beforeMaxWithdraw = viewer.maxWithdrawAsset(address(asset), bob);
+        assertEq(beforeMaxWithdraw, 0, "Bob should have no max withdraw before deposit");
+
+        vm.prank(bob);
+        asset.transfer(address(vault), amount);
+
+        assertEq(
+            vault.totalAssets(), beforeTotalAssets + amount, "Total assets should increase by the amount deposited"
+        );
+        assertEq(vault.totalSupply(), beforeTotalShares, "Total shares should remain the same after donation");
+
+        assertEq(
+            asset.balanceOf(address(vault)), beforeVaultBalance + amount, "Vault should have the asset after donation"
+        );
+        assertEq(asset.balanceOf(bob), beforeBobBalance - amount, "Bob should not have the assets");
+        assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have same shares after donation");
+        assertEq(
+            viewer.maxWithdrawAsset(address(asset), bob),
+            beforeMaxWithdraw,
+            "Bob should have same max withdraw after donation"
+        );
+        assertEq(asset.balanceOf(address(kernelVault)), beforeKernelVaultBalance, "Kernel vault should not have assets");
     }
 
     function test_Vault_ynBfBTCk_withdraw_BFBTC_WithKernelVault(uint256 amount) public {
@@ -513,7 +551,7 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
         uint256 beforeVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
 
         uint256 maxWithdraw = vault.maxWithdrawAsset(MC.BFBTC, bob);
-        assertEqThreshold(maxWithdraw, amount, 2, "Max withdraw should be equal to amount");
+        assertEq(maxWithdraw, amount, "Max withdraw should be equal to amount");
 
         uint256 previewShares = vault.previewWithdrawAsset(MC.BFBTC, maxWithdraw);
 
@@ -561,7 +599,7 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
 
         assertEq(previewAssets, assets, "Preview assets should be equal to assets");
 
-        assertEqThreshold(assets, amount, 10, "Assets should be close to amount");
+        assertEq(assets, amount, "Assets should be close to amount");
 
         assertEq(
             asset.balanceOf(address(vault)),
@@ -574,6 +612,93 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
             "Bob should have the amount deposited after withdraw"
         );
         assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have no shares after withdraw");
+    }
+
+    function test_Vault_ynBfBTCk_rewards_BFBTC_WithKernelVault(uint256 amount, uint256 rewards) public {
+        amount = bound(amount, bfbtcMinDepositAmount, 100_000 ether);
+        rewards = bound(rewards, bfbtcMinDepositAmount, amount);
+        amount = obtainAsset(MC.BFBTC, bob, amount);
+        rewards = obtainAsset(MC.BFBTC, bob, rewards);
+
+        assertGe(bfbtc.balanceOf(bob), rewards + amount, "Bob should have enough rewards & amount");
+
+        IKernelVault kernelVault = _deployKernelVaultAndAddToAssetRegistry(MC.BFBTC);
+        _configureKernelStrategyToSupportKernelVault(vault, kernelVault);
+
+        _depositIntoVault_WithKernelVault(MC.BFBTC, amount);
+
+        uint256 rewardsForBob = rewards * vault.balanceOf(bob) / vault.totalSupply();
+
+        IERC20 asset = IERC20(MC.BFBTC);
+
+        {
+            uint256 beforeAssets = vault.totalAssets();
+            uint256 beforeShares = vault.totalSupply();
+            uint256 beforeMaxWithdraw = viewer.maxWithdrawAsset(address(MC.BFBTC), bob);
+            uint256 beforeBobShares = vault.balanceOf(bob);
+            uint256 beforeKernelVaultBalance = bfbtc.balanceOf(address(kernelVault));
+            uint256 beforeVaultBalance = bfbtc.balanceOf(address(vault));
+
+            vm.prank(bob);
+            bfbtc.transfer(address(vault), rewards);
+
+            uint256 afterAssets = vault.totalAssets();
+            uint256 afterMaxWithdraw = viewer.maxWithdrawAsset(address(MC.BFBTC), bob);
+
+            assertEq(afterAssets, beforeAssets + rewards, "Total assets should increase by rewards");
+            assertEq(vault.totalSupply(), beforeShares, "Total shares should not change");
+            assertEqThreshold(
+                afterMaxWithdraw, beforeMaxWithdraw + rewardsForBob, 2, "Max withdraw should increase by rewards"
+            );
+            assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have same shares");
+            assertEq(
+                asset.balanceOf(address(kernelVault)), beforeKernelVaultBalance, "Kernel vault should not have assets"
+            );
+            assertEq(asset.balanceOf(address(vault)), beforeVaultBalance + rewards, "Vault should have rewards");
+        }
+
+        {
+            uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+            uint256 beforeKernelVaultBalance = asset.balanceOf(address(kernelVault));
+            uint256 beforeBobBalance = asset.balanceOf(bob);
+            uint256 beforeBobShares = vault.balanceOf(bob);
+
+            uint256 maxWithdraw = vault.maxWithdrawAsset(MC.BFBTC, bob);
+            assertEqThreshold(
+                maxWithdraw, amount + rewardsForBob, 2, "Max withdraw should be equal to amount + rewards"
+            );
+
+            uint256 previewShares = vault.previewWithdrawAsset(MC.BFBTC, maxWithdraw);
+
+            vm.prank(bob);
+            uint256 shares = vault.withdrawAsset(MC.BFBTC, maxWithdraw, bob, bob);
+
+            assertEq(shares, previewShares, "Shares should be equal to preview shares");
+
+            uint256 afterVaultBalance = asset.balanceOf(address(vault));
+            uint256 afterBobBalance = asset.balanceOf(bob);
+            uint256 afterBobShares = vault.balanceOf(bob);
+
+            assertEq(afterBobBalance, beforeBobBalance + maxWithdraw, "Bob balance should increase by maxWithdraw");
+            assertEq(afterBobShares, beforeBobShares - shares, "Bob shares should decrease by shares");
+            assertEq(vault.maxWithdrawAsset(MC.BFBTC, bob), 0, "Max withdraw should be zero");
+
+            if (beforeVaultBalance > maxWithdraw) {
+                assertEq(afterVaultBalance, beforeVaultBalance - maxWithdraw, "Vault balance should decrease");
+                assertEq(
+                    asset.balanceOf(address(kernelVault)),
+                    beforeKernelVaultBalance,
+                    "Kernel vault balance should not change"
+                );
+            } else {
+                assertEq(afterVaultBalance, 0, "Vault balance should not decrease");
+                assertEq(
+                    asset.balanceOf(address(kernelVault)),
+                    beforeKernelVaultBalance + beforeVaultBalance - maxWithdraw,
+                    "Kernel vault should only change by withdrawn amount"
+                );
+            }
+        }
     }
 
     function _depositIntoVault_WithKernelVault(address assetAddress, uint256 amount) internal returns (uint256) {
@@ -601,10 +726,9 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
 
         uint256 assetsInBfBTC = vault.convertToAssets(shares);
 
-        assertEqThreshold(
+        assertEq(
             vault.totalAssets(),
             beforeTotalAssets + assetsInBfBTC,
-            10,
             "Total assets should increase by the amount deposited"
         );
         assertEq(
