@@ -193,7 +193,7 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
         uint256 shares = vault.convertToShares(amount);
 
         uint256 rate = IProvider(vault.provider()).getRate(MC.BFBTC);
-        assertEq(rate, 1e18, "Rate should be 1e18");
+        assertEq(rate, 1e8, "Rate should be 1e8");
 
         uint256 baseAssets = Math.mulDiv(amount, rate, 10 ** 8, Math.Rounding.Floor);
         uint256 expectedShares = baseAssets;
@@ -270,11 +270,10 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
         assertEq(previewShares, shares, "Preview shares should be equal to shares");
 
         uint256 assetsInBfBTC = vault.convertToAssets(shares);
-        uint256 assetsInBase = Math.mulDiv(assetsInBfBTC, 10 ** 18, 10 ** 8, Math.Rounding.Floor);
 
         assertEqThreshold(
             vault.totalAssets(),
-            beforeTotalAssets + assetsInBase,
+            beforeTotalAssets + assetsInBfBTC,
             10,
             "Total assets should increase by the amount deposited"
         );
@@ -343,11 +342,9 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
         vm.prank(bob);
         asset.transfer(address(vault), amount);
 
-        uint256 assetsInBase = Math.mulDiv(amount, 10 ** 18, 10 ** 8, Math.Rounding.Floor);
-
         assertEqThreshold(
             vault.totalAssets(),
-            beforeTotalAssets + assetsInBase,
+            beforeTotalAssets + amount,
             10,
             "Total assets should increase by the amount deposited"
         );
@@ -453,7 +450,7 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
             uint256 afterAssets = vault.totalAssets();
             uint256 afterMaxWithdraw = viewer.maxWithdrawAsset(address(MC.BFBTC), bob);
 
-            assertEq(afterAssets, beforeAssets + rewards * 10 ** 10, "Total assets should increase by rewards");
+            assertEq(afterAssets, beforeAssets + rewards, "Total assets should increase by rewards");
             assertEq(vault.totalSupply(), beforeShares, "Total shares should not change");
             assertEqThreshold(
                 afterMaxWithdraw, beforeMaxWithdraw + rewardsForBob, 10, "Max withdraw should increase by rewards"
@@ -603,11 +600,10 @@ contract YnBitFiBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, V
         assertEq(previewShares, shares, "Preview shares should be equal to shares");
 
         uint256 assetsInBfBTC = vault.convertToAssets(shares);
-        uint256 assetsInBase = Math.mulDiv(assetsInBfBTC, 10 ** 18, 10 ** 8, Math.Rounding.Floor);
 
         assertEqThreshold(
             vault.totalAssets(),
-            beforeTotalAssets + assetsInBase,
+            beforeTotalAssets + assetsInBfBTC,
             10,
             "Total assets should increase by the amount deposited"
         );

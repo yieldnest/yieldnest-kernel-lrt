@@ -41,6 +41,9 @@ contract VerifyYnBfBTCkStrategy is KernelVerifyScript {
         assertEq(asset.active, true, "asset[0].active is invalid");
         assertEq(asset.index, 0, "asset[0].index is invalid");
 
+        uint256 rate = rateProvider.getRate(contracts.BFBTC());
+        assertEq(rate, 10 ** 8, "rate is invalid");
+
         // IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
         // assertEq(assets[1], address(stakerGateway.getVault(contracts.BFBTC())));
         // asset = vault_.getAsset(address(stakerGateway.getVault(contracts.BFBTC())));

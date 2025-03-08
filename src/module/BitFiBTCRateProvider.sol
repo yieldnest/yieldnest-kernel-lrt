@@ -27,9 +27,10 @@ contract BitFiBTCRateProvider is BaseKernelRateProvider {
      */
     function getRate(address asset) public view override returns (uint256) {
         if (asset == MC.BFBTC) {
-            // BF BTC is a vault with BTCB as the underlying asset.
-            // BFBTC is the only asset in this vault so we can just return 1e18
-            return 1e18;
+            // BFBTC is a vault with BTCB as the underlying asset.
+            // BFBTC is the only asset in this vault so we can just return 1e8
+            // since BFBTC has 8 decimals
+            return 1e8;
         }
 
         // check if a kernel vault is added as an asset
