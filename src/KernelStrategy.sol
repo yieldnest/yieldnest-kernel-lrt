@@ -123,7 +123,7 @@ contract KernelStrategy is Vault {
      * @return maxAssets The maximum amount of assets.
      */
     function _maxWithdrawAsset(address asset_, address owner) internal view virtual returns (uint256 maxAssets) {
-        if (paused() || !_getAssetStorage().assets[asset_].active) {
+        if (paused() || !_getBaseStrategyStorage().isAssetWithdrawable[asset_]) {
             return 0;
         }
 
@@ -177,7 +177,7 @@ contract KernelStrategy is Vault {
      * @return maxShares The maximum amount of shares.
      */
     function _maxRedeemAsset(address asset_, address owner) internal view virtual returns (uint256 maxShares) {
-        if (paused() || !_getAssetStorage().assets[asset_].active) {
+        if (paused() || !_getBaseStrategyStorage().isAssetWithdrawable[asset_]) {
             return 0;
         }
 

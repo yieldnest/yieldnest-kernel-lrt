@@ -9,10 +9,12 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 import {console} from "lib/forge-std/src/console.sol";
 import {ITransparentUpgradeableProxy} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+
+import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
-import {IVault} from "lib/yieldnest-vault/src/interface/IVault.sol";
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 
+import {console} from "lib/forge-std/src/console.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 
 contract YnBTCkForkTest is BaseForkTest {
@@ -173,6 +175,162 @@ contract YnBTCkForkTest is BaseForkTest {
         vm.expectRevert();
         vault.deposit(depositAmount, specificUser);
 
+        vm.stopPrank();
+    }
+
+    function testAssetsAfterUpgrade() public {
+        _upgradeVault();
+
+        address[] memory assets = vault.getAssets();
+        assertEq(assets.length, 8, "Should have 2 assets");
+        assertEq(vault.asset(), MainnetContracts.BTCB, "Asset should be BTCB");
+
+        address[] memory underlyingAssets = new address[](4);
+        underlyingAssets[0] = MainnetContracts.BTCB;
+        underlyingAssets[1] = MainnetContracts.ENZOBTC;
+        underlyingAssets[2] = MainnetContracts.SOLVBTC;
+        underlyingAssets[3] = MainnetContracts.SOLVBTC_BBN;
+
+        for (uint256 i; i < underlyingAssets.length; ++i) {
+            address kernelVault = stakerGateway.getVault(underlyingAssets[i]);
+            uint256 assetIndex = _checkForAsset(underlyingAssets[i]);
+            bool depositable = false;
+            if (underlyingAssets[i] == MainnetContracts.ENZOBTC || underlyingAssets[i] == MainnetContracts.BTCB) {
+                depositable = true;
+            }
+            uint8 decimals = 18;
+            if (underlyingAssets[i] == MainnetContracts.ENZOBTC) {
+                decimals = 8;
+            }
+            _checkAssetMetadata(underlyingAssets[i], assetIndex, decimals, depositable, true);
+            uint256 kernelVaultIndex = _checkForAsset(kernelVault);
+            _checkAssetMetadata(kernelVault, kernelVaultIndex, decimals, false, false);
+        }
+    }
+
+    function testAddAsset() public {
+        _upgradeVault();
+
+        address newAsset = MainnetContracts.COBTC;
+
+        vm.expectRevert();
+        vault.addAsset(newAsset, true);
+
+        vm.startPrank(ADMIN);
+        vault.addAsset(newAsset, true);
+        vm.stopPrank();
+
+        assertEq(vault.getAssets().length, 9, "Should have 3 assets");
+
+        uint256 index = _checkForAsset(newAsset);
+        _checkAssetMetadata(newAsset, index, 8, true, false);
+    }
+
+    function testAddAssetWithDecimals() public {
+        _upgradeVault();
+
+        address newAsset = MainnetContracts.COBTC;
+
+        vm.expectRevert();
+        vault.addAssetWithDecimals(newAsset, 8, true);
+
+        vm.startPrank(ADMIN);
+        vault.addAssetWithDecimals(newAsset, 8, true);
+        vm.stopPrank();
+
+        assertEq(vault.getAssets().length, 9, "Should have 3 assets");
+
+        uint256 index = _checkForAsset(newAsset);
+        _checkAssetMetadata(newAsset, index, 8, true, true);
+    }
+
+    function testAddAssetWithDepositableAndWithdrawable() public {
+        _upgradeVault();
+
+        address newAsset = MainnetContracts.COBTC;
+
+        vm.expectRevert();
+        vault.addAssetWithDecimals(newAsset, 8, true);
+
+        vm.startPrank(ADMIN);
+        vault.addAsset(newAsset, 8, true, false);
+        vm.stopPrank();
+
+        assertEq(vault.getAssets().length, 9, "Should have 3 assets");
+
+        uint256 index = _checkForAsset(newAsset);
+        _checkAssetMetadata(newAsset, index, 8, true, false);
+
+        vm.startPrank(ADMIN);
+        vault.setAssetWithdrawable(newAsset, true);
+        vm.stopPrank();
+
+        _checkAssetMetadata(newAsset, index, 8, true, true);
+    }
+
+    function testDisableFees() public {
+        _upgradeVault();
+        _disableFees();
+
+        assertEq(vault.baseWithdrawalFee(), 0, "Base withdrawal fee should be 0");
+    }
+
+    function testWithdrawAllSolvBTC() public {
+        _upgradeVault();
+
+        uint256 balance = stakerGateway.balanceOf(MainnetContracts.SOLVBTC, address(vault));
+
+        _withdrawFromVault(MainnetContracts.SOLVBTC, specificUser, balance);
+
+        assertEq(stakerGateway.balanceOf(MainnetContracts.SOLVBTC, address(vault)), 0, "Should have 0 balance");
+    }
+
+    function testWithdrawAllSolvBTCBBN() public {
+        _upgradeVault();
+
+        uint256 balance = stakerGateway.balanceOf(MainnetContracts.SOLVBTC_BBN, address(vault));
+
+        _withdrawFromVault(MainnetContracts.SOLVBTC_BBN, specificUser, balance);
+
+        assertEq(stakerGateway.balanceOf(MainnetContracts.SOLVBTC_BBN, address(vault)), 0, "Should have 0 balance");
+    }
+
+    function _checkForAsset(address assetAddress) internal view returns (uint256 index) {
+        address[] memory assets = vault.getAssets();
+        bool isIncluded = false;
+
+        for (uint256 i; i < assets.length;) {
+            if (assets[i] == assetAddress) {
+                isIncluded = true;
+                index = i;
+                break;
+            }
+            {
+                i++;
+            }
+        }
+
+        assertTrue(isIncluded, "Asset should be included");
+    }
+
+    function _checkAssetMetadata(
+        address assetAddress,
+        uint256 index,
+        uint8 decimals,
+        bool depositable,
+        bool withdrawable
+    ) internal view {
+        IVault.AssetParams memory params = vault.getAsset(assetAddress);
+
+        assertEq(params.index, index, "Asset index should be correct");
+        assertEq(params.decimals, decimals, "Asset decimals should be correct");
+        assertEq(params.active, depositable, "Asset depositable should be correct");
+        assertEq(vault.getAssetWithdrawable(assetAddress), withdrawable, "Asset withdrawable should be correct");
+    }
+
+    function _disableFees() internal {
+        vm.startPrank(ADMIN);
+        KernelStrategy(payable(address(vault))).setBaseWithdrawalFee(0);
         vm.stopPrank();
     }
 }
