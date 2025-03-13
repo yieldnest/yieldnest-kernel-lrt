@@ -25,7 +25,14 @@ contract YnClisBNBkForkTest is BaseForkTest {
     }
 
     function _getStakedBalance() internal view override returns (uint256) {
-        return stakerGateway.balanceOf(address(clisbnb), address(vault));
+        return _getStakedBalance(address(asset));
+    }
+
+    function _getStakedBalance(address assetAddress) internal view override returns (uint256) {
+        if (assetAddress == MainnetContracts.WBNB) {
+            return stakerGateway.balanceOf(MainnetContracts.CLISBNB, address(vault));
+        }
+        return stakerGateway.balanceOf(assetAddress, address(vault));
     }
 
     function _upgradeVault() internal override {
