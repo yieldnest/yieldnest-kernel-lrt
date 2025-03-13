@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: BSD Clause-3
 pragma solidity ^0.8.24;
 
+import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {SetupKernelStrategy} from "test/unit/helpers/SetupKernelStrategy.sol";
+import {MockERC20} from "test/unit/mocks/MockERC20.sol";
 
 contract KernelStrategyAdminUintTest is SetupKernelStrategy {
+    MockERC20 public asset;
+
     function setUp() public {
         deploy();
+        asset = new MockERC20("Mock Token", "MOCK", 18);
 
         // Give Alice some tokens
         deal(alice, INITIAL_BALANCE);
@@ -89,5 +94,125 @@ contract KernelStrategyAdminUintTest is SetupKernelStrategy {
         vm.prank(UNAUTHORIZED);
         vm.expectRevert();
         vault.setHasAllocator(true);
+    }
+
+    function test_Vault_setAssetWithdrawable() public {
+        vm.prank(ASSET_MANAGER);
+        vault.addAsset(address(asset), true);
+
+        assertEq(vault.getAssetWithdrawable(address(asset)), false, "asset should not be withdrawable");
+
+        vm.prank(ASSET_MANAGER);
+        vault.setAssetWithdrawable(address(asset), true);
+
+        assertEq(vault.getAssetWithdrawable(address(asset)), true, "asset should be withdrawable");
+
+        vm.prank(ASSET_MANAGER);
+        vault.setAssetWithdrawable(address(asset), false);
+
+        assertEq(vault.getAssetWithdrawable(address(asset)), false, "asset should not be withdrawable");
+    }
+
+    function test_Vault_setAssetWithdrawable_unauthorized() public {
+        vm.prank(UNAUTHORIZED);
+        vm.expectRevert();
+        vault.setAssetWithdrawable(address(asset), true);
+    }
+
+    function test_Vault_addAsset_Depositable_NotWithdrawable() public {
+        MockERC20 asset2 = new MockERC20("Mock Token 2", "MOCK2", 12);
+        vm.prank(ASSET_MANAGER);
+        vault.addAssetWithDecimals(address(asset2), 12, true, false);
+
+        assertEq(vault.getAsset(address(asset2)).active, true, "asset2 should be active");
+        assertEq(vault.getAsset(address(asset2)).decimals, 12, "asset2 should have 10 decimals");
+        assertEq(vault.getAssetWithdrawable(address(asset2)), false, "asset2 should not be withdrawable");
+
+        MockERC20 asset3 = new MockERC20("Mock Token 3", "MOCK3", 10);
+        vm.prank(ASSET_MANAGER);
+        vault.addAsset(address(asset3), true);
+
+        assertEq(vault.getAsset(address(asset3)).active, true, "asset2 should be active");
+        assertEq(vault.getAsset(address(asset3)).decimals, 10, "asset2 should have 10 decimals");
+        assertEq(vault.getAssetWithdrawable(address(asset3)), false, "asset2 should not be withdrawable");
+    }
+
+    function test_Vault_addAsset_Depositable_Withdrawable() public {
+        vm.prank(ASSET_MANAGER);
+        vault.addAssetWithDecimals(address(asset), 18, true);
+
+        assertEq(vault.getAsset(address(asset)).active, true);
+        assertEq(vault.getAsset(address(asset)).decimals, 18, "asset should have 18 decimals");
+        assertEq(vault.getAssetWithdrawable(address(asset)), true, "asset should not be withdrawable");
+    }
+
+    function test_Vault_addAsset_NotDepositable_NotWithdrawable() public {
+        vm.prank(ASSET_MANAGER);
+        vault.addAsset(address(asset), false);
+        assertEq(vault.getAsset(address(asset)).active, false);
+        assertEq(vault.getAsset(address(asset)).decimals, 18, "asset should have 18 decimals");
+        assertEq(vault.getAssetWithdrawable(address(asset)), false, "asset should not be withdrawable");
+
+        MockERC20 asset2 = new MockERC20("Mock Token 2", "MOCK2", 12);
+        vm.prank(ASSET_MANAGER);
+        vault.addAssetWithDecimals(address(asset2), 12, false, false);
+
+        assertEq(vault.getAsset(address(asset2)).active, false, "asset2 should not be active");
+        assertEq(vault.getAsset(address(asset2)).decimals, 12, "asset2 should have 10 decimals");
+        assertEq(vault.getAssetWithdrawable(address(asset2)), false, "asset2 should not be withdrawable");
+
+        MockERC20 asset3 = new MockERC20("Mock Token 3", "MOCK3", 10);
+        vm.prank(ASSET_MANAGER);
+        vault.addAsset(address(asset3), false);
+
+        assertEq(vault.getAsset(address(asset3)).active, false, "asset2 should not be active");
+        assertEq(vault.getAsset(address(asset3)).decimals, 10, "asset2 should have 10 decimals");
+        assertEq(vault.getAssetWithdrawable(address(asset3)), false, "asset2 should not be withdrawable");
+    }
+
+    function test_Vault_addAsset_NotDepositable_Withdrawable() public {
+        MockERC20 asset2 = new MockERC20("Mock Token 2", "MOCK2", 12);
+        vm.prank(ASSET_MANAGER);
+        vault.addAssetWithDecimals(address(asset2), 12, false, true);
+
+        assertEq(vault.getAsset(address(asset2)).active, false, "asset2 should not be active");
+        assertEq(vault.getAsset(address(asset2)).decimals, 12, "asset2 should have 10 decimals");
+        assertEq(vault.getAssetWithdrawable(address(asset2)), true, "asset2 should be withdrawable");
+    }
+
+    function test_Vault_addAsset_nullAddress() public {
+        vm.prank(ASSET_MANAGER);
+        vm.expectRevert();
+        vault.addAsset(address(0), true);
+
+        vm.prank(ASSET_MANAGER);
+        vm.expectRevert();
+        vault.addAssetWithDecimals(address(0), 18, true, true);
+
+        vm.prank(ASSET_MANAGER);
+        vm.expectRevert();
+        vault.addAssetWithDecimals(address(0), 18, true);
+    }
+
+    function test_Vault_addAsset_duplicateAddress() public {
+        vm.startPrank(ASSET_MANAGER);
+        vault.addAssetWithDecimals(address(asset), 18, true, true);
+
+        vm.expectRevert(abi.encodeWithSelector(IVault.DuplicateAsset.selector, address(asset)));
+        vault.addAssetWithDecimals(address(asset), 18, true, true);
+
+        vm.expectRevert(abi.encodeWithSelector(IVault.DuplicateAsset.selector, address(asset)));
+        vault.addAssetWithDecimals(address(asset), 18, true);
+    }
+
+    function test_Vault_addAsset_unauthorized() public {
+        vm.expectRevert();
+        vault.addAsset(address(asset), true);
+
+        vm.expectRevert();
+        vault.addAssetWithDecimals(address(asset), 18, true, true);
+
+        vm.expectRevert();
+        vault.addAssetWithDecimals(address(asset), 18, true);
     }
 }

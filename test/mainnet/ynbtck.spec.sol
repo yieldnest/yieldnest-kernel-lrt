@@ -24,9 +24,6 @@ import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
-import {IEnzoBTC} from "src/interface/external/lorenzo/IEnzoBTC.sol";
-import {IEnzoNetwork} from "src/interface/external/lorenzo/IEnzoNetwork.sol";
-
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 import {TokenUtils} from "test/mainnet/helpers/TokenUtils.sol";
