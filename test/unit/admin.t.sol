@@ -2,6 +2,8 @@
 pragma solidity ^0.8.24;
 
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
+
+import {IAccessControl} from "lib/yieldnest-vault/src/Common.sol";
 import {SetupKernelStrategy} from "test/unit/helpers/SetupKernelStrategy.sol";
 import {MockERC20} from "test/unit/mocks/MockERC20.sol";
 
@@ -37,14 +39,19 @@ contract KernelStrategyAdminUintTest is SetupKernelStrategy {
 
     function test_Vault_setStakerGateway_nullAddress() public {
         vm.prank(KERNEL_DEPENDENCY_MANAGER);
-        vm.expectRevert();
+        vm.expectRevert(IVault.ZeroAddress.selector);
         vault.setStakerGateway(address(0));
     }
 
     function test_Vault_setStakerGateway_unauthorized() public {
         address sg = address(200);
+        bytes memory error = abi.encodeWithSelector(
+            IAccessControl.AccessControlUnauthorizedAccount.selector,
+            UNAUTHORIZED,
+            vault.KERNEL_DEPENDENCY_MANAGER_ROLE()
+        );
+        vm.expectRevert(error);
         vm.prank(UNAUTHORIZED);
-        vm.expectRevert();
         vault.setStakerGateway(sg);
     }
 
@@ -59,8 +66,11 @@ contract KernelStrategyAdminUintTest is SetupKernelStrategy {
     }
 
     function test_Vault_setSyncDeposit_unauthorized() public {
+        bytes memory error = abi.encodeWithSelector(
+            IAccessControl.AccessControlUnauthorizedAccount.selector, UNAUTHORIZED, vault.DEPOSIT_MANAGER_ROLE()
+        );
+        vm.expectRevert(error);
         vm.prank(UNAUTHORIZED);
-        vm.expectRevert();
         vault.setSyncDeposit(true);
     }
 
@@ -75,8 +85,11 @@ contract KernelStrategyAdminUintTest is SetupKernelStrategy {
     }
 
     function test_Vault_setSyncWithdraw_unauthorized() public {
+        bytes memory error = abi.encodeWithSelector(
+            IAccessControl.AccessControlUnauthorizedAccount.selector, UNAUTHORIZED, vault.DEPOSIT_MANAGER_ROLE()
+        );
+        vm.expectRevert(error);
         vm.prank(UNAUTHORIZED);
-        vm.expectRevert();
         vault.setSyncWithdraw(true);
     }
 
@@ -91,8 +104,11 @@ contract KernelStrategyAdminUintTest is SetupKernelStrategy {
     }
 
     function test_Vault_setHasAllocator_unauthorized() public {
+        bytes memory error = abi.encodeWithSelector(
+            IAccessControl.AccessControlUnauthorizedAccount.selector, UNAUTHORIZED, vault.ALLOCATOR_MANAGER_ROLE()
+        );
+        vm.expectRevert(error);
         vm.prank(UNAUTHORIZED);
-        vm.expectRevert();
         vault.setHasAllocator(true);
     }
 
@@ -114,8 +130,11 @@ contract KernelStrategyAdminUintTest is SetupKernelStrategy {
     }
 
     function test_Vault_setAssetWithdrawable_unauthorized() public {
+        bytes memory error = abi.encodeWithSelector(
+            IAccessControl.AccessControlUnauthorizedAccount.selector, UNAUTHORIZED, vault.ASSET_MANAGER_ROLE()
+        );
+        vm.expectRevert(error);
         vm.prank(UNAUTHORIZED);
-        vm.expectRevert();
         vault.setAssetWithdrawable(address(asset), true);
     }
 
@@ -182,15 +201,16 @@ contract KernelStrategyAdminUintTest is SetupKernelStrategy {
 
     function test_Vault_addAsset_nullAddress() public {
         vm.prank(ASSET_MANAGER);
+        // call reverts when trying to get decimals from zero address
         vm.expectRevert();
         vault.addAsset(address(0), true);
 
         vm.prank(ASSET_MANAGER);
-        vm.expectRevert();
+        vm.expectRevert(IVault.ZeroAddress.selector);
         vault.addAssetWithDecimals(address(0), 18, true, true);
 
         vm.prank(ASSET_MANAGER);
-        vm.expectRevert();
+        vm.expectRevert(IVault.ZeroAddress.selector);
         vault.addAssetWithDecimals(address(0), 18, true);
     }
 
@@ -206,13 +226,19 @@ contract KernelStrategyAdminUintTest is SetupKernelStrategy {
     }
 
     function test_Vault_addAsset_unauthorized() public {
-        vm.expectRevert();
+        bytes memory error = abi.encodeWithSelector(
+            IAccessControl.AccessControlUnauthorizedAccount.selector, UNAUTHORIZED, vault.ASSET_MANAGER_ROLE()
+        );
+        vm.expectRevert(error);
+        vm.prank(UNAUTHORIZED);
         vault.addAsset(address(asset), true);
 
-        vm.expectRevert();
+        vm.expectRevert(error);
+        vm.prank(UNAUTHORIZED);
         vault.addAssetWithDecimals(address(asset), 18, true, true);
 
-        vm.expectRevert();
+        vm.expectRevert(error);
+        vm.prank(UNAUTHORIZED);
         vault.addAssetWithDecimals(address(asset), 18, true);
     }
 }
