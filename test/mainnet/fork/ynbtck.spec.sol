@@ -48,7 +48,13 @@ contract YnBTCkForkTest is BaseForkTest {
         vm.startPrank(ADMIN);
         KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.ENZOBTC, true);
         KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.BTCB, true);
+        KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.SOLVBTC_BBN, true);
+
+        // Set base withdrawal fee to 0
+        // KernelStrategy(payable(address(vault))).setBaseWithdrawalFee(0);
         vm.stopPrank();
+
+        
     }
 
     function testUpgrade() public {
