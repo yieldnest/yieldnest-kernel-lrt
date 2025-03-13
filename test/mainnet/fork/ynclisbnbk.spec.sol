@@ -6,7 +6,7 @@ import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.so
 
 import {MainnetContracts} from "script/Contracts.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
-
+import {KernelStrategy} from "src/KernelStrategy.sol";
 import {KernelClisStrategy} from "src/KernelClisStrategy.sol";
 
 contract YnClisBNBkForkTest is BaseForkTest {
@@ -30,6 +30,16 @@ contract YnClisBNBkForkTest is BaseForkTest {
     function _upgradeVault() internal override {
         KernelClisStrategy newImplementation = new KernelClisStrategy();
         _upgradeVaultWithTimelock(address(newImplementation));
+
+        // Set WBNB as withdrawable after upgrade
+        vm.startPrank(ADMIN);
+        // Grant ASSET_MANAGER_ROLE to ADMIN
+        KernelStrategy(payable(address(vault))).grantRole(
+            KernelStrategy(payable(address(vault))).ASSET_MANAGER_ROLE(),
+            ADMIN
+        );
+        KernelClisStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.WBNB, true);
+        vm.stopPrank();
     }
 
     function testUpgrade() public {

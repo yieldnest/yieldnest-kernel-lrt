@@ -43,6 +43,12 @@ contract YnBTCkForkTest is BaseForkTest {
             address(newImplementation),
             "Implementation address should match new implementation"
         );
+
+        // Set Enzo BTC and BTCB as withdrawable
+        vm.startPrank(ADMIN);
+        KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.ENZOBTC, true);
+        KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.BTCB, true);
+        vm.stopPrank();
     }
 
     function testUpgrade() public {

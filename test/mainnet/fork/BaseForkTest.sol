@@ -6,7 +6,7 @@ import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.so
 
 import {MainnetKernelActors} from "script/KernelActors.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
-
+import {MainnetContracts} from "script/Contracts.sol";
 import {TimelockController} from "lib/openzeppelin-contracts/contracts/governance/TimelockController.sol";
 
 import {ProxyUtils} from "lib/yieldnest-vault/script/ProxyUtils.sol";
