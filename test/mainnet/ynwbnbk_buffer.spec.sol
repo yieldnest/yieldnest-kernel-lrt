@@ -107,6 +107,8 @@ contract YnWBNBkBufferTest is Test, AssertUtils, MainnetKernelActors, EtchUtils 
         assertNotEq(address(kernelVault), address(0));
 
         vault_.addAsset(MC.WBNB, true);
+        vault_.setAssetWithdrawable(MC.WBNB, true);
+
         vault_.addAssetWithDecimals(address(kernelVault), 18, false);
 
         vault_.unpause();

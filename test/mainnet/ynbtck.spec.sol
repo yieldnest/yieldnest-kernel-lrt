@@ -24,9 +24,9 @@ import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
-import {IEnzoNetwork} from "src/interface/external/lorenzo/IEnzoNetwork.sol";
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
+import {TokenUtils} from "test/mainnet/helpers/TokenUtils.sol";
 
 contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultUtils, VaultKernelUtils {
     KernelStrategy public vault;
@@ -37,6 +37,8 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
     address public bob = address(0xB0B);
 
     IERC20 public btcb;
+
+    TokenUtils public tokenUtils;
 
     function setUp() public {
         kernelProvider = new BTCRateProvider();
@@ -64,6 +66,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         btcb = IERC20(MC.BTCB);
 
         mockDepositLimit();
+        tokenUtils = new TokenUtils(address(vault), IStakerGateway(MC.STAKER_GATEWAY));
     }
 
     function etchBTCB() public {
@@ -123,6 +126,11 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         vault_.addAsset(MC.SOLVBTC, true);
         vault_.addAsset(MC.SOLVBTC_BBN, true);
         vault_.addAsset(MC.ENZOBTC, true);
+        // Set assets as withdrawable
+        vault_.setAssetWithdrawable(MC.BTCB, true);
+        vault_.setAssetWithdrawable(MC.SOLVBTC, true);
+        vault_.setAssetWithdrawable(MC.SOLVBTC_BBN, true);
+        vault_.setAssetWithdrawable(MC.ENZOBTC, true);
 
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.BTCB), 18, false);
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SOLVBTC), 18, false);
@@ -298,41 +306,11 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
     }
 
     function getBTCB(uint256 amount) internal {
-        uint256 beforeBobBTCB = btcb.balanceOf(bob);
-
-        vm.prank(0xF977814e90dA44bFA03b6295A0616a897441aceC);
-        btcb.transfer(bob, amount);
-
-        assertEq(btcb.balanceOf(bob), beforeBobBTCB + amount, "Bob's BTCB balance should increase by amount");
+        tokenUtils.getBTCB(bob, amount);
     }
 
     function getEnzoBTC(uint256 amount) internal returns (uint256) {
-        address ENZO_NETWORK = 0x7EFb3515d9eC4537FaFCA635a1De7Da7A5C5c567;
-        address ENZO_STRATEGY = 0xB3cF78f3e483b63280CFe19D52C9c1bDD03D02aB;
-
-        // Get BTCB first
-        getBTCB(amount + 1 ether);
-
-        // Approve BTCB spend
-        vm.prank(bob);
-        btcb.approve(ENZO_NETWORK, amount + 1 ether);
-
-        // Approve BTCB spend to strategy
-        vm.prank(bob);
-        btcb.approve(ENZO_STRATEGY, amount + 1 ether);
-        // Deposit BTCB to get enzoBTC
-        vm.prank(bob);
-        IEnzoNetwork(ENZO_NETWORK).deposit(ENZO_STRATEGY, address(MC.ENZOBTC), amount);
-
-        // BTCB has 18 decimals, enzoBTC has 8 decimals
-        uint256 decimalsFrom = IERC20Metadata(MC.BTCB).decimals();
-        uint256 decimalsTo = IERC20Metadata(MC.ENZOBTC).decimals();
-        uint256 expectedEnzoBTC = amount / 10 ** (decimalsFrom - decimalsTo); // Adjust for decimal difference
-
-        uint256 actualEnzoBTC = IERC20(MC.ENZOBTC).balanceOf(bob);
-        assertEq(actualEnzoBTC, expectedEnzoBTC, "Bob should have received the correct amount of enzoBTC");
-        assertEq(expectedEnzoBTC, amount / 10 ** 10, "Expected enzoBTC should be amount divided by 10^10");
-        return actualEnzoBTC;
+        return tokenUtils.getEnzoBTC(bob, amount);
     }
 
     function test_Vault_ynBTCk_deposit_BTCB(uint256 amount) public {
@@ -442,6 +420,9 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
     }
 
     function test_Vault_ynBTCk_deposit_EnzoBTC(uint256 btcbAmount, bool alwaysComputeTotalAssets) public {
+        // amount is in 18 decimals, enzoBTC is in 8 decimals so starting at 1e11
+        vm.assume(btcbAmount >= 1e11 && btcbAmount <= 1000 ether);
+
         // Test both with and without always compute total assets
         vm.prank(ASSET_MANAGER);
         vault.setAlwaysComputeTotalAssets(alwaysComputeTotalAssets);

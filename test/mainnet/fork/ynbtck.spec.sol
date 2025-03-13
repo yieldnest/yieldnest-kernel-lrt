@@ -7,19 +7,26 @@ import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.so
 import {MainnetContracts} from "script/Contracts.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
+import {console} from "lib/forge-std/src/console.sol";
 import {ITransparentUpgradeableProxy} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+
+import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
-import {IVault} from "lib/yieldnest-vault/src/interface/IVault.sol";
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 
+import {console} from "lib/forge-std/src/console.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
+import {TokenUtils} from "test/mainnet/helpers/TokenUtils.sol";
 
 contract YnBTCkForkTest is BaseForkTest {
+    TokenUtils public tokenUtils;
+
     function setUp() public {
         vault = KernelStrategy(payable(address(MainnetContracts.YNBTCK)));
         stakerGateway = IStakerGateway(vault.getStakerGateway());
 
         asset = IERC20(MainnetContracts.BTCB);
+        tokenUtils = new TokenUtils(address(vault), stakerGateway);
     }
 
     function _upgradeVault() internal override {
@@ -43,6 +50,21 @@ contract YnBTCkForkTest is BaseForkTest {
             address(newImplementation),
             "Implementation address should match new implementation"
         );
+
+        // Set Enzo BTC and BTCB as withdrawable
+        vm.startPrank(ADMIN);
+        KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.ENZOBTC, true);
+        KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.BTCB, true);
+        KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.SOLVBTC_BBN, true);
+        KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.SOLVBTC, true);
+
+        // Grant FEE_MANAGER_ROLE to ADMIN
+        KernelStrategy(payable(address(vault))).grantRole(
+            KernelStrategy(payable(address(vault))).FEE_MANAGER_ROLE(), ADMIN
+        );
+        // Set base withdrawal fee to 0 - not called here to test invariants; test this individually
+        //KernelStrategy(payable(address(vault))).setBaseWithdrawalFee(0);
+        vm.stopPrank();
     }
 
     function testUpgrade() public {
@@ -77,5 +99,311 @@ contract YnBTCkForkTest is BaseForkTest {
     function testAddRoleAndAddFee() public {
         _upgradeVault();
         _addRoleAndAddFee();
+    }
+
+    // Use specific address for testing
+    address specificUser = 0x033fDd2d046bD201d45Ea7813e75cB0c63f93AD8;
+
+    function testWithdrawAllBTCBAfterUpgrade() public {
+        _upgradeVault();
+
+        // Set base withdrawal fee to 0
+        vm.startPrank(ADMIN);
+        KernelStrategy(payable(address(vault))).setBaseWithdrawalFee(0);
+        vm.stopPrank();
+
+        // Get user's share balance
+        uint256 userShares = vault.balanceOf(specificUser);
+
+        // Get the BTCB balance of the vault
+        uint256 btcbBalance = stakerGateway.balanceOf(address(asset), address(vault));
+        // Store total assets before withdrawal
+        uint256 totalAssetsBefore = vault.totalAssets();
+
+        // Calculate the exchange rate before withdrawal
+        uint256 rateBeforeWithdraw = vault.convertToAssets(1e18);
+
+        // Calculate shares equivalent to the BTCB balance
+        uint256 sharesToBurn = vault.convertToShares(btcbBalance);
+
+        // Withdraw based on BTCB balance of vault
+        vm.startPrank(specificUser);
+        uint256 sharesBurned = KernelStrategy(payable(address(vault))).withdrawAsset(
+            address(asset), btcbBalance, specificUser, specificUser
+        );
+        vm.stopPrank();
+
+        // Assert that the shares burned are approximately equal to the calculated shares to burn (within 1 wei)
+        assertApproxEqAbs(
+            sharesBurned, sharesToBurn, 1, "Shares burned should approximately match calculated shares to burn"
+        );
+
+        // Assert that the user's share balance decreased by the correct amount
+        assertEq(
+            vault.balanceOf(specificUser),
+            userShares - sharesBurned,
+            "User's share balance should decrease by shares burned"
+        );
+
+        // Calculate the exchange rate after withdrawal
+        uint256 rateAfterWithdraw = vault.convertToAssets(1e18);
+
+        // Store total assets after withdrawal
+        uint256 totalAssetsAfter = vault.totalAssets();
+
+        // Log the BTCB balance that was withdrawn
+        console.log("BTCB balance withdrawn:", btcbBalance);
+        // Log the exchange rate after withdrawal
+        console.log("Exchange rate after withdrawal:", rateAfterWithdraw);
+
+        // Log the total assets after withdrawal
+        console.log("Total assets after withdrawal:", totalAssetsAfter);
+
+        // Verify user has withdrawn the BTCB
+        assertEq(asset.balanceOf(specificUser), btcbBalance, "User should have received the BTCB balance");
+
+        // Verify total assets decreased by the withdrawn amount
+        assertEq(totalAssetsBefore - btcbBalance, totalAssetsAfter, "Total assets should decrease by withdrawn amount");
+
+        // Verify the exchange rate remains the same
+        assertEq(rateBeforeWithdraw, rateAfterWithdraw, "Exchange rate should remain the same after withdrawal");
+    }
+
+    function testDepositSolvBTCRevert() public {
+        // Get the solvBTC token address
+        address solvBTC = MainnetContracts.SOLVBTC;
+
+        // Deal some solvBTC to the specificUser
+        uint256 depositAmount = 1 ether;
+        deal(solvBTC, specificUser, depositAmount);
+
+        // Verify the user has the solvBTC
+        assertEq(IERC20(solvBTC).balanceOf(specificUser), depositAmount, "User should have solvBTC");
+
+        // Try to deposit solvBTC and expect a revert
+        vm.startPrank(specificUser);
+        IERC20(solvBTC).approve(address(vault), depositAmount);
+
+        // Verify that maxWithdraw for solvBTC is 0
+        uint256 maxWithdrawAmount = KernelStrategy(payable(address(vault))).maxWithdrawAsset(solvBTC, specificUser);
+        assertEq(maxWithdrawAmount, 0, "maxWithdraw for solvBTC should be 0");
+
+        // Verify that maxRedeemAsset for solvBTC is also 0
+        uint256 maxRedeemAmount = KernelStrategy(payable(address(vault))).maxRedeemAsset(solvBTC, specificUser);
+        assertEq(maxRedeemAmount, 0, "maxRedeemAsset for solvBTC should be 0");
+
+        // The deposit should revert because solvBTC is not an accepted asset
+        vm.expectRevert();
+        vault.deposit(depositAmount, specificUser);
+
+        vm.stopPrank();
+    }
+
+    function testAssetsAfterUpgrade() public {
+        _upgradeVault();
+
+        address[] memory assets = vault.getAssets();
+        assertEq(assets.length, 8, "Should have 2 assets");
+        assertEq(vault.asset(), MainnetContracts.BTCB, "Asset should be BTCB");
+
+        address[] memory underlyingAssets = new address[](4);
+        underlyingAssets[0] = MainnetContracts.BTCB;
+        underlyingAssets[1] = MainnetContracts.ENZOBTC;
+        underlyingAssets[2] = MainnetContracts.SOLVBTC;
+        underlyingAssets[3] = MainnetContracts.SOLVBTC_BBN;
+
+        for (uint256 i; i < underlyingAssets.length; ++i) {
+            address kernelVault = stakerGateway.getVault(underlyingAssets[i]);
+            uint256 assetIndex = _checkForAsset(underlyingAssets[i]);
+            bool depositable = false;
+            if (underlyingAssets[i] == MainnetContracts.ENZOBTC || underlyingAssets[i] == MainnetContracts.BTCB) {
+                depositable = true;
+            }
+            uint8 decimals = 18;
+            if (underlyingAssets[i] == MainnetContracts.ENZOBTC) {
+                decimals = 8;
+            }
+            _checkAssetMetadata(underlyingAssets[i], assetIndex, decimals, depositable, true);
+            uint256 kernelVaultIndex = _checkForAsset(kernelVault);
+            _checkAssetMetadata(kernelVault, kernelVaultIndex, decimals, false, false);
+        }
+    }
+
+    function testAddAsset() public {
+        _upgradeVault();
+
+        address newAsset = MainnetContracts.COBTC;
+
+        vm.expectRevert();
+        vault.addAsset(newAsset, true);
+
+        vm.startPrank(ADMIN);
+        vault.addAsset(newAsset, true);
+        vm.stopPrank();
+
+        assertEq(vault.getAssets().length, 9, "Should have 9 assets");
+
+        uint256 index = _checkForAsset(newAsset);
+        _checkAssetMetadata(newAsset, index, 8, true, false);
+    }
+
+    function testAddAssetWithDecimals() public {
+        _upgradeVault();
+
+        address newAsset = MainnetContracts.COBTC;
+
+        vm.expectRevert();
+        vault.addAssetWithDecimals(newAsset, 8, true);
+
+        vm.startPrank(ADMIN);
+        vault.addAssetWithDecimals(newAsset, 8, true);
+        vm.stopPrank();
+
+        assertEq(vault.getAssets().length, 9, "Should have 3 assets");
+
+        uint256 index = _checkForAsset(newAsset);
+        _checkAssetMetadata(newAsset, index, 8, true, true);
+    }
+
+    function testAddAssetWithDepositableAndWithdrawable() public {
+        _upgradeVault();
+
+        address newAsset = MainnetContracts.COBTC;
+
+        vm.expectRevert();
+        vault.addAssetWithDecimals(newAsset, 8, true, false);
+
+        vm.startPrank(ADMIN);
+        vault.addAssetWithDecimals(newAsset, 8, true, false);
+        vm.stopPrank();
+
+        assertEq(vault.getAssets().length, 9, "Should have 9 assets");
+
+        uint256 index = _checkForAsset(newAsset);
+        _checkAssetMetadata(newAsset, index, 8, true, false);
+
+        vm.startPrank(ADMIN);
+        vault.setAssetWithdrawable(newAsset, true);
+        vm.stopPrank();
+
+        _checkAssetMetadata(newAsset, index, 8, true, true);
+
+        // Test setting asset to not withdrawable
+        vm.startPrank(ADMIN);
+        vault.setAssetWithdrawable(newAsset, false);
+        vm.stopPrank();
+
+        _checkAssetMetadata(newAsset, index, 8, true, false);
+    }
+
+    function testDisableFees() public {
+        _upgradeVault();
+        _disableFees();
+
+        assertEq(vault.baseWithdrawalFee(), 0, "Base withdrawal fee should be 0");
+    }
+
+    function testWithdrawAllSolvBTC() public {
+        _upgradeVault();
+
+        uint256 balance = stakerGateway.balanceOf(MainnetContracts.SOLVBTC, address(vault));
+
+        _withdrawFromVault(MainnetContracts.SOLVBTC, specificUser, balance);
+
+        assertEq(stakerGateway.balanceOf(MainnetContracts.SOLVBTC, address(vault)), 0, "Should have 0 balance");
+    }
+
+    function testWithdrawAllSolvBTCBBN() public {
+        _upgradeVault();
+
+        uint256 balance = stakerGateway.balanceOf(MainnetContracts.SOLVBTC_BBN, address(vault));
+
+        _withdrawFromVault(MainnetContracts.SOLVBTC_BBN, specificUser, balance);
+
+        assertEq(stakerGateway.balanceOf(MainnetContracts.SOLVBTC_BBN, address(vault)), 0, "Should have 0 balance");
+    }
+
+    function _checkForAsset(address assetAddress) internal view returns (uint256 index) {
+        address[] memory assets = vault.getAssets();
+        bool isIncluded = false;
+
+        for (uint256 i; i < assets.length;) {
+            if (assets[i] == assetAddress) {
+                isIncluded = true;
+                index = i;
+                break;
+            }
+            {
+                i++;
+            }
+        }
+
+        assertTrue(isIncluded, "Asset should be included");
+    }
+
+    function _checkAssetMetadata(
+        address assetAddress,
+        uint256 index,
+        uint8 decimals,
+        bool depositable,
+        bool withdrawable
+    ) internal view {
+        IVault.AssetParams memory params = vault.getAsset(assetAddress);
+
+        assertEq(params.index, index, "Asset index should be correct");
+        assertEq(params.decimals, decimals, "Asset decimals should be correct");
+        assertEq(params.active, depositable, "Asset depositable should be correct");
+        assertEq(vault.getAssetWithdrawable(assetAddress), withdrawable, "Asset withdrawable should be correct");
+    }
+
+    function testDepositAndWithdrawEnzoBTC() public {
+        _upgradeVault();
+        _disableFees();
+
+        // Get initial balances
+        uint256 initialVaultBalance = stakerGateway.balanceOf(MainnetContracts.ENZOBTC, address(vault));
+
+        // Get some enzoBTC for testing
+        uint256 depositAmount = 100 ether;
+        depositAmount = tokenUtils.getEnzoBTC(alice, depositAmount);
+
+        // Approve and deposit
+        vm.startPrank(alice);
+        IERC20(MainnetContracts.ENZOBTC).approve(address(vault), depositAmount);
+        uint256 shares = vault.depositAsset(MainnetContracts.ENZOBTC, depositAmount, alice);
+        vm.stopPrank();
+
+        // Verify deposit was successful
+        uint256 finalVaultBalance = stakerGateway.balanceOf(MainnetContracts.ENZOBTC, address(vault));
+        assertEq(
+            finalVaultBalance, initialVaultBalance + depositAmount, "Vault should have received the deposited enzoBTC"
+        );
+
+        // Log the shares received from the deposit
+        console.log("Shares received from enzoBTC deposit:", shares);
+        // Convert shares to assets to verify the value
+        uint256 assetsFromShares = vault.convertToAssets(shares);
+
+        // Get the rate provider to check the conversion rate
+        BTCRateProvider rateProvider = BTCRateProvider(vault.provider());
+
+        // Redeem all shares
+        vm.startPrank(alice);
+        uint256 redeemedAmount = vault.redeemAsset(MainnetContracts.ENZOBTC, shares, alice, alice);
+        vm.stopPrank();
+
+        // Assert that the redeemed amount matches the deposit amount
+        assertApproxEqAbs(
+            redeemedAmount,
+            depositAmount,
+            1, // Small threshold for potential rounding errors
+            "Redeemed amount should match the deposit amount"
+        );
+    }
+
+    function _disableFees() internal {
+        vm.startPrank(ADMIN);
+        KernelStrategy(payable(address(vault))).setBaseWithdrawalFee(0);
+        vm.stopPrank();
     }
 }

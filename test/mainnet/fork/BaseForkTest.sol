@@ -4,10 +4,10 @@ pragma solidity ^0.8.24;
 import {Test} from "lib/forge-std/src/Test.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
+import {TimelockController} from "lib/openzeppelin-contracts/contracts/governance/TimelockController.sol";
+import {MainnetContracts} from "script/Contracts.sol";
 import {MainnetKernelActors} from "script/KernelActors.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
-
-import {TimelockController} from "lib/openzeppelin-contracts/contracts/governance/TimelockController.sol";
 
 import {ProxyUtils} from "lib/yieldnest-vault/script/ProxyUtils.sol";
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
@@ -24,6 +24,10 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
 
     function _getStakedBalance() internal view virtual returns (uint256) {
         return stakerGateway.balanceOf(address(asset), address(vault));
+    }
+
+    function _getStakedBalance(address assetAddress) internal view virtual returns (uint256) {
+        return stakerGateway.balanceOf(assetAddress, address(vault));
     }
 
     function _depositIntoVault(address depositor, uint256 depositAmount) internal virtual {
@@ -65,8 +69,14 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
     }
 
     function _withdrawFromVault(address withdrawer, uint256 withdrawAmount) internal virtual {
+        _withdrawFromVault(address(asset), withdrawer, withdrawAmount);
+    }
+
+    function _withdrawFromVault(address assetAddress, address withdrawer, uint256 withdrawAmount) internal virtual {
+        IERC20 asset_ = IERC20(assetAddress);
+
         // Initial balances
-        uint256 withdrawerAssetBefore = asset.balanceOf(withdrawer);
+        uint256 withdrawerAssetBefore = asset_.balanceOf(withdrawer);
         uint256 withdrawerSharesBefore = vault.balanceOf(withdrawer);
 
         // Store initial state
@@ -74,19 +84,19 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
         uint256 initialTotalSupply = vault.totalSupply();
 
         // Store initial vault Asset balance
-        uint256 vaultAssetBefore = _getStakedBalance();
+        uint256 vaultAssetBefore = _getStakedBalance(assetAddress);
 
         vm.startPrank(withdrawer);
 
         // Deposit Asset to get shares
         uint256 shares = KernelStrategy(payable(address(vault))).withdrawAsset(
-            address(asset), withdrawAmount, withdrawer, withdrawer
+            address(asset_), withdrawAmount, withdrawer, withdrawer
         );
 
         vm.stopPrank();
 
         // Check balances after deposit
-        assertEq(asset.balanceOf(withdrawer), withdrawerAssetBefore + withdrawAmount, "Asset balance incorrect");
+        assertEq(asset_.balanceOf(withdrawer), withdrawerAssetBefore + withdrawAmount, "Asset balance incorrect");
         assertEq(vault.balanceOf(withdrawer), withdrawerSharesBefore - shares, "Should have burnt shares");
 
         // Check vault state after deposit
@@ -97,7 +107,9 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
 
         // Check that vault Asset balance increased by deposit amount
         assertEq(
-            _getStakedBalance(), vaultAssetBefore - withdrawAmount, "Vault balance should decrease by withdraw amount"
+            _getStakedBalance(assetAddress),
+            vaultAssetBefore - withdrawAmount,
+            "Vault balance should decrease by withdraw amount"
         );
     }
 

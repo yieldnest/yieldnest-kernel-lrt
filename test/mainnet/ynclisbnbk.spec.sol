@@ -117,6 +117,8 @@ contract YnClisBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Va
         vault_.setSyncDeposit(true);
 
         vault_.addAsset(MC.WBNB, true);
+        vault_.setAssetWithdrawable(MC.WBNB, true);
+
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.CLISBNB), 18, false);
 
         vault_.unpause();

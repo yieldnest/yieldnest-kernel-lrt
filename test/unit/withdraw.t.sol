@@ -195,7 +195,7 @@ contract KernelStrategyWithdrawUnitTest is SetupKernelStrategy {
 
         // set asset to inactive
         vm.prank(ADMIN);
-        vault.updateAsset(0, IVault.AssetUpdateFields({active: false}));
+        vault.setAssetWithdrawable(address(MC.WBNB), false);
 
         vm.prank(alice);
         vm.expectRevert();

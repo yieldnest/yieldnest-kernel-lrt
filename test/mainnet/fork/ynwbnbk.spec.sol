@@ -18,6 +18,18 @@ contract YnWBNBkForkTest is BaseForkTest {
         asset = IERC20(MainnetContracts.WBNB);
     }
 
+    function _upgradeVault() internal override {
+        super._upgradeVault();
+        // Set WBNB as withdrawable after upgrade
+        vm.startPrank(ADMIN);
+        // Grant ASSET_MANAGER_ROLE to ADMIN
+        KernelStrategy(payable(address(vault))).grantRole(
+            KernelStrategy(payable(address(vault))).ASSET_MANAGER_ROLE(), ADMIN
+        );
+        KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.WBNB, true);
+        vm.stopPrank();
+    }
+
     function upgradeVaultWithTimelock() internal {
         KernelStrategy newImplementation = new KernelStrategy();
         _upgradeVaultWithTimelock(address(newImplementation));
