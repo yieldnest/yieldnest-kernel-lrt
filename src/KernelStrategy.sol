@@ -544,7 +544,7 @@ contract KernelStrategy is Vault {
     }
 
     /**
-     * @notice Adds a new asset to the vault specfying the decimals without consulting the asset.decimals()
+     * @notice Adds a new asset to the vault specifying the decimals explicitly
      * @param asset_ The address of the asset.
      * @param decimals_ The decimals of the asset.
      * @param depositableAndWithdrawable Whether the asset is depositable and withdrawable
@@ -559,13 +559,13 @@ contract KernelStrategy is Vault {
     }
 
     /**
-     * @notice Adds a new asset to the vault.
+     * @notice Adds a new asset to the vault specifying the decimals explicitly
      * @param asset_ The address of the asset.
      * @param decimals_ The decimals of the asset.
      * @param depositable_ Whether the asset is depositable.
      * @param withdrawable_ Whether the asset is withdrawable.
      */
-    function addAsset(address asset_, uint8 decimals_, bool depositable_, bool withdrawable_)
+    function addAssetWithDecimals(address asset_, uint8 decimals_, bool depositable_, bool withdrawable_)
         public
         virtual
         onlyRole(ASSET_MANAGER_ROLE)

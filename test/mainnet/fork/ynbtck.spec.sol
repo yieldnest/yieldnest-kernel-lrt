@@ -250,13 +250,13 @@ contract YnBTCkForkTest is BaseForkTest {
         address newAsset = MainnetContracts.COBTC;
 
         vm.expectRevert();
-        vault.addAssetWithDecimals(newAsset, 8, true);
+        vault.addAssetWithDecimals(newAsset, 8, true, false);
 
         vm.startPrank(ADMIN);
-        vault.addAsset(newAsset, 8, true, false);
+        vault.addAssetWithDecimals(newAsset, 8, true, false);
         vm.stopPrank();
 
-        assertEq(vault.getAssets().length, 9, "Should have 3 assets");
+        assertEq(vault.getAssets().length, 9, "Should have 9 assets");
 
         uint256 index = _checkForAsset(newAsset);
         _checkAssetMetadata(newAsset, index, 8, true, false);
@@ -266,6 +266,13 @@ contract YnBTCkForkTest is BaseForkTest {
         vm.stopPrank();
 
         _checkAssetMetadata(newAsset, index, 8, true, true);
+
+        // Test setting asset to not withdrawable
+        vm.startPrank(ADMIN);
+        vault.setAssetWithdrawable(newAsset, false);
+        vm.stopPrank();
+
+        _checkAssetMetadata(newAsset, index, 8, true, false);
     }
 
     function testDisableFees() public {
