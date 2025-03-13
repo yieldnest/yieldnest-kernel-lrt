@@ -7,6 +7,7 @@ import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.so
 import {MainnetContracts} from "script/Contracts.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
+import {console} from "lib/forge-std/src/console.sol";
 import {ITransparentUpgradeableProxy} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
 import {IVault} from "lib/yieldnest-vault/src/interface/IVault.sol";
@@ -92,5 +93,86 @@ contract YnBTCkForkTest is BaseForkTest {
     function testAddRoleAndAddFee() public {
         _upgradeVault();
         _addRoleAndAddFee();
+    }
+
+    // Use specific address for testing
+    address specificUser = 0x033fDd2d046bD201d45Ea7813e75cB0c63f93AD8;
+
+    function testWithdrawAllBTCBAfterUpgrade() public {
+        _upgradeVault();
+
+        // Set base withdrawal fee to 0
+        vm.startPrank(ADMIN);
+        KernelStrategy(payable(address(vault))).setBaseWithdrawalFee(0);
+        vm.stopPrank();
+
+        // Get user's share balance
+        uint256 userShares = vault.balanceOf(specificUser);
+
+        // Get the BTCB balance of the vault
+        uint256 btcbBalance = stakerGateway.balanceOf(address(asset), address(vault));
+        // Store total assets before withdrawal
+        uint256 totalAssetsBefore = vault.totalAssets();
+
+        // Calculate the exchange rate before withdrawal
+        uint256 rateBeforeWithdraw = vault.convertToAssets(1e18);
+
+        // Withdraw based on BTCB balance of vault
+        vm.startPrank(specificUser);
+        KernelStrategy(payable(address(vault))).withdrawAsset(address(asset), btcbBalance, specificUser, specificUser);
+        vm.stopPrank();
+
+        // Calculate the exchange rate after withdrawal
+        uint256 rateAfterWithdraw = vault.convertToAssets(1e18);
+
+        // Store total assets after withdrawal
+        uint256 totalAssetsAfter = vault.totalAssets();
+
+        // Log the BTCB balance that was withdrawn
+        console.log("BTCB balance withdrawn:", btcbBalance);
+        // Log the exchange rate after withdrawal
+        console.log("Exchange rate after withdrawal:", rateAfterWithdraw);
+
+        // Log the total assets after withdrawal
+        console.log("Total assets after withdrawal:", totalAssetsAfter);
+
+        // Verify user has withdrawn the BTCB
+        assertEq(asset.balanceOf(specificUser), btcbBalance, "User should have received the BTCB balance");
+
+        // Verify total assets decreased by the withdrawn amount
+        assertEq(totalAssetsBefore - btcbBalance, totalAssetsAfter, "Total assets should decrease by withdrawn amount");
+
+        // Verify the exchange rate remains the same
+        assertEq(rateBeforeWithdraw, rateAfterWithdraw, "Exchange rate should remain the same after withdrawal");
+    }
+
+    function testDepositSolvBTCRevert() public {
+        // Get the solvBTC token address
+        address solvBTC = MainnetContracts.SOLVBTC;
+
+        // Deal some solvBTC to the specificUser
+        uint256 depositAmount = 1 ether;
+        deal(solvBTC, specificUser, depositAmount);
+
+        // Verify the user has the solvBTC
+        assertEq(IERC20(solvBTC).balanceOf(specificUser), depositAmount, "User should have solvBTC");
+
+        // Try to deposit solvBTC and expect a revert
+        vm.startPrank(specificUser);
+        IERC20(solvBTC).approve(address(vault), depositAmount);
+
+        // Verify that maxWithdraw for solvBTC is 0
+        uint256 maxWithdrawAmount = KernelStrategy(payable(address(vault))).maxWithdrawAsset(solvBTC, specificUser);
+        assertEq(maxWithdrawAmount, 0, "maxWithdraw for solvBTC should be 0");
+
+        // Verify that maxRedeemAsset for solvBTC is also 0
+        uint256 maxRedeemAmount = KernelStrategy(payable(address(vault))).maxRedeemAsset(solvBTC, specificUser);
+        assertEq(maxRedeemAmount, 0, "maxRedeemAsset for solvBTC should be 0");
+
+        // The deposit should revert because solvBTC is not an accepted asset
+        vm.expectRevert();
+        vault.deposit(depositAmount, specificUser);
+
+        vm.stopPrank();
     }
 }
