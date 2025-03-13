@@ -49,12 +49,15 @@ contract YnBTCkForkTest is BaseForkTest {
         KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.ENZOBTC, true);
         KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.BTCB, true);
         KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.SOLVBTC_BBN, true);
+        KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.SOLVBTC, true);
 
-        // Set base withdrawal fee to 0
-        // KernelStrategy(payable(address(vault))).setBaseWithdrawalFee(0);
+        // Grant FEE_MANAGER_ROLE to ADMIN
+        KernelStrategy(payable(address(vault))).grantRole(
+            KernelStrategy(payable(address(vault))).FEE_MANAGER_ROLE(), ADMIN
+        );
+        // Set base withdrawal fee to 0 - not called here to test invariants; test this individually
+        //KernelStrategy(payable(address(vault))).setBaseWithdrawalFee(0);
         vm.stopPrank();
-
-        
     }
 
     function testUpgrade() public {
