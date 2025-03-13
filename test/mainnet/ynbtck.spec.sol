@@ -24,8 +24,8 @@ import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
-import {IEnzoNetwork} from "src/interface/external/lorenzo/IEnzoNetwork.sol";
 import {IEnzoBTC} from "src/interface/external/lorenzo/IEnzoBTC.sol";
+import {IEnzoNetwork} from "src/interface/external/lorenzo/IEnzoNetwork.sol";
 
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
@@ -317,14 +317,13 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         address ENZO_NETWORK = 0x7EFb3515d9eC4537FaFCA635a1De7Da7A5C5c567;
         address ENZO_STRATEGY = 0xB3cF78f3e483b63280CFe19D52C9c1bDD03D02aB;
 
-
         {
             // Check if the bob address is blacklisted in EnzoBTC
             address ENZOBTC = MC.ENZOBTC;
-            
+
             // Get the blacklist admin from EnzoBTC
             address blacklistAdmin = IEnzoBTC(ENZOBTC).blackListAdmin();
-            
+
             // Check if the kernel gateway vault for Enzo is blacklisted
             address kernelGatewayVault = stakerGateway.getVault(ENZOBTC);
             if (IEnzoBTC(ENZOBTC).isBlackListed(kernelGatewayVault)) {
@@ -332,7 +331,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
                 vm.prank(blacklistAdmin);
                 IEnzoBTC(ENZOBTC).removeBlackList(kernelGatewayVault);
             }
-            
+
             // Also check if the kernel strategy is blacklisted
             address kernelStrategy = address(vault);
             if (IEnzoBTC(ENZOBTC).isBlackListed(kernelStrategy)) {
@@ -347,7 +346,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         if (!IEnzoNetwork(ENZO_NETWORK).isWhitelisted(ENZO_STRATEGY)) {
             address[] memory strategies = new address[](1);
             strategies[0] = ENZO_STRATEGY;
-            
+
             // Need to be called by an admin of Enzo Network
             // This is a test environment, so we can use vm.prank
             vm.prank(IEnzoNetwork(ENZO_NETWORK).dao()); // Prank as the Enzo Network DAO
@@ -492,30 +491,6 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have no shares after withdraw");
     }
 
-    // TODO: fix this test when Enzo unpauses
-    function skip_test_Vault_ynBTCk_transfer_EnzoBTC() public {
-        // Get some enzoBTC for alice
-        uint256 amount = 100 ether;
-        address alice = address(0xA11CE);
-
-        uint256 enzoBTCAmount = getEnzoBTC(amount);
-        // Get enzoBTC for alice
-        vm.startPrank(alice);
-        IERC20 enzoBTC = IERC20(MC.ENZOBTC);
-
-        // Verify alice has the enzoBTC
-        assertEq(enzoBTC.balanceOf(alice), enzoBTCAmount, "Alice should have enzoBTC");
-
-        // Check initial balances
-        uint256 aliceBalanceBefore = enzoBTC.balanceOf(alice);
-        uint256 bobBalanceBefore = enzoBTC.balanceOf(bob);
-
-        // Transfer enzoBTC from alice to bob
-        enzoBTC.transfer(bob, enzoBTCAmount);
-        vm.stopPrank();
-    }
-
-    // TODO: fix this test when Enzo unpauses
     function test_Vault_ynBTCk_deposit_EnzoBTC()
         // uint256 btcbAmount,
         //bool alwaysComputeTotalAssets
