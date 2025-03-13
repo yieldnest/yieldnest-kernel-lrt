@@ -24,13 +24,11 @@ contract YnWBNBkForkTest is BaseForkTest {
         vm.startPrank(ADMIN);
         // Grant ASSET_MANAGER_ROLE to ADMIN
         KernelStrategy(payable(address(vault))).grantRole(
-            KernelStrategy(payable(address(vault))).ASSET_MANAGER_ROLE(),
-            ADMIN
+            KernelStrategy(payable(address(vault))).ASSET_MANAGER_ROLE(), ADMIN
         );
         KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.WBNB, true);
         vm.stopPrank();
     }
-
 
     function upgradeVaultWithTimelock() internal {
         KernelStrategy newImplementation = new KernelStrategy();

@@ -5,9 +5,10 @@ import {BaseForkTest} from "./BaseForkTest.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import {MainnetContracts} from "script/Contracts.sol";
-import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
-import {KernelStrategy} from "src/KernelStrategy.sol";
+
 import {KernelClisStrategy} from "src/KernelClisStrategy.sol";
+import {KernelStrategy} from "src/KernelStrategy.sol";
+import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 contract YnClisBNBkForkTest is BaseForkTest {
     IERC20 public clisbnb;
@@ -35,8 +36,7 @@ contract YnClisBNBkForkTest is BaseForkTest {
         vm.startPrank(ADMIN);
         // Grant ASSET_MANAGER_ROLE to ADMIN
         KernelStrategy(payable(address(vault))).grantRole(
-            KernelStrategy(payable(address(vault))).ASSET_MANAGER_ROLE(),
-            ADMIN
+            KernelStrategy(payable(address(vault))).ASSET_MANAGER_ROLE(), ADMIN
         );
         KernelClisStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.WBNB, true);
         vm.stopPrank();

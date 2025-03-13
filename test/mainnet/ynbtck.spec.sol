@@ -445,37 +445,36 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         );
         assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have no shares after withdraw");
     }
-    
+
     // TODO: fix this test when Enzo unpauses
     function skip_test_Vault_ynBTCk_transfer_EnzoBTC() public {
         // Get some enzoBTC for alice
         uint256 amount = 100 ether;
         address alice = address(0xA11CE);
-        
 
         uint256 enzoBTCAmount = getEnzoBTC(amount);
         // Get enzoBTC for alice
         vm.startPrank(alice);
         IERC20 enzoBTC = IERC20(MC.ENZOBTC);
-        
+
         // Verify alice has the enzoBTC
         assertEq(enzoBTC.balanceOf(alice), enzoBTCAmount, "Alice should have enzoBTC");
-        
+
         // Check initial balances
         uint256 aliceBalanceBefore = enzoBTC.balanceOf(alice);
         uint256 bobBalanceBefore = enzoBTC.balanceOf(bob);
-        
+
         // Transfer enzoBTC from alice to bob
         enzoBTC.transfer(bob, enzoBTCAmount);
         vm.stopPrank();
     }
 
     // TODO: fix this test when Enzo unpauses
-    function skip_test_Vault_ynBTCk_deposit_EnzoBTC(
+    function skip_test_Vault_ynBTCk_deposit_EnzoBTC()
         // uint256 btcbAmount,
         //bool alwaysComputeTotalAssets
-    ) public {
-
+        public
+    {
         uint256 btcbAmount = 100 ether;
         bool alwaysComputeTotalAssets = true;
 
