@@ -46,7 +46,7 @@ contract KernelStrategy is Vault {
     }
 
     struct BaseStrategyStorage {
-        bool hasAllocators;
+        bool _hasAllocators; // unused - for future migration
         mapping(address => bool) isAssetWithdrawable;
     }
 
@@ -91,7 +91,7 @@ contract KernelStrategy is Vault {
      * @return hasAllocators True if the strategy has allocators, otherwise false.
      */
     function getHasAllocator() public view returns (bool hasAllocators) {
-        return _getBaseStrategyStorage().hasAllocators;
+        return _getStrategyStorage().hasAllocators;
     }
 
     /**
@@ -504,7 +504,7 @@ contract KernelStrategy is Vault {
      * @param hasAllocators_ The new value for the hasAllocator flag.
      */
     function setHasAllocator(bool hasAllocators_) external onlyRole(ALLOCATOR_MANAGER_ROLE) {
-        BaseStrategyStorage storage strategyStorage = _getBaseStrategyStorage();
+        StrategyStorage storage strategyStorage = _getStrategyStorage();
         strategyStorage.hasAllocators = hasAllocators_;
 
         emit SetHasAllocator(hasAllocators_);
