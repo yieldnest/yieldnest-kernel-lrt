@@ -220,7 +220,7 @@ contract YnBTCkForkTest is BaseForkTest {
         vault.addAsset(newAsset, true);
         vm.stopPrank();
 
-        assertEq(vault.getAssets().length, 9, "Should have 3 assets");
+        assertEq(vault.getAssets().length, 9, "Should have 9 assets");
 
         uint256 index = _checkForAsset(newAsset);
         _checkAssetMetadata(newAsset, index, 8, true, false);

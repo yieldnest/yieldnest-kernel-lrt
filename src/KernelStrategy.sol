@@ -544,7 +544,7 @@ contract KernelStrategy is Vault {
     }
 
     /**
-     * @notice Adds a new asset to the vault.
+     * @notice Adds a new asset to the vault specfying the decimals without consulting the asset.decimals()
      * @param asset_ The address of the asset.
      * @param decimals_ The decimals of the asset.
      * @param depositableAndWithdrawable Whether the asset is depositable and withdrawable
