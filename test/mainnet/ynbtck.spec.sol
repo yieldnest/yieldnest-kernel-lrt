@@ -491,13 +491,9 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have no shares after withdraw");
     }
 
-    function test_Vault_ynBTCk_deposit_EnzoBTC()
-        // uint256 btcbAmount,
-        //bool alwaysComputeTotalAssets
-        public
-    {
-        uint256 btcbAmount = 100 ether;
-        bool alwaysComputeTotalAssets = true;
+    function test_Vault_ynBTCk_deposit_EnzoBTC(uint256 btcbAmount, bool alwaysComputeTotalAssets) public {
+        // amount is in 18 decimals, enzoBTC is in 8 decimals so starting at 1e11
+        vm.assume(btcbAmount >= 1e11 && btcbAmount <= 1000 ether);
 
         // Test both with and without always compute total assets
         vm.prank(ASSET_MANAGER);
@@ -558,7 +554,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         );
     }
 
-    function skip_test_Vault_ynBTCk_withdraw_enzoBTC(uint256 btcbAmount) public {
+    function test_Vault_ynBTCk_withdraw_enzoBTC(uint256 btcbAmount) public {
         // amount is in 18 decimals, enzoBTC is in 8 decimals so starting at 1e11
         vm.assume(btcbAmount >= 1e11 && btcbAmount <= 1000 ether);
 
@@ -616,8 +612,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         );
     }
 
-    // TODO: fix this test when Enzo unpauses
-    function skip_test_Vault_ynBTCk_rewards_enzoBTC(uint256 amount, uint256 rewardsinBTCB) public {
+    function test_Vault_ynBTCk_rewards_enzoBTC(uint256 amount, uint256 rewardsinBTCB) public {
         vm.assume(amount >= 1 ether && amount <= 10_000 ether);
         vm.assume(rewardsinBTCB >= 0 && rewardsinBTCB <= amount); // enzoBTC has 8 decimals
 
