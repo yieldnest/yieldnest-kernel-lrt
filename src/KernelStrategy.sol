@@ -24,6 +24,9 @@ contract KernelStrategy is Vault {
     /// @notice Role for allocator manager permissions
     bytes32 public constant ALLOCATOR_MANAGER_ROLE = keccak256("ALLOCATOR_MANAGER_ROLE");
 
+    /// @notice Error thrown when attempting to withdraw an asset that is not withdrawable
+    error AssetNotWithdrawable(address asset);
+
     /// @notice Emitted when an asset is withdrawn
     event WithdrawAsset(
         address indexed sender,
@@ -40,6 +43,11 @@ contract KernelStrategy is Vault {
         bool syncDeposit;
         bool syncWithdraw;
         bool hasAllocators;
+    }
+
+    struct BaseStrategyStorage {
+        bool hasAllocators;
+        mapping(address => bool) isAssetWithdrawable;
     }
 
     /// @notice Emitted when the staker gateway address is set
@@ -83,7 +91,7 @@ contract KernelStrategy is Vault {
      * @return hasAllocators True if the strategy has allocators, otherwise false.
      */
     function getHasAllocator() public view returns (bool hasAllocators) {
-        return _getStrategyStorage().hasAllocators;
+        return _getBaseStrategyStorage().hasAllocators;
     }
 
     /**
@@ -398,8 +406,8 @@ contract KernelStrategy is Vault {
         uint256 assets,
         uint256 shares
     ) internal virtual onlyAllocator {
-        if (!_getAssetStorage().assets[asset_].active) {
-            revert AssetNotActive();
+        if (!_getBaseStrategyStorage().isAssetWithdrawable[asset_]) {
+            revert AssetNotWithdrawable(asset_);
         }
 
         _subTotalAssets(_convertAssetToBase(asset_, assets));
@@ -446,6 +454,17 @@ contract KernelStrategy is Vault {
     }
 
     /**
+     * @notice Retrieves the strategy storage structure.
+     * @return $ The strategy storage structure.
+     */
+    function _getBaseStrategyStorage() internal pure virtual returns (BaseStrategyStorage storage $) {
+        assembly {
+            // keccak256("yieldnest.storage.strategy.base")
+            $.slot := 0x5cfdf694cb3bdee9e4b3d9c4b43849916bf3f018805254a1c0e500548c668500
+        }
+    }
+
+    /**
      * @notice Sets the staker gateway address.
      * @param stakerGateway The address of the staker gateway.
      */
@@ -485,7 +504,7 @@ contract KernelStrategy is Vault {
      * @param hasAllocators_ The new value for the hasAllocator flag.
      */
     function setHasAllocator(bool hasAllocators_) external onlyRole(ALLOCATOR_MANAGER_ROLE) {
-        StrategyStorage storage strategyStorage = _getStrategyStorage();
+        BaseStrategyStorage storage strategyStorage = _getBaseStrategyStorage();
         strategyStorage.hasAllocators = hasAllocators_;
 
         emit SetHasAllocator(hasAllocators_);
