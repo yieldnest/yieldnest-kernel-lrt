@@ -123,6 +123,11 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         vault_.addAsset(MC.SOLVBTC, true);
         vault_.addAsset(MC.SOLVBTC_BBN, true);
         vault_.addAsset(MC.ENZOBTC, true);
+        // Set assets as withdrawable
+        vault_.setAssetWithdrawable(MC.BTCB, true);
+        vault_.setAssetWithdrawable(MC.SOLVBTC, true);
+        vault_.setAssetWithdrawable(MC.SOLVBTC_BBN, true);
+        vault_.setAssetWithdrawable(MC.ENZOBTC, true);
 
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.BTCB), 18, false);
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SOLVBTC), 18, false);

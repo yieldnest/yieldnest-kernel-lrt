@@ -543,7 +543,6 @@ contract KernelStrategy is Vault {
         emit SetAssetWithdrawable(asset_, withdrawable_);
     }
 
-
     /**
      * @notice Adds a new asset to the vault.
      * @param asset_ The address of the asset.

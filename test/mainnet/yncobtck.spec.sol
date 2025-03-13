@@ -112,6 +112,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         vault_.setHasAllocator(false);
 
         vault_.addAsset(MC.COBTC, true);
+        vault_.setAssetWithdrawable(MC.COBTC, true);
         // VERY IMPORTANT: COBTC has 8 decimals
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.COBTC), 8, false);
 

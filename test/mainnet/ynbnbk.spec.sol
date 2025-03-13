@@ -220,6 +220,11 @@ contract YnBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         vault_.addAsset(MC.SLISBNB, true);
         vault_.addAsset(MC.BNBX, true);
 
+        // Set assets as withdrawable
+        vault_.setAssetWithdrawable(MC.WBNB, false);
+        vault_.setAssetWithdrawable(MC.SLISBNB, true);
+        vault_.setAssetWithdrawable(MC.BNBX, true);
+
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.WBNB), 18, false);
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SLISBNB), 18, false);
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.BNBX), 18, false);
