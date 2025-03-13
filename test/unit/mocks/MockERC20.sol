@@ -3,8 +3,11 @@ pragma solidity ^0.8.24;
 
 import {ERC20} from "lib/yieldnest-vault/src/Common.sol";
 
-contract MockERC20LowDecimals is ERC20 {
-    constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) {
+contract MockERC20 is ERC20 {
+    uint8 private _decimals;
+
+    constructor(string memory name_, string memory symbol_, uint8 decimals_) ERC20(name_, symbol_) {
+        _decimals = decimals_;
         _mint(msg.sender, 1000000 * (10 ** uint256(decimals())));
     }
 
@@ -12,7 +15,7 @@ contract MockERC20LowDecimals is ERC20 {
         _mint(msg.sender, amount);
     }
 
-    function decimals() public pure override returns (uint8) {
-        return 8;
+    function decimals() public view override returns (uint8) {
+        return _decimals;
     }
 }

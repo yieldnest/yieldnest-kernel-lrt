@@ -16,7 +16,7 @@ import {MainnetKernelActors} from "script/KernelActors.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {BNBRateProvider} from "src/module/BNBRateProvider.sol";
 
-import {MockERC20LowDecimals} from "../mocks/MockERC20LowDecimals.sol";
+import {MockERC20} from "../mocks/MockERC20.sol";
 import {MockStakerGateway} from "../mocks/MockStakerGateway.sol";
 import {MockRateProvider} from "test/unit/mocks/MockRateProvider.sol";
 
@@ -32,7 +32,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetKernelActors, EtchUtil
     WETH9 public wbnb;
     MockSTETH public slisbnb;
     WETH9 public bnbx;
-    MockERC20LowDecimals public btc;
+    MockERC20 public btc;
     IStakerGateway public mockGateway;
     MockRateProvider public lowDecimalProvider;
 
@@ -58,7 +58,7 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetKernelActors, EtchUtil
         wbnb = WETH9(payable(MC.WBNB));
         slisbnb = MockSTETH(payable(MC.SLISBNB));
         bnbx = WETH9(payable(MC.BNBX));
-        btc = new MockERC20LowDecimals("BTC", "BTC"); // decimals = 8
+        btc = new MockERC20("BTC", "BTC", 8); // decimals = 8
 
         lowDecimalProvider = new MockRateProvider();
         lowDecimalProvider.addRate(address(wbnb), 1e18); // 10 ** 18 wbnb = 10 ** 18 base
