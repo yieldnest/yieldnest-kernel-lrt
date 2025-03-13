@@ -16,13 +16,17 @@ import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 
 import {console} from "lib/forge-std/src/console.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
+import {TokenUtils} from "test/mainnet/helpers/TokenUtils.sol";
 
 contract YnBTCkForkTest is BaseForkTest {
+    TokenUtils public tokenUtils;
+
     function setUp() public {
         vault = KernelStrategy(payable(address(MainnetContracts.YNBTCK)));
         stakerGateway = IStakerGateway(vault.getStakerGateway());
 
         asset = IERC20(MainnetContracts.BTCB);
+        tokenUtils = new TokenUtils(address(vault), stakerGateway);
     }
 
     function _upgradeVault() internal override {
@@ -333,6 +337,51 @@ contract YnBTCkForkTest is BaseForkTest {
         assertEq(params.decimals, decimals, "Asset decimals should be correct");
         assertEq(params.active, depositable, "Asset depositable should be correct");
         assertEq(vault.getAssetWithdrawable(assetAddress), withdrawable, "Asset withdrawable should be correct");
+    }
+
+    function testDepositAndWithdrawEnzoBTC() public {
+        _upgradeVault();
+        _disableFees();
+
+        // Get initial balances
+        uint256 initialVaultBalance = stakerGateway.balanceOf(MainnetContracts.ENZOBTC, address(vault));
+
+        // Get some enzoBTC for testing
+        uint256 depositAmount = 100 ether;
+        depositAmount = tokenUtils.getEnzoBTC(alice, depositAmount);
+
+        // Approve and deposit
+        vm.startPrank(alice);
+        IERC20(MainnetContracts.ENZOBTC).approve(address(vault), depositAmount);
+        uint256 shares = vault.depositAsset(MainnetContracts.ENZOBTC, depositAmount, alice);
+        vm.stopPrank();
+
+        // Verify deposit was successful
+        uint256 finalVaultBalance = stakerGateway.balanceOf(MainnetContracts.ENZOBTC, address(vault));
+        assertEq(
+            finalVaultBalance, initialVaultBalance + depositAmount, "Vault should have received the deposited enzoBTC"
+        );
+
+        // Log the shares received from the deposit
+        console.log("Shares received from enzoBTC deposit:", shares);
+        // Convert shares to assets to verify the value
+        uint256 assetsFromShares = vault.convertToAssets(shares);
+
+        // Get the rate provider to check the conversion rate
+        BTCRateProvider rateProvider = BTCRateProvider(vault.provider());
+
+        // Redeem all shares
+        vm.startPrank(alice);
+        uint256 redeemedAmount = vault.redeemAsset(MainnetContracts.ENZOBTC, shares, alice, alice);
+        vm.stopPrank();
+
+        // Assert that the redeemed amount matches the deposit amount
+        assertApproxEqAbs(
+            redeemedAmount,
+            depositAmount,
+            1, // Small threshold for potential rounding errors
+            "Redeemed amount should match the deposit amount"
+        );
     }
 
     function _disableFees() internal {
