@@ -62,6 +62,9 @@ contract KernelStrategy is Vault {
     /// @notice Emitted when the hasAllocator flag is set
     event SetHasAllocator(bool hasAllocator);
 
+    /// @notice Emitted when an asset's withdrawable status is changed
+    event SetAssetWithdrawable(address asset, bool isWithdrawable);
+
     /**
      * @notice Returns the current sync deposit flag.
      * @return syncDeposit The sync deposit flag.
@@ -508,6 +511,36 @@ contract KernelStrategy is Vault {
         strategyStorage.hasAllocators = hasAllocators_;
 
         emit SetHasAllocator(hasAllocators_);
+    }
+
+    /**
+     * @notice Returns whether the asset is withdrawable.
+     * @param asset_ The address of the asset.
+     * @return True if the asset is withdrawable, otherwise false.
+     */
+    function getAssetWithdrawable(address asset_) external view returns (bool) {
+        return _getBaseStrategyStorage().isAssetWithdrawable[asset_];
+    }
+
+    /**
+     * @notice Sets whether the asset is withdrawable.
+     * @param asset_ The address of the asset.
+     * @param withdrawable_ The new value for the withdrawable flag.
+     */
+    function setAssetWithdrawable(address asset_, bool withdrawable_) external onlyRole(ASSET_MANAGER_ROLE) {
+        _setAssetWithdrawable(asset_, withdrawable_);
+    }
+
+    /**
+     * @notice Internal function to set whether the asset is withdrawable.
+     * @param asset_ The address of the asset.
+     * @param withdrawable_ The new value for the withdrawable flag.
+     */
+    function _setAssetWithdrawable(address asset_, bool withdrawable_) internal {
+        BaseStrategyStorage storage strategyStorage = _getBaseStrategyStorage();
+        strategyStorage.isAssetWithdrawable[asset_] = withdrawable_;
+
+        emit SetAssetWithdrawable(asset_, withdrawable_);
     }
 
     /**
