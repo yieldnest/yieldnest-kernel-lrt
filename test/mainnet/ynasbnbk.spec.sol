@@ -136,6 +136,8 @@ contract YnAsBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
         vault_.addAsset(MC.WBNB, false);
         vault_.addAsset(MC.SLISBNB, false);
         vault_.addAsset(MC.ASBNB, true);
+        // Set asBNB as withdrawable
+        vault_.setAssetWithdrawable(MC.ASBNB, true);
 
         vault_.addAssetWithDecimals(address(asbnbKernelVault), 18, false);
 

@@ -543,18 +543,36 @@ contract KernelStrategy is Vault {
         emit SetAssetWithdrawable(asset_, withdrawable_);
     }
 
+
     /**
      * @notice Adds a new asset to the vault.
      * @param asset_ The address of the asset.
      * @param decimals_ The decimals of the asset.
-     * @param active_ Whether the asset is active.
+     * @param depositableAndWithdrawable Whether the asset is depositable and withdrawable
      */
-    function addAssetWithDecimals(address asset_, uint8 decimals_, bool active_)
+    function addAssetWithDecimals(address asset_, uint8 decimals_, bool depositableAndWithdrawable)
         public
         virtual
         onlyRole(ASSET_MANAGER_ROLE)
     {
-        _addAsset(asset_, decimals_, active_);
+        _addAsset(asset_, decimals_, depositableAndWithdrawable);
+        _setAssetWithdrawable(asset_, depositableAndWithdrawable);
+    }
+
+    /**
+     * @notice Adds a new asset to the vault.
+     * @param asset_ The address of the asset.
+     * @param decimals_ The decimals of the asset.
+     * @param depositable_ Whether the asset is depositable.
+     * @param withdrawable_ Whether the asset is withdrawable.
+     */
+    function addAsset(address asset_, uint8 decimals_, bool depositable_, bool withdrawable_)
+        public
+        virtual
+        onlyRole(ASSET_MANAGER_ROLE)
+    {
+        _addAsset(asset_, decimals_, depositable_);
+        _setAssetWithdrawable(asset_, withdrawable_);
     }
 
     /**

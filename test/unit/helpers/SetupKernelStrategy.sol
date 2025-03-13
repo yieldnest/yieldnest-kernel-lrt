@@ -115,6 +115,12 @@ contract SetupKernelStrategy is Test, AssertUtils, MainnetKernelActors, EtchUtil
         vault.addAsset(MC.BNBX, true);
         vault.addAsset(address(btc), true);
 
+        // Set assets as withdrawable
+        vault.setAssetWithdrawable(MC.WBNB, true);
+        vault.setAssetWithdrawable(MC.SLISBNB, true);
+        vault.setAssetWithdrawable(MC.BNBX, true);
+        vault.setAssetWithdrawable(address(btc), true);
+
         // by default, we don't set any rules
 
         vault.unpause();
