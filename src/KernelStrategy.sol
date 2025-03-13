@@ -480,6 +480,8 @@ contract KernelStrategy is Vault {
         emit SetStakerGateway(stakerGateway);
     }
 
+    //// DEPOSIT ADMIN ////
+
     /**
      * @notice Sets the sync deposit flag.
      * @param syncDeposit The new value for the sync deposit flag.
@@ -512,6 +514,8 @@ contract KernelStrategy is Vault {
 
         emit SetHasAllocator(hasAllocators_);
     }
+
+    //// ASSET ADMIN ////
 
     /**
      * @notice Returns whether the asset is withdrawable.
