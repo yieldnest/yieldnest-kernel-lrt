@@ -123,10 +123,27 @@ contract YnBTCkForkTest is BaseForkTest {
         // Calculate the exchange rate before withdrawal
         uint256 rateBeforeWithdraw = vault.convertToAssets(1e18);
 
+        // Calculate shares equivalent to the BTCB balance
+        uint256 sharesToBurn = vault.convertToShares(btcbBalance);
+
         // Withdraw based on BTCB balance of vault
         vm.startPrank(specificUser);
-        KernelStrategy(payable(address(vault))).withdrawAsset(address(asset), btcbBalance, specificUser, specificUser);
+        uint256 sharesBurned = KernelStrategy(payable(address(vault))).withdrawAsset(
+            address(asset), btcbBalance, specificUser, specificUser
+        );
         vm.stopPrank();
+
+        // Assert that the shares burned are approximately equal to the calculated shares to burn (within 1 wei)
+        assertApproxEqAbs(
+            sharesBurned, sharesToBurn, 1, "Shares burned should approximately match calculated shares to burn"
+        );
+
+        // Assert that the user's share balance decreased by the correct amount
+        assertEq(
+            vault.balanceOf(specificUser),
+            userShares - sharesBurned,
+            "User's share balance should decrease by shares burned"
+        );
 
         // Calculate the exchange rate after withdrawal
         uint256 rateAfterWithdraw = vault.convertToAssets(1e18);
