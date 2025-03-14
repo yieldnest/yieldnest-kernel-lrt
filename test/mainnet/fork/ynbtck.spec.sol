@@ -197,15 +197,27 @@ contract YnBTCkForkTest is BaseForkTest {
         assertTrue(isSolvBTCWithdrawable, "solvBTC should be withdrawable");
         console.log("Is solvBTC withdrawable:", isSolvBTCWithdrawable);
 
-        // // Verify that maxWithdraw for solvBTC is 0
-        // uint256 maxWithdrawAmount = KernelStrategy(payable(address(vault))).maxWithdrawAsset(solvBTC, specificUser);
-        // assertEq(maxWithdrawAmount, stakerGateway.balanceOf(solvBTC, address(vault)), "maxWithdraw for solvBTC should
-        // equal vault's staked balance");
+        {
+            // Verify that maxWithdraw for solvBTC is 0
+            uint256 maxWithdrawAmount = KernelStrategy(payable(address(vault))).maxWithdrawAsset(solvBTC, specificUser);
+            assertApproxEqAbs(
+                maxWithdrawAmount,
+                stakerGateway.balanceOf(solvBTC, address(vault)),
+                1,
+                "maxWithdraw for solvBTC should equal vault's staked balance"
+            );
+        }
 
-        // // Verify that maxRedeemAsset for solvBTC is also 0
-        // uint256 maxRedeemAmount = KernelStrategy(payable(address(vault))).maxRedeemAsset(solvBTC, specificUser);
-        // assertEq(maxRedeemAmount, stakerGateway.balanceOf(solvBTC, address(vault)), "maxRedeemAsset for solvBTC
-        // should equal vault's staked balance");
+        {
+            // Verify that maxRedeemAsset for solvBTC is also 0
+            uint256 maxRedeemShares = KernelStrategy(payable(address(vault))).maxRedeemAsset(solvBTC, specificUser);
+            // assertApproxEqAbs(
+            //     vault.convertToAssets(maxRedeemShares),
+            //     stakerGateway.balanceOf(solvBTC, address(vault)),
+            //     1,
+            //     "maxRedeemAsset for solvBTC should equal vault's staked balance"
+            // );
+        }
 
         // The deposit should revert because solvBTC is not an accepted asset
         vm.expectRevert();
@@ -234,7 +246,7 @@ contract YnBTCkForkTest is BaseForkTest {
         assertApproxEqRel(
             rateBeforeWithdraw,
             rateAfterWithdraw,
-            1e18,
+            1e10,
             "Vault rate should remain approximately the same after withdrawal"
         );
         // Assert that the rate after withdrawal is greater than or equal to the rate before withdrawal
