@@ -507,6 +507,8 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
 
         uint256 maxWithdraw = vault.maxWithdrawAsset(MC.ENZOBTC, bob);
         assertEqThreshold(maxWithdraw, amount, 10, "Max withdraw should be equal to amount");
+        // Check rate before withdrawal
+        uint256 rateBeforeWithdraw = vault.convertToAssets(1e18);
 
         uint256 previewShares = vault.previewWithdrawAsset(MC.ENZOBTC, maxWithdraw);
 
@@ -514,6 +516,9 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         uint256 shares = vault.withdrawAsset(MC.ENZOBTC, maxWithdraw, bob, bob);
 
         assertEq(previewShares, shares, "Preview shares should be equal to shares");
+        assertEq(
+            rateBeforeWithdraw, vault.convertToAssets(1e18), "Exchange rate should remain the same after withdrawal"
+        );
 
         uint256 afterVaultBalance = asset.balanceOf(address(vault));
         uint256 afterBobBalance = asset.balanceOf(bob);
