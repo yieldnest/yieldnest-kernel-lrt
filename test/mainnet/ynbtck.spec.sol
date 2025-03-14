@@ -587,6 +587,74 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         }
     }
 
+    function test_Vault_ynBTCk_withdrawal_enzoBTC_withRewards(uint256 amount, uint256 rewardsinBTCB) public {
+        // amount is in 18 decimals, enzoBTC is in 8 decimals so starting at 1e11
+        vm.assume(amount >= 1e11 && amount <= 1000 ether);
+        vm.assume(rewardsinBTCB >= 0 && rewardsinBTCB <= amount);
+
+        {
+            // First deposit BTCB worth of amount
+            getBTCB(amount);
+            depositIntoVault(MC.BTCB, amount);
+        }
+
+        // Get enzoBTC for initial deposit
+        uint256 depositAmount = getEnzoBTC(amount);
+
+        // Deposit enzoBTC into the vault
+        vm.startPrank(bob);
+        IERC20(MC.ENZOBTC).approve(address(vault), depositAmount);
+        vault.depositAsset(MC.ENZOBTC, depositAmount, bob);
+        vm.stopPrank();
+
+        // Process accounting to ensure deposit is reflected
+        vault.processAccounting();
+
+        // Get additional enzoBTC for rewards
+        uint256 rewards = getEnzoBTC(rewardsinBTCB);
+
+        // Transfer rewards to the vault
+        vm.prank(bob);
+        IERC20(MC.ENZOBTC).transfer(address(vault), rewards);
+
+        // Process accounting to reflect rewards
+        vault.processAccounting();
+
+        // Perform max withdraw
+        uint256 maxWithdraw = vault.maxWithdrawAsset(MC.ENZOBTC, bob);
+
+        // Store the conversion rate before withdrawal
+        uint256 assetsBeforeWithdraw = vault.convertToAssets(1e18);
+        uint256 sharesBeforeWithdraw = vault.convertToShares(1e18);
+
+        vm.prank(bob);
+        vault.withdrawAsset(MC.ENZOBTC, maxWithdraw, bob, bob);
+
+        // Assert rate stayed the same after withdrawal
+        uint256 assetsAfterWithdraw = vault.convertToAssets(1e18);
+        uint256 sharesAfterWithdraw = vault.convertToShares(1e18);
+
+        assertEqThreshold(
+            assetsAfterWithdraw, assetsBeforeWithdraw, 1e8, "Rate should remain unchanged after withdrawal"
+        );
+        assertEqThreshold(
+            sharesAfterWithdraw,
+            sharesBeforeWithdraw,
+            1e8,
+            "Shares conversion rate should remain unchanged after withdrawal"
+        );
+
+        // Assert rate increased after withdrawal (assets per share decreased)
+        assertGe(
+            assetsAfterWithdraw, assetsBeforeWithdraw, "Rate should increase after withdrawal (fewer assets per share)"
+        );
+        assertLe(
+            sharesAfterWithdraw,
+            sharesBeforeWithdraw,
+            "Shares conversion rate should decrease after withdrawal (more shares per asset)"
+        );
+    }
+
     function test_Vault_ynBTCk_rewards_BTCB(uint256 amount, uint256 rewards) public {
         amount = bound(amount, 1000, 10_000 ether);
         rewards = bound(rewards, 10, amount / 10);
