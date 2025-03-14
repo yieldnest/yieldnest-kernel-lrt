@@ -381,11 +381,6 @@ contract YnBTCkForkTest is BaseForkTest {
 
         // Log the shares received from the deposit
         console.log("Shares received from enzoBTC deposit:", shares);
-        // Convert shares to assets to verify the value
-        uint256 assetsFromShares = vault.convertToAssets(shares);
-
-        // Get the rate provider to check the conversion rate
-        BTCRateProvider rateProvider = BTCRateProvider(vault.provider());
 
         // Redeem all shares
         vm.startPrank(alice);
