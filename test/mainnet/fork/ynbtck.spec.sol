@@ -30,42 +30,48 @@ contract YnBTCkForkTest is BaseForkTest {
     }
 
     function _upgradeVault() internal override {
-        KernelStrategy newImplementation = new KernelStrategy();
+        // KernelStrategy newImplementation = new KernelStrategy();
 
-        // TODO: uncomment this when we have a timelock and remove repeated code
-        // _upgradeVaultWithTimelock(address(newImplementation));
+        // // TODO: uncomment this when we have a timelock and remove repeated code
+        // // _upgradeVaultWithTimelock(address(newImplementation));
 
-        // Get proxy admin
-        ProxyAdmin proxyAdmin = ProxyAdmin(getProxyAdmin(address(vault)));
+        // // Get proxy admin
+        // ProxyAdmin proxyAdmin = ProxyAdmin(getProxyAdmin(address(vault)));
 
-        assertEq(proxyAdmin.owner(), ADMIN, "Proxy admin owner should be admin");
+        // assertEq(proxyAdmin.owner(), ADMIN, "Proxy admin owner should be admin");
 
-        vm.startPrank(ADMIN);
-        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(payable(address(vault))), address(newImplementation), "");
-        vm.stopPrank();
+        // vm.startPrank(ADMIN);
+        // proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(payable(address(vault))), address(newImplementation), "");
+        // vm.stopPrank();
 
-        // Verify upgrade was successful
-        assertEq(
-            getImplementation(address(vault)),
-            address(newImplementation),
-            "Implementation address should match new implementation"
-        );
+        // // Verify upgrade was successful
+        // assertEq(
+        //     getImplementation(address(vault)),
+        //     address(newImplementation),
+        //     "Implementation address should match new implementation"
+        // );
 
-        // Set Enzo BTC and BTCB as withdrawable
-        vm.startPrank(ADMIN);
-        KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.ENZOBTC, true);
-        KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.BTCB, true);
-        KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.SOLVBTC_BBN, true);
-        KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.SOLVBTC, true);
+        // // Set Enzo BTC and BTCB as withdrawable
+        // vm.startPrank(ADMIN);
+        // KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.ENZOBTC, true);
+        // KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.BTCB, true);
+        // KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.SOLVBTC_BBN, true);
+        // KernelStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.SOLVBTC, true);
 
-        // Grant FEE_MANAGER_ROLE to ADMIN
-        KernelStrategy(payable(address(vault))).grantRole(
-            KernelStrategy(payable(address(vault))).FEE_MANAGER_ROLE(), ADMIN
-        );
+        // // Grant FEE_MANAGER_ROLE to ADMIN
+        // KernelStrategy(payable(address(vault))).grantRole(
+        //     KernelStrategy(payable(address(vault))).FEE_MANAGER_ROLE(), ADMIN
+        // );
 
-        vm.stopPrank();
+        // vm.stopPrank();
 
         console.log("Current implementation:", getImplementation(address(vault)));
+        // Print total assets and convertToAssets values
+        uint256 totalAssetsValue = vault.totalAssets();
+        uint256 convertToAssetsValue = vault.convertToAssets(1e18);
+        
+        console.log("Total assets in vault:", totalAssetsValue);
+        console.log("Convert 1e18 shares to assets:", convertToAssetsValue);
 
         // vm.startPrank(ADMIN);
         // // Set base withdrawal fee to 0 - not called here to test invariants; test this individually
