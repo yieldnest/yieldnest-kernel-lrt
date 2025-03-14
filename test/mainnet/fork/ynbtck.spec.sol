@@ -62,9 +62,15 @@ contract YnBTCkForkTest is BaseForkTest {
         KernelStrategy(payable(address(vault))).grantRole(
             KernelStrategy(payable(address(vault))).FEE_MANAGER_ROLE(), ADMIN
         );
-        // Set base withdrawal fee to 0 - not called here to test invariants; test this individually
-        //KernelStrategy(payable(address(vault))).setBaseWithdrawalFee(0);
+
         vm.stopPrank();
+
+        console.log("Current implementation:", getImplementation(address(vault)));
+
+        // vm.startPrank(ADMIN);
+        // // Set base withdrawal fee to 0 - not called here to test invariants; test this individually
+        // KernelStrategy(payable(address(vault))).setBaseWithdrawalFee(1e5);
+        // vm.stopPrank();
     }
 
     function testUpgrade() public {
@@ -169,7 +175,8 @@ contract YnBTCkForkTest is BaseForkTest {
         assertEq(rateBeforeWithdraw, rateAfterWithdraw, "Exchange rate should remain the same after withdrawal");
     }
 
-    function testDepositSolvBTCRevert() public {
+    function testDepositSolvBTCRevertAndWithdrawAllSuccess() public {
+        _upgradeVault();
         // Get the solvBTC token address
         address solvBTC = MainnetContracts.SOLVBTC;
 
@@ -184,23 +191,85 @@ contract YnBTCkForkTest is BaseForkTest {
         vm.startPrank(specificUser);
         IERC20(solvBTC).approve(address(vault), depositAmount);
 
-        // Verify that maxWithdraw for solvBTC is 0
-        uint256 maxWithdrawAmount = KernelStrategy(payable(address(vault))).maxWithdrawAsset(solvBTC, specificUser);
-        assertEq(maxWithdrawAmount, 0, "maxWithdraw for solvBTC should be 0");
+        // Check if solvBTC is withdrawable
+        bool isSolvBTCWithdrawable = vault.getAssetWithdrawable(MainnetContracts.SOLVBTC);
+        // Assert that solvBTC is withdrawable
+        assertTrue(isSolvBTCWithdrawable, "solvBTC should be withdrawable");
+        console.log("Is solvBTC withdrawable:", isSolvBTCWithdrawable);
 
-        // Verify that maxRedeemAsset for solvBTC is also 0
-        uint256 maxRedeemAmount = KernelStrategy(payable(address(vault))).maxRedeemAsset(solvBTC, specificUser);
-        assertEq(maxRedeemAmount, 0, "maxRedeemAsset for solvBTC should be 0");
+        // // Verify that maxWithdraw for solvBTC is 0
+        // uint256 maxWithdrawAmount = KernelStrategy(payable(address(vault))).maxWithdrawAsset(solvBTC, specificUser);
+        // assertEq(maxWithdrawAmount, stakerGateway.balanceOf(solvBTC, address(vault)), "maxWithdraw for solvBTC should
+        // equal vault's staked balance");
+
+        // // Verify that maxRedeemAsset for solvBTC is also 0
+        // uint256 maxRedeemAmount = KernelStrategy(payable(address(vault))).maxRedeemAsset(solvBTC, specificUser);
+        // assertEq(maxRedeemAmount, stakerGateway.balanceOf(solvBTC, address(vault)), "maxRedeemAsset for solvBTC
+        // should equal vault's staked balance");
 
         // The deposit should revert because solvBTC is not an accepted asset
         vm.expectRevert();
         vault.deposit(depositAmount, specificUser);
-
         vm.stopPrank();
+
+        // Withdraw all solvBTC from the vault
+        uint256 vaultSolvBTCBalance = stakerGateway.balanceOf(solvBTC, address(vault));
+        console.log("Vault's solvBTC balance in stakerGateway:", vaultSolvBTCBalance);
+        // Print the user's solvBTC balance before withdrawal
+        uint256 userSolvBTCBalanceBefore = IERC20(solvBTC).balanceOf(specificUser);
+        console.log("User's solvBTC balance before withdrawal:", userSolvBTCBalanceBefore);
+
+        // Check vault rate before withdrawal
+        uint256 testAmount = 1e18;
+        uint256 rateBeforeWithdraw = vault.convertToAssets(testAmount);
+
+        vm.startPrank(specificUser);
+        uint256 withdrawnAmount = vault.withdrawAsset(solvBTC, vaultSolvBTCBalance, specificUser, specificUser);
+        vm.stopPrank();
+
+        // Check vault rate after withdrawal
+        uint256 rateAfterWithdraw = vault.convertToAssets(testAmount);
+
+        // Assert that the rate remains approximately the same
+        assertApproxEqRel(
+            rateBeforeWithdraw,
+            rateAfterWithdraw,
+            1e18,
+            "Vault rate should remain approximately the same after withdrawal"
+        );
+        // Assert that the rate after withdrawal is greater than or equal to the rate before withdrawal
+        assertTrue(
+            rateAfterWithdraw >= rateBeforeWithdraw,
+            "Vault rate after withdrawal should be greater than or equal to rate before withdrawal"
+        );
+        // Print the balance of solvBTC in the vault
+        uint256 vaultSolvBTCBalanceAfterWithdraw = IERC20(solvBTC).balanceOf(address(vault));
+        console.log("Vault's direct solvBTC balance:", vaultSolvBTCBalanceAfterWithdraw);
+
+        // Print the user's solvBTC balance after withdrawal
+        uint256 userSolvBTCBalanceAfter = IERC20(solvBTC).balanceOf(specificUser);
+
+        // Print the delta (change in user's balance)
+        uint256 balanceDelta = userSolvBTCBalanceAfter - userSolvBTCBalanceBefore;
+        console.log("Delta in user's solvBTC balance:", balanceDelta);
+
+        // Print the withdrawn amount
+        console.log("Withdrawn solvBTC amount:", withdrawnAmount);
+
+        // Assert that the vault's solvBTC balance is now zero
+        uint256 finalVaultSolvBTCBalance = stakerGateway.balanceOf(solvBTC, address(vault));
+        assertEq(finalVaultSolvBTCBalance, 0, "Vault's solvBTC balance should be zero after withdrawal");
+        console.log("Final vault's solvBTC balance:", finalVaultSolvBTCBalance);
     }
 
     function testAssetsAfterUpgrade() public {
         _upgradeVault();
+        // Disable fees for testing
+        vm.startPrank(ADMIN);
+        KernelStrategy(payable(address(vault))).setBaseWithdrawalFee(0);
+        vm.stopPrank();
+
+        console.log("Base withdrawal fee set to 0");
 
         address[] memory assets = vault.getAssets();
         assertEq(assets.length, 8, "Should have 2 assets");
@@ -315,10 +384,24 @@ contract YnBTCkForkTest is BaseForkTest {
 
     function testWithdrawAllSolvBTCBBN() public {
         _upgradeVault();
+        // Disable fees for testing
+        _disableFees();
+
+        console.log("Base withdrawal fee set to 0");
 
         uint256 balance = stakerGateway.balanceOf(MainnetContracts.SOLVBTC_BBN, address(vault));
 
+        // Print the balance of solvBTC_BBN in the vault
+        console.log("Vault's solvBTC_BBN balance in stakerGateway:", balance);
+
+        // Check rate before withdrawal
+        uint256 rateBeforeWithdraw = vault.convertToAssets(1e18);
+
         _withdrawFromVault(MainnetContracts.SOLVBTC_BBN, specificUser, balance);
+
+        // Check rate after withdrawal and assert it stayed the same
+        uint256 rateAfterWithdraw = vault.convertToAssets(1e18);
+        assertEq(rateBeforeWithdraw, rateAfterWithdraw, "Exchange rate should remain the same after withdrawal");
 
         assertEq(stakerGateway.balanceOf(MainnetContracts.SOLVBTC_BBN, address(vault)), 0, "Should have 0 balance");
     }
@@ -364,14 +447,23 @@ contract YnBTCkForkTest is BaseForkTest {
         uint256 initialVaultBalance = stakerGateway.balanceOf(MainnetContracts.ENZOBTC, address(vault));
 
         // Get some enzoBTC for testing
-        uint256 depositAmount = 100 ether;
+        uint256 depositAmount = 1000 ether;
         depositAmount = tokenUtils.getEnzoBTC(alice, depositAmount);
+
+        // Check rate before deposit
+        uint256 rateBeforeDeposit = vault.convertToAssets(1e18);
 
         // Approve and deposit
         vm.startPrank(alice);
         IERC20(MainnetContracts.ENZOBTC).approve(address(vault), depositAmount);
         uint256 shares = vault.depositAsset(MainnetContracts.ENZOBTC, depositAmount, alice);
         vm.stopPrank();
+
+        // Check rate after deposit
+        uint256 rateAfterDeposit = vault.convertToAssets(1e18);
+
+        // Assert that the rate remains the same
+        assertEq(rateBeforeDeposit, rateAfterDeposit, "Exchange rate should remain the same after deposit");
 
         // Verify deposit was successful
         uint256 finalVaultBalance = stakerGateway.balanceOf(MainnetContracts.ENZOBTC, address(vault));
@@ -387,10 +479,30 @@ contract YnBTCkForkTest is BaseForkTest {
         // Get the rate provider to check the conversion rate
         BTCRateProvider rateProvider = BTCRateProvider(vault.provider());
 
+        // Check rate before redemption
+        uint256 rateBeforeRedeem = vault.convertToAssets(1e18);
+
         // Redeem all shares
         vm.startPrank(alice);
         uint256 redeemedAmount = vault.redeemAsset(MainnetContracts.ENZOBTC, shares, alice, alice);
         vm.stopPrank();
+
+        // Check rate after redemption
+        uint256 rateAfterRedeem = vault.convertToAssets(1e18);
+
+        // Assert that the rate remains the same
+        assertApproxEqRel(
+            rateBeforeRedeem,
+            rateAfterRedeem,
+            1e8,
+            "Exchange rate should remain approximately the same after redemption"
+        );
+        // Assert that the rate after redemption is greater than or equal to the rate before redemption
+        // This verifies that redemption doesn't decrease the exchange rate and potentially increases it
+        assertTrue(
+            rateAfterRedeem >= rateBeforeRedeem,
+            "Exchange rate after redemption should be greater than or equal to rate before redemption"
+        );
 
         // Assert that the redeemed amount matches the deposit amount
         assertApproxEqAbs(
