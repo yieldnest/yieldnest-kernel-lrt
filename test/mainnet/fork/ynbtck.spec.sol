@@ -377,7 +377,31 @@ contract YnBTCkForkTest is BaseForkTest {
 
         uint256 balance = stakerGateway.balanceOf(MainnetContracts.SOLVBTC, address(vault));
 
+        // Check rate before withdrawal
+        uint256 rateBeforeWithdraw = vault.convertToAssets(1e18);
+        uint256 sharesBeforeWithdraw = vault.convertToShares(1e18);
+
         _withdrawFromVault(MainnetContracts.SOLVBTC, specificUser, balance);
+
+        // Check rate after withdrawal and assert it stayed the same
+        uint256 rateAfterWithdraw = vault.convertToAssets(1e18);
+        uint256 sharesAfterWithdraw = vault.convertToShares(1e18);
+
+        // Assert that convertToShares stays the same
+        assertApproxEqRel(
+            sharesBeforeWithdraw,
+            sharesAfterWithdraw,
+            1e12,
+            "Shares conversion rate should remain approximately the same"
+        );
+        assertTrue(sharesAfterWithdraw <= sharesBeforeWithdraw, "Shares after withdrawal should not increase");
+        assertApproxEqRel(
+            rateBeforeWithdraw,
+            rateAfterWithdraw,
+            1e10,
+            "Exchange rate should remain approximately the same after withdrawal"
+        );
+        assertTrue(rateAfterWithdraw >= rateBeforeWithdraw, "Exchange rate should not decrease after withdrawal");
 
         assertEq(stakerGateway.balanceOf(MainnetContracts.SOLVBTC, address(vault)), 0, "Should have 0 balance");
     }
@@ -481,6 +505,8 @@ contract YnBTCkForkTest is BaseForkTest {
 
         // Check rate before redemption
         uint256 rateBeforeRedeem = vault.convertToAssets(1e18);
+        // Calculate shares to assets conversion before redemption
+        uint256 sharesConversionBefore = vault.convertToShares(1e18);
 
         // Redeem all shares
         vm.startPrank(alice);
@@ -490,7 +516,17 @@ contract YnBTCkForkTest is BaseForkTest {
         // Check rate after redemption
         uint256 rateAfterRedeem = vault.convertToAssets(1e18);
 
-        // Assert that the rate remains the same
+        // Check shares conversion after redemption
+        uint256 sharesConversionAfter = vault.convertToShares(1e18);
+
+        // Assert that the shares conversion decreased
+        assertApproxEqRel(
+            sharesConversionBefore,
+            sharesConversionAfter,
+            1e8,
+            "Shares conversion should be approximately equal after redemption"
+        );
+        assertTrue(sharesConversionAfter < sharesConversionBefore, "Shares conversion should be lower after redemption");
         assertApproxEqRel(
             rateBeforeRedeem,
             rateAfterRedeem,
