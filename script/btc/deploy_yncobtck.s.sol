@@ -5,7 +5,6 @@ import {IProvider, Vault} from "lib/yieldnest-vault/script/BaseScript.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
-import {TestnetBTCRateProvider} from "test/module/BTCRateProvider.sol";
 
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -23,13 +22,12 @@ contract DeployYnCoBTCkStrategy is BaseKernelScript {
     }
 
     function deployRateProvider() internal {
-        if (block.chainid == 97) {
-            rateProvider = IProvider(address(new TestnetBTCRateProvider()));
-        }
-
         if (block.chainid == 56) {
             rateProvider = IProvider(address(new BTCRateProvider()));
+            return;
         }
+        // only bsc mainnet is supported for ynCoBTCk
+        revert UnsupportedChain();
     }
 
     function run() public {
