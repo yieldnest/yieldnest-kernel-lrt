@@ -5,6 +5,8 @@ pragma solidity ^0.8.24;
 import {MainnetContracts as MC} from "script/Contracts.sol";
 
 import {BaseKernelRateProvider} from "./BaseKernelRateProvider.sol";
+
+import {IBFBTC} from "src/interface/external/bitfi/IBFBTC.sol";
 import {ISolvBTCYieldToken} from "src/interface/external/solv/ISolvBTCYieldToken.sol";
 
 /**
@@ -47,6 +49,12 @@ contract BTCRateProvider is BaseKernelRateProvider {
         if (asset == MC.COBTC) {
             // CO BTC is pegged 1:1 to BTC. The rate to BTCB  1e8:1e18
             return 1e18;
+        }
+
+        if (asset == MC.BFBTC) {
+            // BFBTC is a vault with BTCB as the underlying asset.
+            // BFBTC has 8 decimals
+            return IBFBTC(MC.BFBTC).previewWithdraw(1e8, false);
         }
 
         // check if a kernel vault is added as an asset

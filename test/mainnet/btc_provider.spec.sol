@@ -7,6 +7,7 @@ import {MainnetContracts as MC} from "script/Contracts.sol";
 
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
+import {IBFBTC} from "src/interface/external/bitfi/IBFBTC.sol";
 import {ISolvBTCYieldToken} from "src/interface/external/solv/ISolvBTCYieldToken.sol";
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 
@@ -44,6 +45,12 @@ contract BTCProviderTest is Test {
         uint256 rate = provider.getRate(MC.COBTC);
         // coBTC has 8 decimals, BTCB has 18 decimals. 1e8 coBTC is worth 1e18 BTCB
         assertEq(rate, 1e18, "Rate for coBTC should be 1e18");
+    }
+
+    function test_Provider_GetRateBFBTC() public view {
+        uint256 rate = provider.getRate(MC.BFBTC);
+        uint256 expected = IBFBTC(MC.BFBTC).previewWithdraw(1e8, false);
+        assertEq(rate, expected, "Rate for BFBTC should be correct");
     }
 
     function test_Provider_GetRateKernelVault() public view {
