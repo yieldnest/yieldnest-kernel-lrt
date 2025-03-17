@@ -414,7 +414,7 @@ contract YnBTCkForkTest is BaseForkTest {
         assertEq(vault.getAssetWithdrawable(assetAddress), withdrawable, "Asset withdrawable should be correct");
     }
 
-    function testDepositAndWithdrawEnzoBTC() public {
+    function testDepositAndRedeemEnzoBTC() public {
         _upgradeVault();
 
         // Get initial balances
@@ -469,6 +469,87 @@ contract YnBTCkForkTest is BaseForkTest {
             "Shares conversion should be approximately equal after redemption"
         );
         assertTrue(sharesConversionAfter < sharesConversionBefore, "Shares conversion should be lower after redemption");
+        assertApproxEqRel(
+            rateBeforeRedeem,
+            rateAfterRedeem,
+            1e8,
+            "Exchange rate should remain approximately the same after redemption"
+        );
+        // Assert that the rate after redemption is greater than or equal to the rate before redemption
+        // This verifies that redemption doesn't decrease the exchange rate and potentially increases it
+        assertTrue(
+            rateAfterRedeem >= rateBeforeRedeem,
+            "Exchange rate after redemption should be greater than or equal to rate before redemption"
+        );
+
+        // Assert that the redeemed amount matches the deposit amount
+        assertApproxEqAbs(
+            redeemedAmount,
+            depositAmount,
+            1, // Small threshold for potential rounding errors
+            "Redeemed amount should match the deposit amount"
+        );
+    }
+
+    function testDepositAndWithdrawEnzoBTC() public {
+        _upgradeVault();
+
+        // Get initial balances
+        uint256 initialVaultBalance = stakerGateway.balanceOf(MainnetContracts.ENZOBTC, address(vault));
+
+        // Get some enzoBTC for testing
+        uint256 depositAmount = 1000 ether;
+        depositAmount = tokenUtils.getEnzoBTC(alice, depositAmount);
+
+        // Check rate before deposit
+        uint256 rateBeforeDeposit = vault.convertToAssets(1e18);
+
+        // Approve and deposit
+        vm.startPrank(alice);
+        IERC20(MainnetContracts.ENZOBTC).approve(address(vault), depositAmount);
+        uint256 shares = vault.depositAsset(MainnetContracts.ENZOBTC, depositAmount, alice);
+        vm.stopPrank();
+
+        // Check rate after deposit
+        uint256 rateAfterDeposit = vault.convertToAssets(1e18);
+
+        // Assert that the rate remains the same
+        assertEq(rateBeforeDeposit, rateAfterDeposit, "Exchange rate should remain the same after deposit");
+
+        // Verify deposit was successful
+        uint256 finalVaultBalance = stakerGateway.balanceOf(MainnetContracts.ENZOBTC, address(vault));
+        assertEq(
+            finalVaultBalance, initialVaultBalance + depositAmount, "Vault should have received the deposited enzoBTC"
+        );
+
+        // Check rate before redemption
+        uint256 rateBeforeRedeem = vault.convertToAssets(1e18);
+        // Calculate shares to assets conversion before redemption
+        uint256 sharesConversionBefore = vault.convertToShares(1e18);
+
+        // Withdraw using withdrawAsset instead of redeemAsset
+        vm.startPrank(alice);
+        uint256 redeemedAmount = vault.previewRedeemAsset(MainnetContracts.ENZOBTC, shares);
+        vault.withdrawAsset(MainnetContracts.ENZOBTC, redeemedAmount, alice, alice);
+        vm.stopPrank();
+
+        // Check rate after redemption
+        uint256 rateAfterRedeem = vault.convertToAssets(1e18);
+
+        // Check shares conversion after redemption
+        uint256 sharesConversionAfter = vault.convertToShares(1e18);
+
+        // Assert that the shares conversion decreased
+        assertApproxEqRel(
+            sharesConversionBefore,
+            sharesConversionAfter,
+            1e8,
+            "Shares conversion should be approximately equal after redemption"
+        );
+
+        assertTrue(
+            sharesConversionAfter <= sharesConversionBefore, "Shares conversion should be lower after redemption"
+        );
         assertApproxEqRel(
             rateBeforeRedeem,
             rateAfterRedeem,
