@@ -15,7 +15,8 @@ import {FeeMath} from "lib/yieldnest-vault/src/module/FeeMath.sol";
 import {BaseKernelScript} from "script/BaseKernelScript.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
-// FOUNDRY_PROFILE=mainnet forge script DeployBTCRateProvider --sender 0xd53044093F757E8a56fED3CCFD0AF5Ad67AeaD4a
+// FOUNDRY_PROFILE=mainnet forge script DeployYnCoBTCkStrategy --sender 0xa1E340bd1e3ea09B3981164BBB4AfeDdF0e7bA0D
+// --account [accountname]
 contract DeployBTCRateProvider is BaseKernelScript {
     function symbol() public pure override returns (string memory) {
         return "ynBTCk";

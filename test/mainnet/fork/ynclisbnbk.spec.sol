@@ -5,9 +5,10 @@ import {BaseForkTest} from "./BaseForkTest.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import {MainnetContracts} from "script/Contracts.sol";
-import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 import {KernelClisStrategy} from "src/KernelClisStrategy.sol";
+import {KernelStrategy} from "src/KernelStrategy.sol";
+import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 contract YnClisBNBkForkTest is BaseForkTest {
     IERC20 public clisbnb;
@@ -24,12 +25,28 @@ contract YnClisBNBkForkTest is BaseForkTest {
     }
 
     function _getStakedBalance() internal view override returns (uint256) {
-        return stakerGateway.balanceOf(address(clisbnb), address(vault));
+        return _getStakedBalance(address(asset));
+    }
+
+    function _getStakedBalance(address assetAddress) internal view override returns (uint256) {
+        if (assetAddress == MainnetContracts.WBNB) {
+            return stakerGateway.balanceOf(MainnetContracts.CLISBNB, address(vault));
+        }
+        return stakerGateway.balanceOf(assetAddress, address(vault));
     }
 
     function _upgradeVault() internal override {
         KernelClisStrategy newImplementation = new KernelClisStrategy();
         _upgradeVaultWithTimelock(address(newImplementation));
+
+        // Set WBNB as withdrawable after upgrade
+        vm.startPrank(ADMIN);
+        // Grant ASSET_MANAGER_ROLE to ADMIN
+        KernelStrategy(payable(address(vault))).grantRole(
+            KernelStrategy(payable(address(vault))).ASSET_MANAGER_ROLE(), ADMIN
+        );
+        KernelClisStrategy(payable(address(vault))).setAssetWithdrawable(MainnetContracts.WBNB, true);
+        vm.stopPrank();
     }
 
     function testUpgrade() public {

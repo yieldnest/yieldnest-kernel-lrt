@@ -8,7 +8,6 @@ import {TransparentUpgradeableProxy} from
 
 import {IERC20, IERC20Metadata} from "lib/yieldnest-vault/src/Common.sol";
 
-import {Vault} from "lib/yieldnest-vault/src/Vault.sol";
 import {WETH9} from "lib/yieldnest-vault/test/unit/mocks/MockWETH.sol";
 
 import {AssertUtils} from "lib/yieldnest-vault/test/utils/AssertUtils.sol";
@@ -24,9 +23,10 @@ import {VaultKernelUtils} from "script/VaultKernelUtils.sol";
 import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
+
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
-import {IEnzoNetwork} from "src/interface/external/lorenzo/IEnzoNetwork.sol";
+import {TokenUtils} from "test/mainnet/helpers/TokenUtils.sol";
 
 contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultUtils, VaultKernelUtils {
     KernelStrategy public vault;
@@ -37,6 +37,8 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
     address public bob = address(0xB0B);
 
     IERC20 public btcb;
+
+    TokenUtils public tokenUtils;
 
     function setUp() public {
         kernelProvider = new BTCRateProvider();
@@ -64,6 +66,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         btcb = IERC20(MC.BTCB);
 
         mockDepositLimit();
+        tokenUtils = new TokenUtils(address(vault), IStakerGateway(MC.STAKER_GATEWAY));
     }
 
     function etchBTCB() public {
@@ -87,8 +90,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
 
     function deploy() public returns (KernelStrategy _vault) {
         KernelStrategy implementation = new KernelStrategy();
-        TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(implementation), address(ADMIN), "");
+        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(address(implementation), address(ADMIN), "");
 
         _vault = KernelStrategy(payable(address(proxy)));
         _vault.initialize(ADMIN, "YieldNest Restaked BTC - Kernel", "ynBTCk", 18, 0, false, true);
@@ -124,6 +126,11 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         vault_.addAsset(MC.SOLVBTC, true);
         vault_.addAsset(MC.SOLVBTC_BBN, true);
         vault_.addAsset(MC.ENZOBTC, true);
+        // Set assets as withdrawable
+        vault_.setAssetWithdrawable(MC.BTCB, true);
+        vault_.setAssetWithdrawable(MC.SOLVBTC, true);
+        vault_.setAssetWithdrawable(MC.SOLVBTC_BBN, true);
+        vault_.setAssetWithdrawable(MC.ENZOBTC, true);
 
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.BTCB), 18, false);
         vault_.addAssetWithDecimals(IStakerGateway(MC.STAKER_GATEWAY).getVault(MC.SOLVBTC), 18, false);
@@ -299,46 +306,11 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
     }
 
     function getBTCB(uint256 amount) internal {
-        uint256 beforeBobBTCB = btcb.balanceOf(bob);
-        
-        vm.prank(0xF977814e90dA44bFA03b6295A0616a897441aceC);
-        btcb.transfer(bob, amount);
-
-        assertEq(btcb.balanceOf(bob), beforeBobBTCB + amount, "Bob's BTCB balance should increase by amount");
+        tokenUtils.getBTCB(bob, amount);
     }
 
-
     function getEnzoBTC(uint256 amount) internal returns (uint256) {
-        address ENZO_NETWORK = 0x7EFb3515d9eC4537FaFCA635a1De7Da7A5C5c567;
-        address ENZO_STRATEGY = 0xB3cF78f3e483b63280CFe19D52C9c1bDD03D02aB;
-        
-        // Get BTCB first
-        getBTCB(amount + 1 ether);
-
-        // Approve BTCB spend
-        vm.prank(bob);
-        btcb.approve(ENZO_NETWORK, amount + 1 ether);
-
-        // Approve BTCB spend to strategy
-        vm.prank(bob);
-        btcb.approve(ENZO_STRATEGY, amount + 1 ether);
-        // Deposit BTCB to get enzoBTC
-        vm.prank(bob);
-        IEnzoNetwork(ENZO_NETWORK).deposit(
-            ENZO_STRATEGY,
-            address(MC.ENZOBTC),
-            amount
-        );
-
-        // BTCB has 18 decimals, enzoBTC has 8 decimals
-        uint256 decimalsFrom = IERC20Metadata(MC.BTCB).decimals();
-        uint256 decimalsTo = IERC20Metadata(MC.ENZOBTC).decimals();
-        uint256 expectedEnzoBTC = amount / 10 ** (decimalsFrom - decimalsTo); // Adjust for decimal difference
-        
-        uint256 actualEnzoBTC = IERC20(MC.ENZOBTC).balanceOf(bob);
-        assertEq(actualEnzoBTC, expectedEnzoBTC, "Bob should have received the correct amount of enzoBTC");
-        assertEq(expectedEnzoBTC, amount / 10 ** 10, "Expected enzoBTC should be amount divided by 10^10");
-        return actualEnzoBTC;
+        return tokenUtils.getEnzoBTC(bob, amount);
     }
 
     function test_Vault_ynBTCk_deposit_BTCB(uint256 amount) public {
@@ -447,10 +419,9 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have no shares after withdraw");
     }
 
-    function test_Vault_ynBTCk_deposit_EnzoBTC(
-        uint256 btcbAmount,
-        bool alwaysComputeTotalAssets
-    ) public {
+    function test_Vault_ynBTCk_deposit_EnzoBTC(uint256 btcbAmount, bool alwaysComputeTotalAssets) public {
+        // amount is in 18 decimals, enzoBTC is in 8 decimals so starting at 1e11
+        vm.assume(btcbAmount >= 1e11 && btcbAmount <= 1000 ether);
 
         // Test both with and without always compute total assets
         vm.prank(ASSET_MANAGER);
@@ -500,7 +471,6 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
             );
         }
 
-        
         uint256 afterTotalAssets = vault.totalAssets();
         uint256 decimalsFrom = IERC20Metadata(MC.BTCB).decimals();
         uint256 decimalsTo = IERC20Metadata(MC.ENZOBTC).decimals();
@@ -537,6 +507,8 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
 
         uint256 maxWithdraw = vault.maxWithdrawAsset(MC.ENZOBTC, bob);
         assertEqThreshold(maxWithdraw, amount, 10, "Max withdraw should be equal to amount");
+        // Check rate before withdrawal
+        uint256 rateBeforeWithdraw = vault.convertToAssets(1e18);
 
         uint256 previewShares = vault.previewWithdrawAsset(MC.ENZOBTC, maxWithdraw);
 
@@ -544,6 +516,9 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         uint256 shares = vault.withdrawAsset(MC.ENZOBTC, maxWithdraw, bob, bob);
 
         assertEq(previewShares, shares, "Preview shares should be equal to shares");
+        assertEq(
+            rateBeforeWithdraw, vault.convertToAssets(1e18), "Exchange rate should remain the same after withdrawal"
+        );
 
         uint256 afterVaultBalance = asset.balanceOf(address(vault));
         uint256 afterBobBalance = asset.balanceOf(bob);
@@ -594,9 +569,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
             vault.processAccounting();
 
             assertEq(
-                IERC20(MC.ENZOBTC).balanceOf(address(vault)),
-                rewards,
-                "Vault should have received enzoBTC rewards"
+                IERC20(MC.ENZOBTC).balanceOf(address(vault)), rewards, "Vault should have received enzoBTC rewards"
             );
 
             uint256 afterAssets = vault.totalAssets();
@@ -612,6 +585,74 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
             );
             assertEq(vault.balanceOf(bob), beforeBobShares, "Bob should have same shares");
         }
+    }
+
+    function test_Vault_ynBTCk_withdrawal_enzoBTC_withRewards(uint256 amount, uint256 rewardsinBTCB) public {
+        // amount is in 18 decimals, enzoBTC is in 8 decimals so starting at 1e11
+        vm.assume(amount >= 1e11 && amount <= 1000 ether);
+        vm.assume(rewardsinBTCB >= 0 && rewardsinBTCB <= amount);
+
+        {
+            // First deposit BTCB worth of amount
+            getBTCB(amount);
+            depositIntoVault(MC.BTCB, amount);
+        }
+
+        // Get enzoBTC for initial deposit
+        uint256 depositAmount = getEnzoBTC(amount);
+
+        // Deposit enzoBTC into the vault
+        vm.startPrank(bob);
+        IERC20(MC.ENZOBTC).approve(address(vault), depositAmount);
+        vault.depositAsset(MC.ENZOBTC, depositAmount, bob);
+        vm.stopPrank();
+
+        // Process accounting to ensure deposit is reflected
+        vault.processAccounting();
+
+        // Get additional enzoBTC for rewards
+        uint256 rewards = getEnzoBTC(rewardsinBTCB);
+
+        // Transfer rewards to the vault
+        vm.prank(bob);
+        IERC20(MC.ENZOBTC).transfer(address(vault), rewards);
+
+        // Process accounting to reflect rewards
+        vault.processAccounting();
+
+        // Perform max withdraw
+        uint256 maxWithdraw = vault.maxWithdrawAsset(MC.ENZOBTC, bob);
+
+        // Store the conversion rate before withdrawal
+        uint256 assetsBeforeWithdraw = vault.convertToAssets(1e18);
+        uint256 sharesBeforeWithdraw = vault.convertToShares(1e18);
+
+        vm.prank(bob);
+        vault.withdrawAsset(MC.ENZOBTC, maxWithdraw, bob, bob);
+
+        // Assert rate stayed the same after withdrawal
+        uint256 assetsAfterWithdraw = vault.convertToAssets(1e18);
+        uint256 sharesAfterWithdraw = vault.convertToShares(1e18);
+
+        assertEqThreshold(
+            assetsAfterWithdraw, assetsBeforeWithdraw, 1e8, "Rate should remain unchanged after withdrawal"
+        );
+        assertEqThreshold(
+            sharesAfterWithdraw,
+            sharesBeforeWithdraw,
+            1e8,
+            "Shares conversion rate should remain unchanged after withdrawal"
+        );
+
+        // Assert rate increased after withdrawal (assets per share decreased)
+        assertGe(
+            assetsAfterWithdraw, assetsBeforeWithdraw, "Rate should increase after withdrawal (fewer assets per share)"
+        );
+        assertLe(
+            sharesAfterWithdraw,
+            sharesBeforeWithdraw,
+            "Shares conversion rate should decrease after withdrawal (more shares per asset)"
+        );
     }
 
     function test_Vault_ynBTCk_rewards_BTCB(uint256 amount, uint256 rewards) public {

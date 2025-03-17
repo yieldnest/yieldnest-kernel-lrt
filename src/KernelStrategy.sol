@@ -24,6 +24,9 @@ contract KernelStrategy is Vault {
     /// @notice Role for allocator manager permissions
     bytes32 public constant ALLOCATOR_MANAGER_ROLE = keccak256("ALLOCATOR_MANAGER_ROLE");
 
+    /// @notice Error thrown when attempting to withdraw an asset that is not withdrawable
+    error AssetNotWithdrawable(address asset);
+
     /// @notice Emitted when an asset is withdrawn
     event WithdrawAsset(
         address indexed sender,
@@ -42,6 +45,11 @@ contract KernelStrategy is Vault {
         bool hasAllocators;
     }
 
+    struct BaseStrategyStorage {
+        bool _hasAllocators; // unused - for future migration
+        mapping(address => bool) isAssetWithdrawable;
+    }
+
     /// @notice Emitted when the staker gateway address is set
     event SetStakerGateway(address stakerGateway);
 
@@ -53,6 +61,9 @@ contract KernelStrategy is Vault {
 
     /// @notice Emitted when the hasAllocator flag is set
     event SetHasAllocator(bool hasAllocator);
+
+    /// @notice Emitted when an asset's withdrawable status is changed
+    event SetAssetWithdrawable(address asset, bool isWithdrawable);
 
     /**
      * @notice Returns the current sync deposit flag.
@@ -112,7 +123,7 @@ contract KernelStrategy is Vault {
      * @return maxAssets The maximum amount of assets.
      */
     function _maxWithdrawAsset(address asset_, address owner) internal view virtual returns (uint256 maxAssets) {
-        if (paused() || !_getAssetStorage().assets[asset_].active) {
+        if (paused() || !_getBaseStrategyStorage().isAssetWithdrawable[asset_]) {
             return 0;
         }
 
@@ -166,7 +177,7 @@ contract KernelStrategy is Vault {
      * @return maxShares The maximum amount of shares.
      */
     function _maxRedeemAsset(address asset_, address owner) internal view virtual returns (uint256 maxShares) {
-        if (paused() || !_getAssetStorage().assets[asset_].active) {
+        if (paused() || !_getBaseStrategyStorage().isAssetWithdrawable[asset_]) {
             return 0;
         }
 
@@ -398,8 +409,8 @@ contract KernelStrategy is Vault {
         uint256 assets,
         uint256 shares
     ) internal virtual onlyAllocator {
-        if (!_getAssetStorage().assets[asset_].active) {
-            revert AssetNotActive();
+        if (!_getBaseStrategyStorage().isAssetWithdrawable[asset_]) {
+            revert AssetNotWithdrawable(asset_);
         }
 
         _subTotalAssets(_convertAssetToBase(asset_, assets));
@@ -446,6 +457,17 @@ contract KernelStrategy is Vault {
     }
 
     /**
+     * @notice Retrieves the strategy storage structure.
+     * @return $ The strategy storage structure.
+     */
+    function _getBaseStrategyStorage() internal pure virtual returns (BaseStrategyStorage storage $) {
+        assembly {
+            // keccak256("yieldnest.storage.strategy.base")
+            $.slot := 0x5cfdf694cb3bdee9e4b3d9c4b43849916bf3f018805254a1c0e500548c668500
+        }
+    }
+
+    /**
      * @notice Sets the staker gateway address.
      * @param stakerGateway The address of the staker gateway.
      */
@@ -457,6 +479,8 @@ contract KernelStrategy is Vault {
 
         emit SetStakerGateway(stakerGateway);
     }
+
+    //// DEPOSIT ADMIN ////
 
     /**
      * @notice Sets the sync deposit flag.
@@ -491,18 +515,67 @@ contract KernelStrategy is Vault {
         emit SetHasAllocator(hasAllocators_);
     }
 
+    //// ASSET ADMIN ////
+
     /**
-     * @notice Adds a new asset to the vault.
+     * @notice Returns whether the asset is withdrawable.
+     * @param asset_ The address of the asset.
+     * @return True if the asset is withdrawable, otherwise false.
+     */
+    function getAssetWithdrawable(address asset_) external view returns (bool) {
+        return _getBaseStrategyStorage().isAssetWithdrawable[asset_];
+    }
+
+    /**
+     * @notice Sets whether the asset is withdrawable.
+     * @param asset_ The address of the asset.
+     * @param withdrawable_ The new value for the withdrawable flag.
+     */
+    function setAssetWithdrawable(address asset_, bool withdrawable_) external onlyRole(ASSET_MANAGER_ROLE) {
+        _setAssetWithdrawable(asset_, withdrawable_);
+    }
+
+    /**
+     * @notice Internal function to set whether the asset is withdrawable.
+     * @param asset_ The address of the asset.
+     * @param withdrawable_ The new value for the withdrawable flag.
+     */
+    function _setAssetWithdrawable(address asset_, bool withdrawable_) internal {
+        BaseStrategyStorage storage strategyStorage = _getBaseStrategyStorage();
+        strategyStorage.isAssetWithdrawable[asset_] = withdrawable_;
+
+        emit SetAssetWithdrawable(asset_, withdrawable_);
+    }
+
+    /**
+     * @notice Adds a new asset to the vault specifying the decimals explicitly
      * @param asset_ The address of the asset.
      * @param decimals_ The decimals of the asset.
-     * @param active_ Whether the asset is active.
+     * @param depositableAndWithdrawable Whether the asset is depositable and withdrawable
      */
-    function addAssetWithDecimals(address asset_, uint8 decimals_, bool active_)
+    function addAssetWithDecimals(address asset_, uint8 decimals_, bool depositableAndWithdrawable)
         public
         virtual
         onlyRole(ASSET_MANAGER_ROLE)
     {
-        _addAsset(asset_, decimals_, active_);
+        _addAsset(asset_, decimals_, depositableAndWithdrawable);
+        _setAssetWithdrawable(asset_, depositableAndWithdrawable);
+    }
+
+    /**
+     * @notice Adds a new asset to the vault specifying the decimals explicitly
+     * @param asset_ The address of the asset.
+     * @param decimals_ The decimals of the asset.
+     * @param depositable_ Whether the asset is depositable.
+     * @param withdrawable_ Whether the asset is withdrawable.
+     */
+    function addAssetWithDecimals(address asset_, uint8 decimals_, bool depositable_, bool withdrawable_)
+        public
+        virtual
+        onlyRole(ASSET_MANAGER_ROLE)
+    {
+        _addAsset(asset_, decimals_, depositable_);
+        _setAssetWithdrawable(asset_, withdrawable_);
     }
 
     /**
