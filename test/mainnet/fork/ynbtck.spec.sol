@@ -224,8 +224,6 @@ contract YnBTCkForkTest is BaseForkTest {
             rateAfterWithdraw >= rateBeforeWithdraw,
             "Vault rate after withdrawal should be greater than or equal to rate before withdrawal"
         );
-        // Print the user's solvBTC balance after withdrawal
-        uint256 userSolvBTCBalanceAfter = IERC20(solvBTC).balanceOf(specificUser);
 
         // Assert that the vault's solvBTC balance is now zero
         uint256 finalVaultSolvBTCBalance = stakerGateway.balanceOf(solvBTC, address(vault));
@@ -456,11 +454,6 @@ contract YnBTCkForkTest is BaseForkTest {
         assertEq(
             finalVaultBalance, initialVaultBalance + depositAmount, "Vault should have received the deposited enzoBTC"
         );
-
-        uint256 assetsFromShares = vault.convertToAssets(shares);
-
-        // Get the rate provider to check the conversion rate
-        BTCRateProvider rateProvider = BTCRateProvider(vault.provider());
 
         // Check rate before redemption
         uint256 rateBeforeRedeem = vault.convertToAssets(1e18);
