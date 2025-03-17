@@ -177,14 +177,14 @@ contract YnBTCkForkTest is BaseForkTest {
         }
 
         {
-            // Verify that maxRedeemAsset for solvBTC is also 0
-            //uint256 maxRedeemShares = KernelStrategy(payable(address(vault))).maxRedeemAsset(solvBTC, specificUser);
-            // assertApproxEqAbs(
-            //     vault.convertToAssets(maxRedeemShares),
-            //     stakerGateway.balanceOf(solvBTC, address(vault)),
-            //     1,
-            //     "maxRedeemAsset for solvBTC should equal vault's staked balance"
-            // );
+            // Verify that maxRedeemAsset for solvBTC is also equal to the amount
+            uint256 maxRedeemShares = KernelStrategy(payable(address(vault))).maxRedeemAsset(solvBTC, specificUser);
+            assertApproxEqAbs(
+                vault.convertToAssets(maxRedeemShares),
+                stakerGateway.balanceOf(solvBTC, address(vault)),
+                1,
+                "maxRedeemAsset for solvBTC should equal vault's staked balance"
+            );
         }
 
         // The deposit should revert because solvBTC is not an accepted asset
