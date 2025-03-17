@@ -331,13 +331,6 @@ contract YnBTCkForkTest is BaseForkTest {
         _checkAssetMetadata(newAsset, index, 8, true, false);
     }
 
-    function testDisableFees() public {
-        _upgradeVault();
-        _disableFees();
-
-        assertEq(vault.baseWithdrawalFee(), 0, "Base withdrawal fee should be 0");
-    }
-
     function testWithdrawAllSolvBTC() public {
         _upgradeVault();
 
@@ -374,8 +367,6 @@ contract YnBTCkForkTest is BaseForkTest {
 
     function testWithdrawAllSolvBTCBBN() public {
         _upgradeVault();
-        // Disable fees for testing
-        _disableFees();
 
         uint256 balance = stakerGateway.balanceOf(MainnetContracts.SOLVBTC_BBN, address(vault));
         // Check rate before withdrawal
@@ -425,7 +416,6 @@ contract YnBTCkForkTest is BaseForkTest {
 
     function testDepositAndWithdrawEnzoBTC() public {
         _upgradeVault();
-        _disableFees();
 
         // Get initial balances
         uint256 initialVaultBalance = stakerGateway.balanceOf(MainnetContracts.ENZOBTC, address(vault));
@@ -499,11 +489,5 @@ contract YnBTCkForkTest is BaseForkTest {
             1, // Small threshold for potential rounding errors
             "Redeemed amount should match the deposit amount"
         );
-    }
-
-    function _disableFees() internal {
-        vm.startPrank(ADMIN);
-        KernelStrategy(payable(address(vault))).setBaseWithdrawalFee(0);
-        vm.stopPrank();
     }
 }
