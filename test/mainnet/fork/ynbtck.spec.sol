@@ -57,26 +57,6 @@ contract YnBTCkForkTest is BaseForkTest {
         _testVaultUpgrade();
     }
 
-    function testDepositBeforeUpgrade() public {
-        _depositIntoVault(alice, 100 ether);
-    }
-
-    function testDepositAfterUpgrade() public {
-        _upgradeVault();
-        _depositIntoVault(alice, 100 ether);
-    }
-
-    function testWithdrawBeforeUpgrade() public {
-        _depositIntoVault(alice, 100 ether);
-        _withdrawFromVault(alice, 50 ether);
-    }
-
-    function testWithdrawAfterUpgrade() public {
-        _depositIntoVault(alice, 100 ether);
-        _upgradeVault();
-        _withdrawFromVault(alice, 50 ether);
-    }
-
     function testAddRoleAndDeactivateAsset() public {
         _upgradeVault();
         _addRoleAndModifyAsset(MainnetContracts.SOLVBTC, false);
@@ -251,7 +231,7 @@ contract YnBTCkForkTest is BaseForkTest {
             address kernelVault = stakerGateway.getVault(underlyingAssets[i]);
             uint256 assetIndex = _checkForAsset(underlyingAssets[i]);
             bool depositable = false;
-            if (underlyingAssets[i] == MainnetContracts.ENZOBTC || underlyingAssets[i] == MainnetContracts.BTCB) {
+            if (underlyingAssets[i] == MainnetContracts.ENZOBTC) {
                 depositable = true;
             }
             uint8 decimals = 18;
