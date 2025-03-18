@@ -22,13 +22,14 @@ import {VaultKernelUtils} from "script/VaultKernelUtils.sol";
 import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
+import {CoBTCRateProvider} from "src/module/CoBTCRateProvider.sol";
 
 import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
-contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultUtils, VaultKernelUtils {
+contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultUtils, VaultKernelUtils {
     KernelStrategy public vault;
-    BTCRateProvider public kernelProvider;
+    CoBTCRateProvider public kernelProvider;
     IStakerGateway public stakerGateway;
     KernelVaultViewer public viewer;
 
@@ -37,7 +38,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
     IERC20 public cobtc;
 
     function setUp() public {
-        kernelProvider = new BTCRateProvider();
+        kernelProvider = new CoBTCRateProvider();
         etchProvider(address(kernelProvider));
 
         stakerGateway = IStakerGateway(MC.STAKER_GATEWAY);
@@ -82,7 +83,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(address(implementation), address(ADMIN), "");
 
         _vault = KernelStrategy(payable(address(proxy)));
-        _vault.initialize(ADMIN, "YieldNest Restaked Coffer BTC - Kernel", "ynCoBTCk", 18, 0, false, true);
+        _vault.initialize(ADMIN, "YieldNest Restaked Coffer BTC - Kernel", "ynCoBTCk", 8, 0, false, true);
 
         configureKernelStrategy(_vault);
     }
@@ -162,7 +163,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         assertEq(vault.symbol(), "ynCoBTCk", "Vault symbol should be 'ynCoBTCk'");
 
         // Test the decimals function
-        assertEq(vault.decimals(), 18, "Vault decimals should be 18");
+        assertEq(vault.decimals(), 8, "Vault decimals should be 18");
 
         // Test the totalSupply function
         vault.totalSupply();
@@ -185,7 +186,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         uint256 shares = vault.convertToShares(amount);
 
         uint256 rate = IProvider(vault.provider()).getRate(MC.COBTC);
-        assertEq(rate, 1e18, "Rate should be 1e18");
+        assertEq(rate, 1e8, "Rate should be 1e8");
 
         uint256 baseAssets = Math.mulDiv(amount, rate, 10 ** 8, Math.Rounding.Floor);
         uint256 expectedShares = baseAssets;
@@ -264,7 +265,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
         assertEq(previewShares, shares, "Preview shares should be equal to shares");
 
         uint256 assetsInCoBTC = vault.convertToAssets(shares);
-        uint256 assetsInBase = Math.mulDiv(assetsInCoBTC, 10 ** 18, 10 ** 8, Math.Rounding.Floor);
+        uint256 assetsInBase = assetsInCoBTC; // Math.mulDiv(assetsInCoBTC, 10 ** 18, 10 ** 8, Math.Rounding.Floor);
 
         assertEqThreshold(
             vault.totalAssets(),
@@ -424,7 +425,7 @@ contract YnBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultU
             uint256 afterAssets = vault.totalAssets();
             uint256 afterMaxWithdraw = viewer.maxWithdrawAsset(address(MC.COBTC), bob);
 
-            assertEq(afterAssets, beforeAssets + rewards * 10 ** 10, "Total assets should increase by rewards");
+            assertEq(afterAssets, beforeAssets + rewards, "Total assets should increase by rewards");
             assertEq(vault.totalSupply(), beforeShares, "Total shares should not change");
             assertEqThreshold(
                 afterMaxWithdraw, beforeMaxWithdraw + rewardsForBob, 10, "Max withdraw should increase by rewards"
