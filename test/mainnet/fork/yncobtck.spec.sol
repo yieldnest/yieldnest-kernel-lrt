@@ -18,7 +18,7 @@ import {console} from "lib/forge-std/src/console.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {TokenUtils} from "test/mainnet/helpers/TokenUtils.sol";
 
-contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
+contract YNCoBTCForkTest is Test, MainnetKernelActors, ProxyUtils {
     TokenUtils public tokenUtils;
     KernelStrategy public vault;
     IStakerGateway public stakerGateway;
@@ -132,7 +132,7 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
     }
 
     function testDoubleWithdrawCoBTC() public {
-        uint256 depositAmount = 10e8;
+        uint256 depositAmount = 20e8;
         
         uint256 depositCount = 10;
 
@@ -176,7 +176,7 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
             // assertEq(vault.balanceOf(alice), depositAmount, "Alice's vault balance should match the deposit amount");
             // assertEq(vault.totalAssets(), depositAmount, "Vault's total assets should match the deposit amount");
 
-            uint256 withdrawAmount = depositAmount - 1;
+            uint256 withdrawAmount = depositAmount;
 
             // Check convertToAssets before withdrawal
             uint256 assetsBeforeWithdraw = vault.convertToAssets(1e18);
