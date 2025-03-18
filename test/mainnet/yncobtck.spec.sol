@@ -308,6 +308,9 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
         uint256 beforeVaultBalance = stakerGateway.balanceOf(address(asset), address(vault));
         uint256 previewShares = vault.previewDepositAsset(address(asset), amount);
 
+        assertEq(vault.convertToShares(amount), amount, "Amount should be equal to converted shares");
+        assertEq(vault.convertToAssets(amount), amount, "Amount should be equal to converted assets");
+
         deal(MC.COBTC, bob, amount);
 
         vm.prank(bob);
@@ -497,6 +500,8 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
 
         uint256 previewWithdrawShares = vault.previewWithdrawAsset(MC.COBTC, maxWithdraw);
 
+        uint256 shareRateBeforeWithdraw = vault.convertToShares(1e18);
+
         vm.prank(bob);
         uint256 withdrawnShares = vault.withdrawAsset(address(asset), maxWithdraw, bob, bob);
 
@@ -508,21 +513,34 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
             "Vault should have a reduced balance in the stakerGateway after withdrawal"
         );
 
-        uint256 rateAfterWithdraw = vault.convertToAssets(1e18);
-
-        console.log("Rate after withdrawal:", rateAfterWithdraw);
         {
+            uint256 shareRateAfterWithdraw = vault.convertToShares(1e18);
+            assertLt(shareRateAfterWithdraw, shareRateBeforeWithdraw, "Share rate should increase after withdrawal");
+
             uint256 assetDecimals = asset.decimals();
-            uint256 tolerance = 10 ** (18 - assetDecimals);
+            uint256 tolerance = 1e8;
 
             assertApproxEqRel(
-                asset.balanceOf(bob),
-                beforeBobBalance + maxWithdraw,
+                shareRateAfterWithdraw,
+                shareRateBeforeWithdraw,
                 tolerance,
                 "Bob should have the assets after withdrawal"
             );
         }
-        assertGt(rateAfterWithdraw, rateAfterDepositAndRewards, "Exchange rate should remain the same after withdrawal");
+
+        {
+            uint256 rateAfterWithdraw = vault.convertToAssets(1e18);
+
+            uint256 assetDecimals = asset.decimals();
+            uint256 tolerance = 1e8;
+
+            assertApproxEqRel(
+                rateAfterWithdraw, rateAfterDepositAndRewards, tolerance, "Bob should have the assets after withdrawal"
+            );
+            assertGt(
+                rateAfterWithdraw, rateAfterDepositAndRewards, "Exchange rate should remain the same after withdrawal"
+            );
+        }
     }
 
     function test_Vault_ynCoBTCk_deposit_COBTC(uint256 amount) public {
