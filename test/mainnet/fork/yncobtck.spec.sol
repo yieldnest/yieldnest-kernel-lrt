@@ -12,10 +12,10 @@ import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {ProxyUtils} from "lib/yieldnest-vault/script/ProxyUtils.sol";
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 
-import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
-import {CoBTCRateProvider} from "src/module/CoBTCRateProvider.sol";
 import {console} from "lib/forge-std/src/console.sol";
+import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
+import {CoBTCRateProvider} from "src/module/CoBTCRateProvider.sol";
 import {TokenUtils} from "test/mainnet/helpers/TokenUtils.sol";
 
 contract YNCoBTCForkTest is Test, MainnetKernelActors, ProxyUtils {
@@ -133,11 +133,10 @@ contract YNCoBTCForkTest is Test, MainnetKernelActors, ProxyUtils {
 
     function testDoubleWithdrawCoBTC() public {
         uint256 depositAmount = 20e8;
-        
+
         uint256 depositCount = 10;
 
         for (uint256 i = 0; i < depositCount; i++) {
-
             uint256 aliceCoBTCBalance = asset.balanceOf(alice);
             if (aliceCoBTCBalance > 0) {
                 vm.startPrank(alice);
@@ -271,7 +270,11 @@ contract YNCoBTCForkTest is Test, MainnetKernelActors, ProxyUtils {
 
         // Verify the rate provider was updated
         address currentRateProvider = vault.provider();
-        assertEq(currentRateProvider, address(newRateProvider), "Rate provider should be updated to the new CoBTCRateProvider");
+        assertEq(
+            currentRateProvider,
+            address(newRateProvider),
+            "Rate provider should be updated to the new CoBTCRateProvider"
+        );
 
         // Get the conversion rates after the upgrade
         uint256 sharesAfter = vault.convertToShares(100 ether);
