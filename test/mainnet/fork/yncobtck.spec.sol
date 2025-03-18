@@ -110,6 +110,126 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
             "Alice's vault balance should be approximately zero after withdrawal"
         );
         //assertEq(vault.totalAssets(), 0, "Vault's total assets should be zero after withdrawal");
+        uint256 aliceCoBTCBeforeRedeem = asset.balanceOf(alice);
+
+        // Redeem the remaining shares
+        vm.startPrank(alice);
+        vault.redeem(aliceVaultBalanceAfterWithdraw, alice, alice);
+        vm.stopPrank();
+
+        uint256 aliceCoBTCAfterRedeem = asset.balanceOf(alice);
+        uint256 coBTCDifference = aliceCoBTCAfterRedeem - aliceCoBTCBeforeRedeem;
+        console.log("Alice's coBTC balance before redeem:", aliceCoBTCBeforeRedeem);
+        console.log("Alice's coBTC balance after redeem:", aliceCoBTCAfterRedeem);
+        console.log("Difference in coBTC that Alice has before and after redeem:", coBTCDifference);
+
+        uint256 aliceVaultBalanceAfterRedeem = vault.balanceOf(alice);
+        console.log("Alice's vault balance after redeem:", aliceVaultBalanceAfterRedeem);
+
+        uint256 totalAssetsAfterRedeem = vault.totalAssets();
+        console.log("Vault's total assets after redeem:", totalAssetsAfterRedeem);
+    }
+
+    function testDoubleWithdrawCoBTC() public {
+        uint256 depositAmount = 10e8;
+
+        for (uint256 i = 0; i < 10; i++) {
+
+            // Deal coBTC to alice
+            deal(address(asset), alice, depositAmount);
+
+            // Approve the vault to spend the asset
+            vm.startPrank(alice);
+            asset.approve(address(vault), depositAmount);
+            uint256 totalAssetsBeforeDeposit = vault.totalAssets();
+            console.log("Vault's total assets before deposit:", totalAssetsBeforeDeposit);
+
+            // Deposit into the vault
+            vault.deposit(depositAmount, alice);
+            vm.stopPrank();
+
+            uint256 aliceVaultBalance = vault.balanceOf(alice);
+            console.log("Alice's vault balance after deposit:", aliceVaultBalance);
+
+            uint256 totalAssetsAfterDeposit = vault.totalAssets();
+            console.log("Vault's total assets after deposit:", totalAssetsAfterDeposit);
+
+            // Assert that totalAssets increased by the coBTC converted to BTC
+            uint256 expectedIncrease = depositAmount * 1e10;
+            assertEq(
+                totalAssetsAfterDeposit,
+                totalAssetsBeforeDeposit + expectedIncrease,
+                "Vault's total assets should increase by the coBTC converted to BTC"
+            );
+
+            // // Verify the deposit was successful
+            // assertEq(vault.balanceOf(alice), depositAmount, "Alice's vault balance should match the deposit amount");
+            // assertEq(vault.totalAssets(), depositAmount, "Vault's total assets should match the deposit amount");
+
+            uint256 withdrawAmount = depositAmount - 1;
+
+            // Check convertToAssets before withdrawal
+            uint256 assetsBeforeWithdraw = vault.convertToAssets(1e18);
+            // Check convertToShares before withdrawal
+            uint256 sharesBeforeWithdraw = vault.convertToShares(1e18);
+
+            // Withdraw the deposited amount
+            vm.startPrank(alice);
+            vault.withdraw(withdrawAmount, alice, alice);
+            vm.stopPrank();
+
+            // Check convertToAssets after withdrawal
+            uint256 assetsAfterWithdraw = vault.convertToAssets(1e18);
+            // Check convertToShares after withdrawal
+            uint256 sharesAfterWithdraw = vault.convertToShares(1e18);
+
+            // Assert that convertToAssets after withdrawal is greater than or equal to before withdrawal
+            assertTrue(
+                assetsAfterWithdraw >= assetsBeforeWithdraw,
+                "convertToAssets after withdrawal should be greater than or equal to before withdrawal"
+            );
+
+            // Assert that convertToShares after withdrawal is less than or equal to before withdrawal
+            assertTrue(
+                sharesAfterWithdraw <= sharesBeforeWithdraw,
+                "convertToShares after withdrawal should be less than or equal to before withdrawal"
+            );
+
+            uint256 aliceVaultBalanceAfterWithdraw = vault.balanceOf(alice);
+            console.log("Alice's vault balance after withdrawal:", aliceVaultBalanceAfterWithdraw);
+
+            uint256 totalAssetsAfterWithdraw = vault.totalAssets();
+            console.log("Vault's total assets after withdrawal:", totalAssetsAfterWithdraw);
+
+            // Verify the withdrawal was successful
+            // assertApproxEqAbs(
+            //     aliceVaultBalanceAfterWithdraw,
+            //     0,
+            //     1e10,
+            //     "Alice's vault balance should be approximately zero after withdrawal"
+            // );
+        }
+
+        //assertEq(vault.totalAssets(), 0, "Vault's total assets should be zero after withdrawal");
+        uint256 aliceCoBTCBeforeRedeem = asset.balanceOf(alice);
+
+
+        // Redeem the remaining shares
+        vm.startPrank(alice);
+        vault.withdraw(9, alice, alice);
+        vm.stopPrank();
+
+        // uint256 aliceCoBTCAfterRedeem = asset.balanceOf(alice);
+        // uint256 coBTCDifference = aliceCoBTCAfterRedeem - aliceCoBTCBeforeRedeem;
+        // console.log("Alice's coBTC balance before redeem:", aliceCoBTCBeforeRedeem);
+        // console.log("Alice's coBTC balance after redeem:", aliceCoBTCAfterRedeem);
+        // console.log("Difference in coBTC that Alice has before and after redeem:", coBTCDifference);
+
+        // uint256 aliceVaultBalanceAfterRedeem = vault.balanceOf(alice);
+        // console.log("Alice's vault balance after redeem:", aliceVaultBalanceAfterRedeem);
+
+        // uint256 totalAssetsAfterRedeem = vault.totalAssets();
+        // console.log("Vault's total assets after redeem:", totalAssetsAfterRedeem);
     }
 
     // function testSimpleWithdraw() public {
