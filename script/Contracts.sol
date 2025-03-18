@@ -57,7 +57,7 @@ library MainnetContracts {
 
     // btc vault
     address public constant YNBTCK = 0x78839cE14a8213779128Ee4da6D75E1326606A56;
-    address public constant YNCOBTCK = 0x99155a7fc5d76114dbB71d7ebcF412ee2FC0ee81;
+    address public constant YNCOBTCK = 0x132376b153d3cFf94615fe25712DB12CaAADf547;
     // kernel
     address public constant STAKER_GATEWAY = 0xb32dF5B33dBCCA60437EC17b27842c12bFE83394;
     address public constant KERNEL_CONFIG = 0x45d7Bb73253A908E6160aa5FD9DA083F7Bc6faf5;

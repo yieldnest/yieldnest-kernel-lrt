@@ -18,7 +18,7 @@ import {KernelStrategy} from "src/KernelStrategy.sol";
 import {CoBTCRateProvider} from "src/module/CoBTCRateProvider.sol";
 import {TokenUtils} from "test/mainnet/helpers/TokenUtils.sol";
 
-contract YNCoBTCForkTest is Test, MainnetKernelActors, ProxyUtils {
+contract YNCoBTCkLegacyForkTest is Test, MainnetKernelActors, ProxyUtils {
     TokenUtils public tokenUtils;
     KernelStrategy public vault;
     IStakerGateway public stakerGateway;
@@ -27,7 +27,7 @@ contract YNCoBTCForkTest is Test, MainnetKernelActors, ProxyUtils {
     address public bob = 0x9999567890ABCdef1234567890aBcDEF12345678;
 
     function setUp() public {
-        vault = KernelStrategy(payable(address(MainnetContracts.YNCOBTCK)));
+        vault = KernelStrategy(payable(address(0x99155a7fc5d76114dbB71d7ebcF412ee2FC0ee81)));
         stakerGateway = IStakerGateway(vault.getStakerGateway());
 
         asset = IERC20(MainnetContracts.COBTC);
