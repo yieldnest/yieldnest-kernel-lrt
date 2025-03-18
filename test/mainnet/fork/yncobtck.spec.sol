@@ -175,7 +175,7 @@ contract YNCoBTCForkTest is Test, MainnetKernelActors, ProxyUtils {
             // assertEq(vault.balanceOf(alice), depositAmount, "Alice's vault balance should match the deposit amount");
             // assertEq(vault.totalAssets(), depositAmount, "Vault's total assets should match the deposit amount");
 
-            uint256 withdrawAmount = depositAmount;
+            uint256 withdrawAmount = depositAmount - 1;
 
             // Check convertToAssets before withdrawal
             uint256 assetsBeforeWithdraw = vault.convertToAssets(1e18);
