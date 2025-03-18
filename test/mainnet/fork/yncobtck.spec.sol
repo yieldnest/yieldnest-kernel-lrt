@@ -13,7 +13,7 @@ import {ProxyUtils} from "lib/yieldnest-vault/script/ProxyUtils.sol";
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 
 import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
-
+import {CoBTCRateProvider} from "src/module/CoBTCRateProvider.sol";
 import {console} from "lib/forge-std/src/console.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {TokenUtils} from "test/mainnet/helpers/TokenUtils.sol";
@@ -254,6 +254,39 @@ contract YNCoBTCForkTest is Test, MainnetKernelActors, ProxyUtils {
 
         // uint256 totalAssetsAfterRedeem = vault.totalAssets();
         // console.log("Vault's total assets after redeem:", totalAssetsAfterRedeem);
+    }
+
+    function testUpgradeCoBTCRateProvider() public {
+        // Deploy the new CoBTCRateProvider
+        CoBTCRateProvider newRateProvider = new CoBTCRateProvider();
+
+        // Get the conversion rates before the upgrade
+        uint256 sharesBefore = vault.convertToShares(100 ether);
+        uint256 assetsBefore = vault.convertToAssets(100 ether);
+
+        // Set the new rate provider in the vault
+        vm.startPrank(0x5e5f6AD23939247744b40d792692ef808701f292);
+        vault.setProvider(address(newRateProvider));
+        vm.stopPrank();
+
+        // Verify the rate provider was updated
+        address currentRateProvider = vault.provider();
+        assertEq(currentRateProvider, address(newRateProvider), "Rate provider should be updated to the new CoBTCRateProvider");
+
+        // Get the conversion rates after the upgrade
+        uint256 sharesAfter = vault.convertToShares(100 ether);
+        uint256 assetsAfter = vault.convertToAssets(100 ether);
+
+        console.log("Shares before upgrade:", sharesBefore);
+        console.log("Assets before upgrade:", assetsBefore);
+
+        console.log("Shares after upgrade:", sharesAfter);
+        console.log("Assets after upgrade:", assetsAfter);
+
+        // Assert that the conversion rates are the same before and after the upgrade
+
+        // assertEq(assetsBefore, assetsAfter, "convertToAssets should be the same before and after the upgrade");
+        // assertEq(sharesBefore, sharesAfter, "convertToShares should be the same before and after the upgrade");
     }
 
     // function testSimpleWithdraw() public {
