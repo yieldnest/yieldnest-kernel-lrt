@@ -15,11 +15,13 @@ import {TokenUtils} from "test/mainnet/helpers/TokenUtils.sol";
 contract YnCoBTCkForkTest is BaseForkTest {
     TokenUtils public tokenUtils;
 
+    address public depositor = alice;
+
     function setUp() public {
         vault = KernelStrategy(payable(address(MainnetContracts.YNCOBTCK)));
         stakerGateway = IStakerGateway(vault.getStakerGateway());
 
-        asset = IERC20(MainnetContracts.BTCB);
+        asset = IERC20(MainnetContracts.COBTC);
         tokenUtils = new TokenUtils(address(vault), stakerGateway);
     }
 
@@ -41,9 +43,32 @@ contract YnCoBTCkForkTest is BaseForkTest {
         );
 
         vm.stopPrank();
+
+        // Deal asset to depositor
+        deal(address(asset), depositor, 10000e8);
     }
 
     function testUpgrade() public {
         _testVaultUpgrade();
+    }
+
+    function testDepositBeforeUpgrade() public {
+        _depositIntoVault(address(depositor), 100e8);
+    }
+
+    function testDepositAfterUpgrade() public {
+        _upgradeVault();
+        _depositIntoVault(address(depositor), 100e8);
+    }
+
+    function testWithdrawBeforeUpgrade() public {
+        _depositIntoVault(address(depositor), 100e8);
+        _withdrawFromVault(address(depositor), 50e8);
+    }
+
+    function testWithdrawAfterUpgrade() public {
+        _depositIntoVault(address(depositor), 100e8);
+        _upgradeVault();
+        _withdrawFromVault(address(depositor), 50e8);
     }
 }
