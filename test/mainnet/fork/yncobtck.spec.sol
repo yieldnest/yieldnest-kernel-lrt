@@ -71,4 +71,9 @@ contract YnCoBTCkForkTest is BaseForkTest {
         _upgradeVault();
         _withdrawFromVault(address(depositor), 50e8);
     }
+
+    function testAddRoleAndAddFee() public {
+        _upgradeVault();
+        _addRoleAndAddFee();
+    }
 }
