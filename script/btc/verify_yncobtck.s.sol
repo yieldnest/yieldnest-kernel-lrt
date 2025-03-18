@@ -42,12 +42,14 @@ contract VerifyYnBTCkStrategy is KernelVerifyScript {
         assertEq(asset.decimals, 8, "asset[0].decimals is invalid");
         assertEq(asset.active, true, "asset[0].active is invalid");
         assertEq(asset.index, 0, "asset[0].index is invalid");
+        assertTrue(vault_.isAssetWithdrawable(contracts.COBTC()), "asset[0] should be withdrawable");
 
         assertEq(assets[1], address(stakerGateway.getVault(contracts.COBTC())));
         asset = vault_.getAsset(address(stakerGateway.getVault(contracts.COBTC())));
         assertEq(asset.decimals, 8, "asset[1].decimals is invalid");
         assertEq(asset.active, false, "asset[1].active is invalid");
         assertEq(asset.index, 1, "asset[1].index is invalid");
+        assertFalse(vault_.isAssetWithdrawable(address(stakerGateway.getVault(contracts.COBTC()))), "asset[1] should not be withdrawable");
 
         _verifyApprovalRule(vault_, contracts.COBTC(), contracts.STAKER_GATEWAY());
         _verifyStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.COBTC());
