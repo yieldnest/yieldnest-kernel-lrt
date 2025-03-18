@@ -56,11 +56,11 @@ contract DeployYnCoBTCkStrategy is BaseKernelScript {
         address admin = msg.sender;
 
         string memory name = "YieldNest Restaked Coffer BTC - Kernel";
-        uint8 decimals = 18;
+        uint8 decimals = 8;
 
         console.log("Deploying YieldNest Restaked Coffer BTC - Kernel (ynCoBTCk) by", msg.sender);
 
-        uint64 baseWithdrawalFee = uint64(0.001 ether * FeeMath.BASIS_POINT_SCALE / 1 ether); // 0.1%
+        uint64 baseWithdrawalFee = 0; // 0%
         bool countNativeAsset = false;
         bool alwaysComputeTotalAssets = true;
         bytes memory initData = abi.encodeWithSelector(
@@ -92,10 +92,16 @@ contract DeployYnCoBTCkStrategy is BaseKernelScript {
         vault_.setSyncDeposit(true);
         vault_.setSyncWithdraw(true);
 
-        vault_.addAsset(contracts.COBTC(), true);
+        // Adding the COBTC asset to the vault with 8 decimals, and setting it as both depositable and withdrawable
+        vault_.addAssetWithDecimals(contracts.COBTC(), 8, true, true);
+
+        // Getting the staker gateway instance
         IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
+
+        // Adding the staker gateway's vault for COBTC to the vault with 8 decimals
+        // but setting it as neither depositable nor withdrawable
         // VERY IMPORTANT: COBTC has 8 decimals
-        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.COBTC()), 8, false);
+        vault_.addAssetWithDecimals(stakerGateway.getVault(contracts.COBTC()), 8, false, false);
 
         setApprovalRule(vault_, contracts.COBTC(), contracts.STAKER_GATEWAY());
 
