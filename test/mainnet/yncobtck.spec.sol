@@ -294,7 +294,7 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
     }
 
     function test_Vault_ynCoBTCk_deposit_fixed_amount() public {
-        uint256 amount = 1000 ether; // Fixed amount for deposit
+        uint256 amount = 1000e8; // Fixed amount for deposit
 
         IERC20 asset = IERC20(MC.COBTC);
 
@@ -319,7 +319,7 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
         assertEqThreshold(
             stakerGateway.balanceOf(address(asset), address(vault)),
             beforeVaultBalance + amount,
-            100,
+            1,
             "Vault should have a balance in the stakerGateway"
         );
 
@@ -329,6 +329,114 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
 
         uint8 decimals = vault.decimals();
         assertEq(decimals, 8, "Vault decimals should be 8");
+    }
+
+    function test_Vault_ynCoBTCk_deposit_and_withdraw_fixed_amount() public {
+        uint256 amount = 1000e8; // Fixed amount for deposit and withdrawal with 8 decimals
+
+        IERC20 asset = IERC20(MC.COBTC);
+
+        uint256 beforeVaultBalance = stakerGateway.balanceOf(address(asset), address(vault));
+        uint256 previewShares = vault.previewDepositAsset(address(asset), amount);
+
+        deal(MC.COBTC, bob, amount);
+
+        vm.prank(bob);
+        asset.approve(address(vault), amount);
+
+        // Test the deposit function
+        vm.prank(bob);
+        uint256 shares = vault.depositAsset(address(asset), amount, bob);
+
+        assertEq(shares, amount, "Shares should be equal to the amount deposited");
+        assertEq(previewShares, shares, "Preview shares should be equal to shares");
+        assertEqThreshold(
+            stakerGateway.balanceOf(address(asset), address(vault)),
+            beforeVaultBalance + amount,
+            1,
+            "Vault should have a balance in the stakerGateway"
+        );
+
+        // Assert the rate and decimals
+        uint256 rateAfterDeposit = vault.convertToAssets(1e18);
+        assertEq(rateAfterDeposit, 1e18, "Exchange rate should be 1:1 after deposit");
+
+        // Test the withdraw function
+        uint256 beforeBobBalance = asset.balanceOf(bob);
+        uint256 beforeVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
+
+        uint256 maxWithdraw = vault.maxWithdrawAsset(MC.COBTC, bob);
+        assertEqThreshold(maxWithdraw, amount, 1, "Max withdraw should be equal to amount");
+
+        uint256 previewWithdrawShares = vault.previewWithdrawAsset(MC.COBTC, maxWithdraw);
+
+        vm.prank(bob);
+        uint256 withdrawnShares = vault.withdrawAsset(address(asset), maxWithdraw, bob, bob);
+
+        assertEq(withdrawnShares, previewWithdrawShares, "Withdrawn shares should be equal to preview withdraw shares");
+        assertEq(asset.balanceOf(bob), beforeBobBalance + maxWithdraw, "Bob should have the assets after withdrawal");
+        assertEq(
+            stakerGateway.balanceOf(address(asset), address(vault)),
+            beforeVaultStakerShares - maxWithdraw,
+            "Vault should have a reduced balance in the stakerGateway after withdrawal"
+        );
+
+        uint256 rateAfterWithdraw = vault.convertToAssets(1e18);
+        assertEq(rateAfterWithdraw, rateAfterDeposit, "Exchange rate should remain the same after withdrawal");
+    }
+
+    function test_Vault_ynCoBTCk_redeem_fixed_amount() public {
+        uint256 amount = 1000 ether;
+
+        IERC20 asset = IERC20(MC.COBTC);
+
+        // Set sync deposit enabled
+        vm.prank(ADMIN);
+        vault.setSyncDeposit(true);
+
+        uint256 beforeVaultBalance = stakerGateway.balanceOf(address(asset), address(vault));
+        uint256 previewShares = vault.previewDepositAsset(address(asset), amount);
+
+        deal(MC.COBTC, bob, amount);
+
+        vm.prank(bob);
+        asset.approve(address(vault), amount);
+
+        // Test the deposit function
+        vm.prank(bob);
+        uint256 shares = vault.depositAsset(address(asset), amount, bob);
+
+        assertEq(previewShares, shares, "Preview shares should be equal to shares");
+        assertEqThreshold(
+            stakerGateway.balanceOf(address(asset), address(vault)),
+            beforeVaultBalance + amount,
+            100,
+            "Vault should have a balance in the stakerGateway"
+        );
+
+        // Test the redeem function
+        uint256 beforeBobBalance = asset.balanceOf(bob);
+        uint256 beforeVaultStakerShares = stakerGateway.balanceOf(address(asset), address(vault));
+
+        uint256 maxRedeem = vault.maxRedeemAsset(MC.COBTC, bob);
+        assertEqThreshold(maxRedeem, shares, 1, "Max redeem should be equal to shares");
+        assertEqThreshold(shares, amount, 1, "Max redeem should be equal to amount");
+
+        uint256 previewRedeemShares = vault.previewRedeemAsset(MC.COBTC, maxRedeem);
+
+        vm.prank(bob);
+        uint256 redeemedShares = vault.redeemAsset(address(asset), maxRedeem, bob, bob);
+
+        assertEq(redeemedShares, previewRedeemShares, "Redeemed shares should be equal to preview redeem shares");
+        assertEq(asset.balanceOf(bob), beforeBobBalance + maxRedeem, "Bob should have the assets after redemption");
+        assertEq(
+            stakerGateway.balanceOf(address(asset), address(vault)),
+            beforeVaultStakerShares - maxRedeem,
+            "Vault should have a reduced balance in the stakerGateway after redemption"
+        );
+
+        uint256 rateAfterRedeem = vault.convertToAssets(1e18);
+        assertEq(rateAfterRedeem, 1e18, "Exchange rate should remain the same after redemption");
     }
 
     function test_Vault_ynCoBTCk_deposit_COBTC(uint256 amount) public {

@@ -237,7 +237,7 @@ contract BscContracts is IContracts {
         return MainnetContracts.SLIS_BNB_STAKE_MANAGER;
     }
 
-    function YNCOBTCK() external view returns (address) {
+    function YNCOBTCK() external pure returns (address) {
         return MainnetContracts.YNCOBTCK;
     }
 }
