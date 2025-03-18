@@ -14,10 +14,9 @@ import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 
 import {ProxyAdmin} from "lib/yieldnest-vault/src/Common.sol";
 
+import {console} from "lib/forge-std/src/console.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {TokenUtils} from "test/mainnet/helpers/TokenUtils.sol";
-import {console} from "lib/forge-std/src/console.sol";
-
 
 contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
     TokenUtils public tokenUtils;
@@ -33,6 +32,7 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
         asset = IERC20(MainnetContracts.COBTC);
         tokenUtils = new TokenUtils(address(vault), stakerGateway);
     }
+
     function testSimpleDepositCoBTC() public {
         uint256 depositAmount = 10e8;
 
@@ -42,6 +42,8 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
         // Approve the vault to spend the asset
         vm.startPrank(alice);
         asset.approve(address(vault), depositAmount);
+        uint256 totalAssetsBeforeDeposit = vault.totalAssets();
+        console.log("Vault's total assets before deposit:", totalAssetsBeforeDeposit);
 
         // Deposit into the vault
         vault.deposit(depositAmount, alice);
@@ -53,16 +55,46 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
         uint256 totalAssetsAfterDeposit = vault.totalAssets();
         console.log("Vault's total assets after deposit:", totalAssetsAfterDeposit);
 
+        // Assert that totalAssets increased by the coBTC converted to BTC
+        uint256 expectedIncrease = depositAmount * 1e10;
+        assertEq(
+            totalAssetsAfterDeposit,
+            totalAssetsBeforeDeposit + expectedIncrease,
+            "Vault's total assets should increase by the coBTC converted to BTC"
+        );
+
         // // Verify the deposit was successful
         // assertEq(vault.balanceOf(alice), depositAmount, "Alice's vault balance should match the deposit amount");
         // assertEq(vault.totalAssets(), depositAmount, "Vault's total assets should match the deposit amount");
 
         uint256 withdrawAmount = depositAmount - 1;
 
+        // Check convertToAssets before withdrawal
+        uint256 assetsBeforeWithdraw = vault.convertToAssets(1e18);
+        // Check convertToShares before withdrawal
+        uint256 sharesBeforeWithdraw = vault.convertToShares(1e18);
+
         // Withdraw the deposited amount
         vm.startPrank(alice);
         vault.withdraw(withdrawAmount, alice, alice);
         vm.stopPrank();
+
+        // Check convertToAssets after withdrawal
+        uint256 assetsAfterWithdraw = vault.convertToAssets(1e18);
+        // Check convertToShares after withdrawal
+        uint256 sharesAfterWithdraw = vault.convertToShares(1e18);
+
+        // Assert that convertToAssets after withdrawal is greater than or equal to before withdrawal
+        assertTrue(
+            assetsAfterWithdraw >= assetsBeforeWithdraw,
+            "convertToAssets after withdrawal should be greater than or equal to before withdrawal"
+        );
+
+        // Assert that convertToShares after withdrawal is less than or equal to before withdrawal
+        assertTrue(
+            sharesAfterWithdraw <= sharesBeforeWithdraw,
+            "convertToShares after withdrawal should be less than or equal to before withdrawal"
+        );
 
         uint256 aliceVaultBalanceAfterWithdraw = vault.balanceOf(alice);
         console.log("Alice's vault balance after withdrawal:", aliceVaultBalanceAfterWithdraw);
@@ -71,7 +103,12 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
         console.log("Vault's total assets after withdrawal:", totalAssetsAfterWithdraw);
 
         // Verify the withdrawal was successful
-        assertApproxEqAbs(aliceVaultBalanceAfterWithdraw, 0, 1e10, "Alice's vault balance should be approximately zero after withdrawal");
+        assertApproxEqAbs(
+            aliceVaultBalanceAfterWithdraw,
+            0,
+            1e10,
+            "Alice's vault balance should be approximately zero after withdrawal"
+        );
         //assertEq(vault.totalAssets(), 0, "Vault's total assets should be zero after withdrawal");
     }
 
@@ -91,7 +128,9 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
     //     vm.stopPrank();
 
     //     // Verify the withdrawal was successful
-    //     assertEq(vault.balanceOf(alice), depositAmount - withdrawAmount, "Alice's vault balance should match the remaining amount");
-    //     assertEq(vault.totalAssets(), depositAmount - withdrawAmount, "Vault's total assets should match the remaining amount");
+    //     assertEq(vault.balanceOf(alice), depositAmount - withdrawAmount, "Alice's vault balance should match the
+    // remaining amount");
+    //     assertEq(vault.totalAssets(), depositAmount - withdrawAmount, "Vault's total assets should match the
+    // remaining amount");
     // }
 }
