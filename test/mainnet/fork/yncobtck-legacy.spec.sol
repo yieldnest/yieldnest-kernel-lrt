@@ -211,14 +211,6 @@ contract YNCoBTCkLegacyForkTest is Test, MainnetKernelActors, ProxyUtils {
             console.log("Vault's total assets after withdrawal:", totalAssetsAfterWithdraw);
             uint256 aliceAssetBalanceAfterWithdraw = asset.balanceOf(alice);
             console.log("Alice's asset balance after withdrawal:", aliceAssetBalanceAfterWithdraw);
-
-            // Verify the withdrawal was successful
-            // assertApproxEqAbs(
-            //     aliceVaultBalanceAfterWithdraw,
-            //     0,
-            //     1e10,
-            //     "Alice's vault balance should be approximately zero after withdrawal"
-            // );
         }
 
         uint256 bobAssetBalance = asset.balanceOf(bob);
@@ -243,16 +235,6 @@ contract YNCoBTCkLegacyForkTest is Test, MainnetKernelActors, ProxyUtils {
             totalBalance <= depositCount * depositAmount,
             "Total balance of Alice and Bob should be less than or equal to depositCount * depositAmount"
         );
-
-        // uint256 coBTCDifference = aliceCoBTCAfterRedeem - aliceCoBTCBeforeRedeem;
-
-        // console.log("Difference in coBTC that Alice has before and after redeem:", coBTCDifference);
-
-        // uint256 aliceVaultBalanceAfterRedeem = vault.balanceOf(alice);
-        // console.log("Alice's vault balance after redeem:", aliceVaultBalanceAfterRedeem);
-
-        // uint256 totalAssetsAfterRedeem = vault.totalAssets();
-        // console.log("Vault's total assets after redeem:", totalAssetsAfterRedeem);
     }
 
     function testUpgradeCoBTCRateProvider() public {
@@ -285,32 +267,5 @@ contract YNCoBTCkLegacyForkTest is Test, MainnetKernelActors, ProxyUtils {
 
         console.log("Shares after upgrade:", sharesAfter);
         console.log("Assets after upgrade:", assetsAfter);
-
-        // Assert that the conversion rates are the same before and after the upgrade
-
-        // assertEq(assetsBefore, assetsAfter, "convertToAssets should be the same before and after the upgrade");
-        // assertEq(sharesBefore, sharesAfter, "convertToShares should be the same before and after the upgrade");
     }
-
-    // function testSimpleWithdraw() public {
-    //     uint256 depositAmount = 100 ether;
-    //     uint256 withdrawAmount = 50 ether;
-
-    //     // Approve the vault to spend the asset
-    //     vm.startPrank(alice);
-    //     asset.approve(address(vault), depositAmount);
-
-    //     // Deposit into the vault
-    //     vault.deposit(depositAmount, alice);
-
-    //     // Withdraw from the vault
-    //     vault.withdraw(withdrawAmount, alice, alice);
-    //     vm.stopPrank();
-
-    //     // Verify the withdrawal was successful
-    //     assertEq(vault.balanceOf(alice), depositAmount - withdrawAmount, "Alice's vault balance should match the
-    // remaining amount");
-    //     assertEq(vault.totalAssets(), depositAmount - withdrawAmount, "Vault's total assets should match the
-    // remaining amount");
-    // }
 }
