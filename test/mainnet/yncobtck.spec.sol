@@ -168,6 +168,9 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
         // Test the decimals function
         assertEq(vault.decimals(), 8, "Vault decimals should be 18");
 
+        // Test the decimals function for COBTC
+        assertEq(IERC20Metadata(MC.COBTC).decimals(), 8, "COBTC should have 8 decimals");
+
         // Test the totalSupply function
         vault.totalSupply();
     }
@@ -459,9 +462,6 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
             vault.depositAsset(address(asset), aliceAmount, alice);
         }
 
-        uint256 beforeVaultBalance = stakerGateway.balanceOf(address(asset), address(vault));
-        uint256 previewShares = vault.previewDepositAsset(address(asset), amount);
-
         deal(MC.COBTC, bob, amount);
 
         vm.prank(bob);
@@ -469,7 +469,7 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
 
         // Test the deposit function
         vm.prank(bob);
-        uint256 shares = vault.depositAsset(address(asset), amount, bob);
+        vault.depositAsset(address(asset), amount, bob);
 
         uint256 charlieAmount = 12.23456e8; // 12.23456 coBTC with 8 decimals
         {
@@ -517,7 +517,6 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
             uint256 shareRateAfterWithdraw = vault.convertToShares(1e18);
             assertLt(shareRateAfterWithdraw, shareRateBeforeWithdraw, "Share rate should increase after withdrawal");
 
-            uint256 assetDecimals = asset.decimals();
             uint256 tolerance = 1e8;
 
             assertApproxEqRel(
@@ -531,7 +530,6 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
         {
             uint256 rateAfterWithdraw = vault.convertToAssets(1e18);
 
-            uint256 assetDecimals = asset.decimals();
             uint256 tolerance = 1e8;
 
             assertApproxEqRel(
