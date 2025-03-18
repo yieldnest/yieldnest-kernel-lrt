@@ -134,7 +134,6 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
         uint256 depositAmount = 10e8;
 
         for (uint256 i = 0; i < 10; i++) {
-
             // Deal coBTC to alice
             deal(address(asset), alice, depositAmount);
 
@@ -212,17 +211,17 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
 
         //assertEq(vault.totalAssets(), 0, "Vault's total assets should be zero after withdrawal");
         uint256 aliceCoBTCBeforeRedeem = asset.balanceOf(alice);
-
+        console.log("Alice's coBTC balance before redeem:", aliceCoBTCBeforeRedeem);
 
         // Redeem the remaining shares
         vm.startPrank(alice);
         vault.withdraw(9, alice, alice);
         vm.stopPrank();
 
-        // uint256 aliceCoBTCAfterRedeem = asset.balanceOf(alice);
+        uint256 aliceCoBTCAfterRedeem = asset.balanceOf(alice);
+        console.log("Alice's coBTC balance after redeem:", aliceCoBTCAfterRedeem);
         // uint256 coBTCDifference = aliceCoBTCAfterRedeem - aliceCoBTCBeforeRedeem;
-        // console.log("Alice's coBTC balance before redeem:", aliceCoBTCBeforeRedeem);
-        // console.log("Alice's coBTC balance after redeem:", aliceCoBTCAfterRedeem);
+
         // console.log("Difference in coBTC that Alice has before and after redeem:", coBTCDifference);
 
         // uint256 aliceVaultBalanceAfterRedeem = vault.balanceOf(alice);
