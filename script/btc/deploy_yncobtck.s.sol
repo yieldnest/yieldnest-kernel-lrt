@@ -4,7 +4,8 @@ pragma solidity ^0.8.24;
 import {IProvider, Vault} from "lib/yieldnest-vault/script/BaseScript.sol";
 
 import {KernelStrategy} from "src/KernelStrategy.sol";
-import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
+import {CoBTCRateProvider} from "src/module/CoBTCRateProvider.sol";
+
 import {TestnetBTCRateProvider} from "test/module/BTCRateProvider.sol";
 
 import {TransparentUpgradeableProxy} from
@@ -28,7 +29,7 @@ contract DeployYnCoBTCkStrategy is BaseKernelScript {
         }
 
         if (block.chainid == 56) {
-            rateProvider = IProvider(address(new BTCRateProvider()));
+            rateProvider = IProvider(address(new CoBTCRateProvider()));
         }
     }
 

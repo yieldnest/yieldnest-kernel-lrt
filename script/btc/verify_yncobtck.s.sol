@@ -4,9 +4,11 @@ pragma solidity ^0.8.24;
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {KernelVerifyScript} from "script/KernelVerifyScript.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
+import {KernelStrategy} from "src/KernelStrategy.sol";
 
-// FOUNDRY_PROFILE=mainnet forge script VerifyYnBTCkStrategy
-contract VerifyYnBTCkStrategy is KernelVerifyScript {
+
+// FOUNDRY_PROFILE=mainnet forge script VerifyYnCoBTCkStrategy
+contract VerifyYnCoBTCkStrategy is KernelVerifyScript {
     function symbol() public pure override returns (string memory) {
         return "ynCoBTCk";
     }
@@ -42,14 +44,22 @@ contract VerifyYnBTCkStrategy is KernelVerifyScript {
         assertEq(asset.decimals, 8, "asset[0].decimals is invalid");
         assertEq(asset.active, true, "asset[0].active is invalid");
         assertEq(asset.index, 0, "asset[0].index is invalid");
-        assertTrue(vault_.isAssetWithdrawable(contracts.COBTC()), "asset[0] should be withdrawable");
+        assertTrue(vault_.getAssetWithdrawable(contracts.COBTC()), "asset[0] should be withdrawable");
 
         assertEq(assets[1], address(stakerGateway.getVault(contracts.COBTC())));
         asset = vault_.getAsset(address(stakerGateway.getVault(contracts.COBTC())));
         assertEq(asset.decimals, 8, "asset[1].decimals is invalid");
         assertEq(asset.active, false, "asset[1].active is invalid");
         assertEq(asset.index, 1, "asset[1].index is invalid");
-        assertFalse(vault_.isAssetWithdrawable(address(stakerGateway.getVault(contracts.COBTC()))), "asset[1] should not be withdrawable");
+        assertFalse(vault_.getAssetWithdrawable(address(stakerGateway.getVault(contracts.COBTC()))), "asset[1] should not be withdrawable");
+
+        assertEq(vault_.convertToShares(1e8), 1e8, "convertToShares(1e8) is invalid");
+        assertEq(vault_.convertToAssets(1e8), 1e8, "convertToAssets(1e8) is invalid");
+
+        {
+            uint256 rate = rateProvider.getRate(contracts.COBTC());
+            assertEq(rate, 1e8, "Rate for CoBTC should be 1e8");
+        }
 
         _verifyApprovalRule(vault_, contracts.COBTC(), contracts.STAKER_GATEWAY());
         _verifyStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.COBTC());
