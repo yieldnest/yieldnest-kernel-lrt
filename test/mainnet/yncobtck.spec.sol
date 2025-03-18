@@ -293,6 +293,44 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
         return shares;
     }
 
+    function test_Vault_ynCoBTCk_deposit_fixed_amount() public {
+        uint256 amount = 1000 ether; // Fixed amount for deposit
+
+        IERC20 asset = IERC20(MC.COBTC);
+
+        // Set sync deposit enabled
+        vm.prank(ADMIN);
+        vault.setSyncDeposit(true);
+
+        uint256 beforeVaultBalance = stakerGateway.balanceOf(address(asset), address(vault));
+        uint256 previewShares = vault.previewDepositAsset(address(asset), amount);
+
+        deal(MC.COBTC, bob, amount);
+
+        vm.prank(bob);
+        asset.approve(address(vault), amount);
+
+        // Test the deposit function
+        vm.prank(bob);
+        uint256 shares = vault.depositAsset(address(asset), amount, bob);
+
+        assertEq(shares, amount, "Shares should be equal to the amount deposited");
+        assertEq(previewShares, shares, "Preview shares should be equal to shares");
+        assertEqThreshold(
+            stakerGateway.balanceOf(address(asset), address(vault)),
+            beforeVaultBalance + amount,
+            100,
+            "Vault should have a balance in the stakerGateway"
+        );
+
+        // Assert the rate and decimals
+        uint256 rateAfterDeposit = vault.convertToAssets(1e18);
+        assertEq(rateAfterDeposit, 1e18, "Exchange rate should be 1:1 after deposit");
+
+        uint8 decimals = vault.decimals();
+        assertEq(decimals, 8, "Vault decimals should be 8");
+    }
+
     function test_Vault_ynCoBTCk_deposit_COBTC(uint256 amount) public {
         amount = bound(amount, 10, 10_000 ether);
 
