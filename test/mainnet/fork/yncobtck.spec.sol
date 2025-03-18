@@ -24,6 +24,7 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
     IStakerGateway public stakerGateway;
     IERC20 public asset;
     address public alice = 0x1234567890AbcdEF1234567890aBcdef12345678;
+    address public bob = 0x9999567890ABCdef1234567890aBcDEF12345678;
 
     function setUp() public {
         vault = KernelStrategy(payable(address(MainnetContracts.YNCOBTCK)));
@@ -132,8 +133,18 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
 
     function testDoubleWithdrawCoBTC() public {
         uint256 depositAmount = 10e8;
+        
+        uint256 depositCount = 10;
 
-        for (uint256 i = 0; i < 10; i++) {
+        for (uint256 i = 0; i < depositCount; i++) {
+
+            uint256 aliceCoBTCBalance = asset.balanceOf(alice);
+            if (aliceCoBTCBalance > 0) {
+                vm.startPrank(alice);
+                asset.transfer(bob, aliceCoBTCBalance);
+                vm.stopPrank();
+                console.log("Transferred Alice's coBTC balance to Bob:", aliceCoBTCBalance);
+            }
             // Deal coBTC to alice
             deal(address(asset), alice, depositAmount);
 
@@ -199,6 +210,8 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
 
             uint256 totalAssetsAfterWithdraw = vault.totalAssets();
             console.log("Vault's total assets after withdrawal:", totalAssetsAfterWithdraw);
+            uint256 aliceAssetBalanceAfterWithdraw = asset.balanceOf(alice);
+            console.log("Alice's asset balance after withdrawal:", aliceAssetBalanceAfterWithdraw);
 
             // Verify the withdrawal was successful
             // assertApproxEqAbs(
@@ -208,6 +221,9 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
             //     "Alice's vault balance should be approximately zero after withdrawal"
             // );
         }
+
+        uint256 bobAssetBalance = asset.balanceOf(bob);
+        console.log("Bob's asset balance:", bobAssetBalance);
 
         //assertEq(vault.totalAssets(), 0, "Vault's total assets should be zero after withdrawal");
         uint256 aliceCoBTCBeforeRedeem = asset.balanceOf(alice);
@@ -220,6 +236,15 @@ contract BaseForkTest is Test, MainnetKernelActors, ProxyUtils {
 
         uint256 aliceCoBTCAfterRedeem = asset.balanceOf(alice);
         console.log("Alice's coBTC balance after redeem:", aliceCoBTCAfterRedeem);
+
+        uint256 totalBalance = aliceCoBTCAfterRedeem + bobAssetBalance;
+        console.log("Total balance of Alice and Bob:", totalBalance);
+
+        assertTrue(
+            totalBalance <= depositCount * depositAmount,
+            "Total balance of Alice and Bob should be less than or equal to depositCount * depositAmount"
+        );
+
         // uint256 coBTCDifference = aliceCoBTCAfterRedeem - aliceCoBTCBeforeRedeem;
 
         // console.log("Difference in coBTC that Alice has before and after redeem:", coBTCDifference);
