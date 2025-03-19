@@ -5,7 +5,6 @@ pragma solidity ^0.8.24;
 import {MainnetContracts as MC} from "script/Contracts.sol";
 
 import {BaseKernelRateProvider} from "./BaseKernelRateProvider.sol";
-import {ISolvBTCYieldToken} from "src/interface/external/solv/ISolvBTCYieldToken.sol";
 
 /**
  * @title BTCRateProvider
