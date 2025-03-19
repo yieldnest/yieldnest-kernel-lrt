@@ -21,6 +21,7 @@ interface IContracts {
     function SOLVBTC_BBN() external view returns (address);
     function ENZOBTC() external view returns (address);
     function COBTC() external view returns (address);
+    function BFBTC() external view returns (address);
     function ASBNB() external view returns (address);
 
     function AS_BNB_MINTER() external view returns (address);
@@ -41,6 +42,7 @@ library MainnetContracts {
     address public constant SOLVBTC_BBN = 0x1346b618dC92810EC74163e4c27004c921D446a5;
     address public constant ENZOBTC = 0x6A9A65B84843F5fD4aC9a0471C4fc11AFfFBce4a;
     address public constant COBTC = 0x918b3aa73e2D42D96CF64CBdB16838985992dAbc;
+    address public constant BFBTC = 0x623F2774d9f27B59bc6b954544487532CE79d9DF;
 
     // stake managers
     address public constant BNBX_STAKE_MANAGER = 0x3b961e83400D51e6E1AF5c450d3C7d7b80588d28;
@@ -63,6 +65,7 @@ library MainnetContracts {
     address public constant KERNEL_CONFIG = 0x45d7Bb73253A908E6160aa5FD9DA083F7Bc6faf5;
     address public constant KERNEL_CONFIG_ADMIN = 0x40f5f0f5E78289B33E450fBCA1cbD8700098cd23;
     address public constant ASSET_REGISTRY = 0xd0B91Fc0a323bbb726faAF8867CdB1cA98c44ABB;
+    address public constant KERNEL_VAULT_BEACON = 0xA026462C57BE1bDd668dE6ce2F8Ab2E332c112fE;
 
     address public constant PROVIDER = address(123456789); // TODO: Update with deployed Provider
     address public constant BUFFER = address(987654321); // TODO: Update with deployed buffer
@@ -81,6 +84,7 @@ library TestnetContracts {
     address public constant SOLVBTC_BBN = 0xB4618618b6Fcb61b72feD991AdcC344f43EE57Ad;
     address public constant ENZOBTC = 0x0000000000000000000000000000000000000000;
     address public constant COBTC = 0x0000000000000000000000000000000000000000;
+    address public constant BFBTC = 0x0000000000000000000000000000000000000000;
 
     address public constant ASBNB = 0x0000000000000000000000000000000000000000;
 
@@ -149,6 +153,10 @@ contract ChapelContracts is IContracts {
 
     function COBTC() external pure override returns (address) {
         return TestnetContracts.COBTC;
+    }
+
+    function BFBTC() external pure override returns (address) {
+        return TestnetContracts.BFBTC;
     }
 
     function SOLVBTC_BBN() external pure override returns (address) {
@@ -223,6 +231,10 @@ contract BscContracts is IContracts {
 
     function COBTC() external pure override returns (address) {
         return MainnetContracts.COBTC;
+    }
+
+    function BFBTC() external pure override returns (address) {
+        return MainnetContracts.BFBTC;
     }
 
     function ASBNB() external pure override returns (address) {
