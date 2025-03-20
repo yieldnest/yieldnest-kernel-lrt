@@ -1,0 +1,13 @@
+{
+  "admin": "0x721688652DEa9Cabec70BD99411EAEAB9485d436",
+  "deployer": "0xa1E340bd1e3ea09B3981164BBB4AfeDdF0e7bA0D",
+  "rateProvider": "0xbA91A950DCe944c7351DD0cCe091364FC519BD1b",
+  "symbol": "ynBfBTCk",
+  "timelock": "0xa1ece84F57FE043248867A99c12a822188477cDd",
+  "viewer-implementation": "0x0E4FFaaF990b1398e5Ae9407602473A793deaeD8",
+  "viewer-proxy": "0x39C6aC01e65e0b4C80B2aADcBD66060bb75eEc5A",
+  "viewer-proxyAdmin": "0xD987F8eA7Abf5AF7e2e787B41fFc097e0a2814e7",
+  "ynBfBTCk-implementation": "0x0E64643d8073b82ac6D6a9e7d1D6b6689a05Acb3",
+  "ynBfBTCk-proxy": "0x1B015705214bdcAAf43E8EDeCa13023143224Ab7",
+  "ynBfBTCk-proxyAdmin": "0x80538bCcfd751374F2e585A1d5CEF84200f7C7B9"
+}
