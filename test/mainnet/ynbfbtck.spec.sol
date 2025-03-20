@@ -25,6 +25,7 @@ import {IKernelConfig} from "src/interface/external/kernel/IKernelConfig.sol";
 import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
+import {console} from "lib/forge-std/src/console.sol";
 import {IBFBTC} from "src/interface/external/bitfi/IBFBTC.sol";
 import {BfBTCRateProvider} from "src/module/BfBTCRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
@@ -312,6 +313,71 @@ contract YnBitFiBTCkTest is Test, MainnetKernelActors, EtchUtils, VaultUtils, Va
         uint256 afterBalance = bfbtc.balanceOf(to);
 
         return afterBalance - beforeBalance;
+    }
+
+    function test_Vault_ynBfBTCk_deposit_BFBTC_FixedAmount() public {
+        uint256 amount = 1000 ether;
+        amount = obtainBFBTC(bob, amount);
+
+        uint256 rateBefore = vault.convertToAssets(1e18);
+        assertEq(rateBefore, 1e18, "Converted assets should be equal to 1e18");
+
+        uint256 shares = depositIntoVault(MC.BFBTC, amount);
+
+        assertEq(shares, amount, "Shares should be equal to amount");
+
+        uint256 rateAfter = vault.convertToAssets(1e18);
+        assertEq(rateBefore, rateAfter, "Rate should stay the same after deposit");
+
+        assertEq(vault.totalSupply(), amount, "Total supply should be equal to amount");
+        assertEq(vault.totalAssets(), amount, "Total assets should be equal to amount");
+    }
+
+    function test_Vault_ynBfBTCk_deposit_and_withdraw_BFBTC_FixedAmount() public {
+        uint256 amount = 1000 ether;
+        amount = obtainBFBTC(bob, amount);
+
+        IERC20 asset = IERC20(MC.BFBTC);
+
+        uint256 rateBeforeDeposit = vault.convertToAssets(1e18);
+        assertEq(rateBeforeDeposit, 1e18, "Converted assets should be equal to 1e18");
+
+        uint256 shares = depositIntoVault(MC.BFBTC, amount);
+
+        uint256 rateAfterDeposit = vault.convertToAssets(1e18);
+        assertEq(rateBeforeDeposit, rateAfterDeposit, "Rate should stay the same after deposit");
+
+        assertEq(vault.totalSupply(), amount, "Total supply should be equal to amount");
+
+        uint256 beforeVaultBalance = asset.balanceOf(address(vault));
+        uint256 beforeBobBalance = asset.balanceOf(bob);
+        uint256 beforeBobShares = vault.balanceOf(bob);
+
+        uint256 previewAssets = vault.previewRedeemAsset(MC.BFBTC, shares);
+
+        vm.prank(bob);
+        uint256 assets = vault.redeemAsset(MC.BFBTC, shares, bob, bob);
+
+        assertEq(previewAssets, assets, "Preview assets should be equal to assets");
+
+        assertApproxEqAbs(assets, amount, 2, "Assets should be equal to amount");
+
+        assertApproxEqAbs(
+            asset.balanceOf(address(vault)),
+            beforeVaultBalance - assets,
+            2,
+            "Vault should have transferred the asset to bob"
+        );
+        assertApproxEqAbs(
+            asset.balanceOf(bob), beforeBobBalance + assets, 2, "Bob should have the amount deposited after withdraw"
+        );
+        assertEq(vault.balanceOf(bob), 0, "Bob should have no shares after withdraw");
+
+        uint256 rateAfterWithdraw = vault.convertToAssets(1e18);
+        assertEq(rateBeforeDeposit, rateAfterWithdraw, "Rate should stay the same after withdraw");
+
+        assertEq(vault.totalAssets(), 0, "Total assets should be 0");
+        assertEq(vault.totalSupply(), 0, "Total supply should be 0");
     }
 
     function test_Vault_ynBfBTCk_deposit_BFBTC(uint256 amount) public {
