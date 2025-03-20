@@ -3,10 +3,12 @@ pragma solidity ^0.8.24;
 
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {KernelVerifyScript} from "script/KernelVerifyScript.sol";
+
+import {KernelStrategy} from "src/KernelStrategy.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
-// FOUNDRY_PROFILE=mainnet forge script VerifyYnBTCkStrategy
-contract VerifyYnBTCkStrategy is KernelVerifyScript {
+// FOUNDRY_PROFILE=mainnet forge script VerifyYnCoBTCkStrategy
+contract VerifyYnCoBTCkStrategy is KernelVerifyScript {
     function symbol() public pure override returns (string memory) {
         return "ynCoBTCk";
     }
@@ -23,14 +25,14 @@ contract VerifyYnBTCkStrategy is KernelVerifyScript {
 
         assertEq(vault_.name(), "YieldNest Restaked Coffer BTC - Kernel", "name is invalid");
         assertEq(vault_.symbol(), "ynCoBTCk", "symbol is invalid");
-        assertEq(vault_.decimals(), 18, "decimals is invalid");
+        assertEq(vault_.decimals(), 8, "decimals is invalid");
 
         assertEq(vault_.provider(), address(rateProvider), "provider is invalid");
         assertEq(vault_.getStakerGateway(), contracts.STAKER_GATEWAY(), "staker gateway is invalid");
         assertFalse(vault_.getHasAllocator(), "has allocator is invalid");
         assertTrue(vault_.getSyncDeposit(), "sync deposit is invalid");
         assertTrue(vault_.getSyncWithdraw(), "sync withdraw is invalid");
-        assertEq(vault_.baseWithdrawalFee(), 100000, "base withdrawal fee is invalid");
+        assertEq(vault_.baseWithdrawalFee(), 0, "base withdrawal fee is invalid");
         assertEq(vault_.countNativeAsset(), false, "count native asset is invalid");
         assertTrue(vault_.alwaysComputeTotalAssets(), "always compute total assets is invalid");
         IStakerGateway stakerGateway = IStakerGateway(contracts.STAKER_GATEWAY());
@@ -42,12 +44,25 @@ contract VerifyYnBTCkStrategy is KernelVerifyScript {
         assertEq(asset.decimals, 8, "asset[0].decimals is invalid");
         assertEq(asset.active, true, "asset[0].active is invalid");
         assertEq(asset.index, 0, "asset[0].index is invalid");
+        assertTrue(vault_.getAssetWithdrawable(contracts.COBTC()), "asset[0] should be withdrawable");
 
         assertEq(assets[1], address(stakerGateway.getVault(contracts.COBTC())));
         asset = vault_.getAsset(address(stakerGateway.getVault(contracts.COBTC())));
         assertEq(asset.decimals, 8, "asset[1].decimals is invalid");
         assertEq(asset.active, false, "asset[1].active is invalid");
         assertEq(asset.index, 1, "asset[1].index is invalid");
+        assertFalse(
+            vault_.getAssetWithdrawable(address(stakerGateway.getVault(contracts.COBTC()))),
+            "asset[1] should not be withdrawable"
+        );
+
+        assertEq(vault_.convertToShares(1e8), 1e8, "convertToShares(1e8) is invalid");
+        assertEq(vault_.convertToAssets(1e8), 1e8, "convertToAssets(1e8) is invalid");
+
+        {
+            uint256 rate = rateProvider.getRate(contracts.COBTC());
+            assertEq(rate, 1e8, "Rate for CoBTC should be 1e8");
+        }
 
         _verifyApprovalRule(vault_, contracts.COBTC(), contracts.STAKER_GATEWAY());
         _verifyStakingRule(vault_, contracts.STAKER_GATEWAY(), contracts.COBTC());
