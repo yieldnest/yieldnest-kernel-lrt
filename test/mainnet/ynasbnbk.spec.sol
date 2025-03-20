@@ -29,6 +29,11 @@ import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 import {IAsBnbMinter} from "lib/yieldnest-vault/src/interface/external/astherus/IAsBnbMinter.sol";
 import {ISlisBnbStakeManager} from "lib/yieldnest-vault/src/interface/external/lista/ISlisBnbStakeManager.sol";
 
+interface IAsBnbYieldProxy {
+    function activitiesOnGoing() external view returns (bool);
+    function endActivity(uint256 numberOfActivity) external;
+}
+
 contract YnAsBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultUtils, VaultKernelUtils {
     KernelStrategy public vault;
     BNBRateProvider public kernelProvider;
@@ -46,6 +51,9 @@ contract YnAsBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
     address public alice = address(0xA11ce);
 
     uint256 public minMintAmount = 0.001 ether;
+
+    address public constant YIELD_PROXY_MANAGER = 0xa8c0C6Ee62F5AD95730fe23cCF37d1c1FFAA1c3f;
+    address public constant YIELD_PROXY = 0xE861dd4b0AB6f3a42943e6EF441c3C611CD1bec2;
 
     function setUp() public {
         kernelProvider = new BNBRateProvider();
@@ -260,7 +268,7 @@ contract YnAsBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
         vault.processAccounting();
     }
 
-    function _mintAsBnb(uint256 amount) internal {
+    function _mintAsBnb(uint256 amount) internal returns (uint256) {
         address[] memory targets = new address[](2);
         targets[0] = MC.SLISBNB;
         targets[1] = MC.AS_BNB_MINTER;
@@ -274,9 +282,13 @@ contract YnAsBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
         data[1] = abi.encodeWithSignature("mintAsBnb(uint256)", amount);
 
         vm.prank(PROCESSOR);
-        vault.processor(targets, values, data);
+        bytes[] memory returnData = vault.processor(targets, values, data);
+
+        uint256 mintedAmount = abi.decode(returnData[1], (uint256));
 
         vault.processAccounting();
+
+        return mintedAmount;
     }
 
     function _stakeAsBnb(uint256 amount) internal {
@@ -324,36 +336,49 @@ contract YnAsBNBkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
 
         vault.processAccounting();
 
-        assertEq(vault.totalAssets(), amount, "vault should have full supply");
+        assertEq(vault.totalAssets(), amount, "vault should have full supply after donation");
 
         _unwrapWBNB(amount);
 
         assertEq(wbnb.balanceOf(address(vault)), 0, "vault should have no wbnb");
         assertEq(address(vault).balance, amount, "vault should have bnb");
-        assertEq(vault.totalAssets(), amount, "vault should have full supply");
+        assertEq(vault.totalAssets(), amount, "vault should have full supply after unwrap");
 
         _depositBNBForSlis(amount);
 
-        assertApproxEqRel(vault.totalAssets(), amount, 1e14, "vault should have full supply");
+        assertApproxEqRel(vault.totalAssets(), amount, 1e14, "vault should have full supply after deposit to SlisBnb");
         assertEq(address(vault).balance, 0, "vault should have no bnb");
         uint256 slisBnbAmount = slisBnbStakeManager.convertBnbToSnBnb(amount);
         assertApproxEqRel(slisbnb.balanceOf(address(vault)), slisBnbAmount, 1e14, "vault should have slisbnb");
 
-        _mintAsBnb(slisbnb.balanceOf(address(vault)));
+        {
+            // end all activities on yield proxy so mint happens immediately
+            // otherwise, the minter queues the mint request and the mint happens after the activities end
+            if (IAsBnbYieldProxy(YIELD_PROXY).activitiesOnGoing()) {
+                vm.startPrank(YIELD_PROXY_MANAGER);
+                IAsBnbYieldProxy(YIELD_PROXY).endActivity(type(uint256).max);
+                vm.stopPrank();
+            }
+            assertFalse(IAsBnbYieldProxy(YIELD_PROXY).activitiesOnGoing());
+        }
 
-        assertApproxEqRel(vault.totalAssets(), amount, 1e14, "vault should have full supply");
+        uint256 mintedAmount = _mintAsBnb(slisbnb.balanceOf(address(vault)));
+
+        assertGt(mintedAmount, 0, "minted amount should be greater than 0");
+
+        assertApproxEqRel(vault.totalAssets(), amount, 1e14, "vault should have full supply after mint asbnb");
         assertEq(slisbnb.balanceOf(address(vault)), 0, "vault should have no slisbnb");
         uint256 asBnbAmount = asBnbMinter.convertToAsBnb(slisBnbAmount);
         assertApproxEqRel(asbnb.balanceOf(address(vault)), asBnbAmount, 1e14, "vault should have asbnb");
 
         _stakeAsBnb(asbnb.balanceOf(address(vault)));
 
-        assertApproxEqRel(vault.totalAssets(), amount, 1e14, "vault should have full supply");
+        assertApproxEqRel(vault.totalAssets(), amount, 1e14, "vault should have full supply after stake asbnb");
         assertEq(asbnb.balanceOf(address(vault)), 0, "vault should have no asbnb");
 
         _unstakeAsBnb(stakerGateway.balanceOf(MC.ASBNB, address(vault)));
 
-        assertApproxEqRel(vault.totalAssets(), amount, 1e14, "vault should have full supply");
+        assertApproxEqRel(vault.totalAssets(), amount, 1e14, "vault should have full supply after unstake asbnb");
         assertApproxEqRel(asbnb.balanceOf(address(vault)), asBnbAmount, 1e14, "vault should have asbnb");
     }
 

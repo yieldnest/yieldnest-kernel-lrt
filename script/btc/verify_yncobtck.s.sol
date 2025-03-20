@@ -4,7 +4,6 @@ pragma solidity ^0.8.24;
 import {IVault} from "lib/yieldnest-vault/src/BaseVault.sol";
 import {KernelVerifyScript} from "script/KernelVerifyScript.sol";
 
-import {KernelStrategy} from "src/KernelStrategy.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
 // FOUNDRY_PROFILE=mainnet forge script VerifyYnCoBTCkStrategy
