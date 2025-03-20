@@ -176,11 +176,6 @@ contract YnBitFiBTCkTest is Test, MainnetKernelActors, EtchUtils, VaultUtils, Va
         vault.totalSupply();
     }
 
-    function _convertAssetToBase(address asset_, uint256 assets) internal view virtual returns (uint256) {
-        uint256 rate = IProvider(vault.provider()).getRate(asset_);
-        return assets.mulDiv(rate, 10 ** (IERC20(asset_).decimals()), Math.Rounding.Floor);
-    }
-
     function test_Vault_ERC4626_view_functions() public view {
         // Test the paused function
         assertFalse(vault.paused(), "Vault should not be paused");
@@ -347,9 +342,8 @@ contract YnBitFiBTCkTest is Test, MainnetKernelActors, EtchUtils, VaultUtils, Va
         vm.prank(bob);
         asset.transfer(address(vault), amount);
 
-        uint256 baseAmount = _convertAssetToBase(MC.BFBTC, amount);
         assertEq(
-            vault.totalAssets(), beforeTotalAssets + baseAmount, "Total assets should increase by the amount deposited"
+            vault.totalAssets(), beforeTotalAssets + amount, "Total assets should increase by the amount deposited"
         );
         assertEq(vault.totalSupply(), beforeTotalShares, "Total shares should remain the same after donation");
 
@@ -451,11 +445,8 @@ contract YnBitFiBTCkTest is Test, MainnetKernelActors, EtchUtils, VaultUtils, Va
             bfbtc.transfer(address(vault), rewards);
 
             uint256 afterMaxWithdraw = viewer.maxWithdrawAsset(address(MC.BFBTC), bob);
-            uint256 rewardsInBase = _convertAssetToBase(MC.BFBTC, rewards);
 
-            assertApproxEqAbs(
-                vault.totalAssets(), beforeAssets + rewardsInBase, 2, "Total assets should increase by rewards"
-            );
+            assertApproxEqAbs(vault.totalAssets(), beforeAssets + rewards, 2, "Total assets should increase by rewards");
             assertEq(vault.totalSupply(), beforeShares, "Total shares should not change");
             assertApproxEqAbs(
                 afterMaxWithdraw, beforeMaxWithdraw + rewardsForBob, 2, "Max withdraw should increase by rewards"
@@ -504,9 +495,7 @@ contract YnBitFiBTCkTest is Test, MainnetKernelActors, EtchUtils, VaultUtils, Va
         uint256 shares = _depositIntoVault_WithKernelVault(MC.BFBTC, amount);
 
         uint256 convertedAssets = vault.convertToAssets(shares);
-        uint256 assetsInBase = _convertAssetToBase(MC.BFBTC, amount);
-        assertApproxEqAbs(assetsInBase, convertedAssets, 2, "Assets in base should be equal to converted assets");
-        assertApproxEqAbs(assetsInBase, amount, 2, "Assets in base should be equal to amount");
+        assertApproxEqAbs(convertedAssets, amount, 2, "Assets in base should be equal to amount");
         assertApproxEqAbs(shares, amount, 2, "Shares should be equal to amount");
     }
 
@@ -531,10 +520,8 @@ contract YnBitFiBTCkTest is Test, MainnetKernelActors, EtchUtils, VaultUtils, Va
         vm.prank(bob);
         asset.transfer(address(vault), amount);
 
-        uint256 baseAmount = _convertAssetToBase(MC.BFBTC, amount);
-
         assertEq(
-            vault.totalAssets(), beforeTotalAssets + baseAmount, "Total assets should increase by the amount deposited"
+            vault.totalAssets(), beforeTotalAssets + amount, "Total assets should increase by the amount deposited"
         );
         assertEq(vault.totalSupply(), beforeTotalShares, "Total shares should remain the same after donation");
 
@@ -662,12 +649,7 @@ contract YnBitFiBTCkTest is Test, MainnetKernelActors, EtchUtils, VaultUtils, Va
             bfbtc.transfer(address(vault), rewards);
 
             uint256 afterMaxWithdraw = viewer.maxWithdrawAsset(address(MC.BFBTC), bob);
-
-            uint256 rewardsInBase = _convertAssetToBase(MC.BFBTC, rewards);
-
-            assertApproxEqAbs(
-                vault.totalAssets(), beforeAssets + rewardsInBase, 2, "Total assets should increase by rewards"
-            );
+            assertApproxEqAbs(vault.totalAssets(), beforeAssets + rewards, 2, "Total assets should increase by rewards");
             assertEq(vault.totalSupply(), beforeShares, "Total shares should not change");
             assertApproxEqAbs(
                 afterMaxWithdraw, beforeMaxWithdraw + rewardsForBob, 2, "Max withdraw should increase by rewards"
