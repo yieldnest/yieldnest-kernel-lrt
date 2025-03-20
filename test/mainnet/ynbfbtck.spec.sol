@@ -181,23 +181,6 @@ contract YnBitFiBTCkTest is Test, MainnetKernelActors, EtchUtils, VaultUtils, Va
         return assets.mulDiv(rate, 10 ** (IERC20(asset_).decimals()), Math.Rounding.Floor);
     }
 
-    function _convertBaseToAsset(address asset_, uint256 assets) internal view virtual returns (uint256) {
-        uint256 rate = IProvider(vault.provider()).getRate(asset_);
-        return assets.mulDiv(10 ** (IERC20(asset_).decimals()), rate, Math.Rounding.Floor);
-    }
-
-    function _convertToShares(address asset_, uint256 assets) internal view virtual returns (uint256, uint256) {
-        uint256 baseAssets = _convertAssetToBase(asset_, assets);
-        uint256 shares = baseAssets.mulDiv(vault.totalSupply() + 10 ** 0, vault.totalAssets() + 1, Math.Rounding.Floor);
-        return (shares, baseAssets);
-    }
-
-    function _convertToAssets(address asset_, uint256 shares) internal view virtual returns (uint256, uint256) {
-        uint256 baseAssets = shares.mulDiv(vault.totalAssets() + 1, vault.totalSupply() + 10 ** 0, Math.Rounding.Floor);
-        uint256 assets = _convertBaseToAsset(asset_, baseAssets);
-        return (assets, baseAssets);
-    }
-
     function test_Vault_ERC4626_view_functions() public view {
         // Test the paused function
         assertFalse(vault.paused(), "Vault should not be paused");
@@ -211,15 +194,6 @@ contract YnBitFiBTCkTest is Test, MainnetKernelActors, EtchUtils, VaultUtils, Va
         assertGe(totalAssets, totalSupply, "TotalAssets should be greater than totalSupply");
 
         uint256 amount = 1 ether;
-        {
-            // Test convertToBase for BFBTC
-            uint256 baseAmount = _convertAssetToBase(MC.BFBTC, amount);
-            uint256 convertedAmount = _convertBaseToAsset(MC.BFBTC, baseAmount);
-
-            assertEq(baseAmount, amount, "Base amount should be equal to amount");
-            assertEq(convertedAmount, amount, "Converted amount should be equal to amount");
-        }
-
         {
             // Test the convertToShares function
             uint256 shares = vault.convertToShares(amount);
@@ -352,9 +326,7 @@ contract YnBitFiBTCkTest is Test, MainnetKernelActors, EtchUtils, VaultUtils, Va
         uint256 shares = depositIntoVault(MC.BFBTC, amount);
 
         uint256 convertedAssets = vault.convertToAssets(shares);
-        uint256 assetsInBase = _convertAssetToBase(MC.BFBTC, amount);
-        assertApproxEqAbs(assetsInBase, convertedAssets, 2, "Assets in base should be equal to converted assets");
-        assertApproxEqAbs(assetsInBase, amount, 2, "Assets in base should be equal to amount");
+        assertApproxEqAbs(convertedAssets, amount, 2, "Assets in base should be equal to amount");
         assertApproxEqAbs(shares, amount, 2, "Shares should be equal to amount");
     }
 
