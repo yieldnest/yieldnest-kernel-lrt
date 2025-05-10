@@ -6,13 +6,10 @@ import {IProvider, Vault} from "lib/yieldnest-vault/script/BaseScript.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
 import {CoBTCRateProvider} from "src/module/CoBTCRateProvider.sol";
 
-import {TestnetBTCRateProvider} from "test/module/BTCRateProvider.sol";
-
 import {TransparentUpgradeableProxy} from
     "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {console} from "lib/forge-std/src/console.sol";
-import {FeeMath} from "lib/yieldnest-vault/src/module/FeeMath.sol";
 import {BaseKernelScript} from "script/BaseKernelScript.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 
@@ -24,13 +21,12 @@ contract DeployYnCoBTCkStrategy is BaseKernelScript {
     }
 
     function deployRateProvider() internal {
-        if (block.chainid == 97) {
-            rateProvider = IProvider(address(new TestnetBTCRateProvider()));
-        }
-
         if (block.chainid == 56) {
             rateProvider = IProvider(address(new CoBTCRateProvider()));
+            return;
         }
+        // only bsc mainnet is supported for ynCoBTCk
+        revert UnsupportedChain();
     }
 
     function run() public {

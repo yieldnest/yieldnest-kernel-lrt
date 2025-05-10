@@ -5,9 +5,6 @@ import {Test} from "lib/forge-std/src/Test.sol";
 
 import {MainnetContracts as MC} from "script/Contracts.sol";
 
-import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
-
-import {ISolvBTCYieldToken} from "src/interface/external/solv/ISolvBTCYieldToken.sol";
 import {CoBTCRateProvider} from "src/module/CoBTCRateProvider.sol";
 
 contract CoBTCProviderTest is Test {

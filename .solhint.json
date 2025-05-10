@@ -10,8 +10,9 @@
     "not-rely-on-time": "warn",
     "state-visibility": "error",
     "max-line-length": ["warn", 122],
-    "no-console": "off",
     "func-name-mixedcase": "off",
-    "no-inline-assembly": "off"
+    "no-inline-assembly": "off",
+    "no-console": "error",
+    "gas-custom-errors": "error"
   }
 }

@@ -24,8 +24,6 @@ import {IKernelVault} from "src/interface/external/kernel/IKernelVault.sol";
 import {IStakerGateway} from "src/interface/external/kernel/IStakerGateway.sol";
 import {CoBTCRateProvider} from "src/module/CoBTCRateProvider.sol";
 
-import {console} from "lib/forge-std/src/console.sol";
-import {BTCRateProvider} from "src/module/BTCRateProvider.sol";
 import {EtchUtils} from "test/mainnet/helpers/EtchUtils.sol";
 
 contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, VaultUtils, VaultKernelUtils {
@@ -221,7 +219,7 @@ contract YnCoBTCkTest is Test, AssertUtils, MainnetKernelActors, EtchUtils, Vaul
 
         // Test the getAssets function
         address[] memory assets = vault.getAssets();
-        assertEq(assets.length, 2, "There should be six assets in the vault");
+        assertEq(assets.length, 2, "There should be 2 assets in the vault");
         assertEq(assets[0], MC.COBTC, "First asset should be BTCB");
 
         // Test the getAsset function

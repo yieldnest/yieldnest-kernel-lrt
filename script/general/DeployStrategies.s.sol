@@ -1,16 +1,12 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.24;
 
-import {BscContracts, ChapelContracts, IContracts} from "script/Contracts.sol";
-import {IKernelActors, MainnetKernelActors, TestnetKernelActors} from "script/KernelActors.sol";
 import {VaultKernelUtils} from "script/VaultKernelUtils.sol";
 
 import {Script} from "lib/forge-std/src/Script.sol";
-import {BaseScript, IActors} from "lib/yieldnest-vault/script/BaseScript.sol";
 
 import {KernelClisStrategy} from "src/KernelClisStrategy.sol";
 import {KernelStrategy} from "src/KernelStrategy.sol";
-import {KernelVaultViewer} from "src/utils/KernelVaultViewer.sol";
 
 contract DeployStrategies is Script, VaultKernelUtils {
     function run() public virtual {
